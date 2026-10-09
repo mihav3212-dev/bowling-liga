@@ -88,7 +88,7 @@ export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
             className="ghost"
             type="button"
             onClick={() => {
-              if (window.confirm("Naloži testni razpored 2025/26? Trenutni vnos ekip se zbriše.")) {
+              if (window.confirm("Naloži razpored 2025/26 (22 krogov)? Trenutni vnos ekip se zbriše.")) {
                 loadSeason2025();
               }
             }}

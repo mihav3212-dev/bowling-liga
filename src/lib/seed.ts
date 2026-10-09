@@ -19,7 +19,7 @@ export function createSeed2025(): LeagueState {
   const teams: Team[] = SEASON_TEAM_NAMES_2025.map((name) => ({ id: uid("t"), name }));
   return {
     seasonKey: "2025-26",
-    seasonTitle: `${SEASON_TITLE_2025} (test / arhiv)`,
+    seasonTitle: SEASON_TITLE_2025,
     teams,
     players: [],
     matches: buildOfficialMatches(teams),

@@ -1,6 +1,6 @@
 import type { OfficialRound } from "./fixtures";
 
-/** Uradni razpored 2025/2026 (12 ekip, 11 krogov, 1. krog). */
+/** Uradni razpored 2025/2026 (12 ekip, 22 krogov: 1. in 2. del). */
 
 export const SEASON_TITLE_2025 = "2025/2026";
 
@@ -19,9 +19,9 @@ export const SEASON_TEAM_NAMES_2025 = [
   "FRIZERSTVO SIJAJ",
 ] as const;
 
-/** Zadnja nedelja oktobra 2025 (26. 10.) — prehod na CET. */
+/** Zadnja nedelja oktobra 2025 (26. 10.) in zadnja nedelja marca 2026 (29. 3.). */
 function at(date: string, time: string): string {
-  const offset = date < "2025-10-26" ? "+02:00" : "+01:00";
+  const offset = date < "2025-10-26" || date >= "2026-03-29" ? "+02:00" : "+01:00";
   return `${date}T${time}:00${offset}`;
 }
 
@@ -173,6 +173,139 @@ export const ROUNDS_2025: OfficialRound[] = [
       slot("BELI LABOD", "KLASMETAL", "2026-02-05", "18:00"),
       slot("BOWLING LENART", "MOBICOM", "2026-02-05", "19:30"),
       slot("BAR 10", "PIVOVARNA VARDAM", "2026-02-05", "21:00"),
+    ],
+  },
+  {
+    round: 12,
+    label: "11.–12. februar 2026",
+    matches: [
+      slot("MOBICOM", "SAUBERMACHER", "2026-02-11", "18:00"),
+      slot("PIVOVARNA VARDAM", "PARMA", "2026-02-11", "19:30"),
+      slot("KLASMETAL", "BAR 10", "2026-02-11", "21:00"),
+      slot("FITNES LENART", "FRIZERSTVO SIJAJ", "2026-02-12", "18:00"),
+      slot("OBČINA LENART", "BELI LABOD", "2026-02-12", "19:30"),
+      slot("POŽARNI INŽENIRING MURŠEC", "BOWLING LENART", "2026-02-12", "21:00"),
+    ],
+  },
+  {
+    round: 13,
+    label: "18.–19. februar 2026",
+    noteAfter: "24.–26. februar 2026 — ni lige (šolske počitnice)",
+    matches: [
+      slot("BOWLING LENART", "FITNES LENART", "2026-02-18", "18:00"),
+      slot("SAUBERMACHER", "POŽARNI INŽENIRING MURŠEC", "2026-02-18", "19:30"),
+      slot("FRIZERSTVO SIJAJ", "PIVOVARNA VARDAM", "2026-02-18", "21:00"),
+      slot("BAR 10", "OBČINA LENART", "2026-02-19", "18:00"),
+      slot("PARMA", "KLASMETAL", "2026-02-19", "19:30"),
+      slot("BELI LABOD", "MOBICOM", "2026-02-19", "21:00"),
+    ],
+  },
+  {
+    round: 14,
+    label: "4.–5. marec 2026",
+    matches: [
+      slot("MOBICOM", "BAR 10", "2026-03-04", "18:00"),
+      slot("PIVOVARNA VARDAM", "FITNES LENART", "2026-03-04", "19:30"),
+      slot("BOWLING LENART", "SAUBERMACHER", "2026-03-04", "21:00"),
+      slot("POŽARNI INŽENIRING MURŠEC", "BELI LABOD", "2026-03-05", "18:00"),
+      slot("KLASMETAL", "FRIZERSTVO SIJAJ", "2026-03-05", "19:30"),
+      slot("OBČINA LENART", "PARMA", "2026-03-05", "21:00"),
+    ],
+  },
+  {
+    round: 15,
+    label: "11.–12. marec 2026",
+    matches: [
+      slot("FITNES LENART", "SAUBERMACHER", "2026-03-11", "18:00"),
+      slot("PIVOVARNA VARDAM", "KLASMETAL", "2026-03-11", "19:30"),
+      slot("BAR 10", "POŽARNI INŽENIRING MURŠEC", "2026-03-11", "21:00"),
+      slot("FRIZERSTVO SIJAJ", "OBČINA LENART", "2026-03-12", "18:00"),
+      slot("BELI LABOD", "BOWLING LENART", "2026-03-12", "19:30"),
+      slot("PARMA", "MOBICOM", "2026-03-12", "21:00"),
+    ],
+  },
+  {
+    round: 16,
+    label: "18.–19. marec 2026",
+    matches: [
+      slot("OBČINA LENART", "PIVOVARNA VARDAM", "2026-03-18", "18:00"),
+      slot("MOBICOM", "FRIZERSTVO SIJAJ", "2026-03-18", "19:30"),
+      slot("KLASMETAL", "FITNES LENART", "2026-03-18", "21:00"),
+      slot("BOWLING LENART", "BAR 10", "2026-03-19", "18:00"),
+      slot("POŽARNI INŽENIRING MURŠEC", "PARMA", "2026-03-19", "19:30"),
+      slot("SAUBERMACHER", "BELI LABOD", "2026-03-19", "21:00"),
+    ],
+  },
+  {
+    round: 17,
+    label: "23.–24. marec 2026 (ponedeljek in torek)",
+    matches: [
+      slot("SAUBERMACHER", "OBČINA LENART", "2026-03-23", "18:00"),
+      slot("POŽARNI INŽENIRING MURŠEC", "FITNES LENART", "2026-03-23", "19:30"),
+      slot("PARMA", "FRIZERSTVO SIJAJ", "2026-03-23", "21:00"),
+      slot("BOWLING LENART", "MOBICOM", "2026-03-24", "18:00"),
+      slot("BAR 10", "PIVOVARNA VARDAM", "2026-03-24", "19:30"),
+      slot("BELI LABOD", "KLASMETAL", "2026-03-24", "21:00"),
+    ],
+  },
+  {
+    round: 18,
+    label: "25.–26. marec 2026",
+    matches: [
+      slot("PIVOVARNA VARDAM", "MOBICOM", "2026-03-25", "18:00"),
+      slot("KLASMETAL", "OBČINA LENART", "2026-03-25", "19:30"),
+      slot("BAR 10", "SAUBERMACHER", "2026-03-25", "21:00"),
+      slot("FITNES LENART", "BELI LABOD", "2026-03-26", "18:00"),
+      slot("PARMA", "BOWLING LENART", "2026-03-26", "19:30"),
+      slot("FRIZERSTVO SIJAJ", "POŽARNI INŽENIRING MURŠEC", "2026-03-26", "21:00"),
+    ],
+  },
+  {
+    round: 19,
+    label: "1.–2. april 2026",
+    matches: [
+      slot("POŽARNI INŽENIRING MURŠEC", "PIVOVARNA VARDAM", "2026-04-01", "18:00"),
+      slot("SAUBERMACHER", "PARMA", "2026-04-01", "19:30"),
+      slot("BOWLING LENART", "FRIZERSTVO SIJAJ", "2026-04-01", "21:00"),
+      slot("MOBICOM", "KLASMETAL", "2026-04-02", "18:00"),
+      slot("BELI LABOD", "BAR 10", "2026-04-02", "19:30"),
+      slot("OBČINA LENART", "FITNES LENART", "2026-04-02", "21:00"),
+    ],
+  },
+  {
+    round: 20,
+    label: "8.–9. april 2026",
+    matches: [
+      slot("FRIZERSTVO SIJAJ", "SAUBERMACHER", "2026-04-08", "18:00"),
+      slot("OBČINA LENART", "MOBICOM", "2026-04-08", "19:30"),
+      slot("PIVOVARNA VARDAM", "BOWLING LENART", "2026-04-08", "21:00"),
+      slot("PARMA", "BELI LABOD", "2026-04-09", "18:00"),
+      slot("KLASMETAL", "POŽARNI INŽENIRING MURŠEC", "2026-04-09", "19:30"),
+      slot("FITNES LENART", "BAR 10", "2026-04-09", "21:00"),
+    ],
+  },
+  {
+    round: 21,
+    label: "15.–16. april 2026",
+    matches: [
+      slot("SAUBERMACHER", "PIVOVARNA VARDAM", "2026-04-15", "18:00"),
+      slot("BAR 10", "PARMA", "2026-04-15", "19:30"),
+      slot("MOBICOM", "FITNES LENART", "2026-04-15", "21:00"),
+      slot("POŽARNI INŽENIRING MURŠEC", "OBČINA LENART", "2026-04-16", "18:00"),
+      slot("BOWLING LENART", "KLASMETAL", "2026-04-16", "19:30"),
+      slot("BELI LABOD", "FRIZERSTVO SIJAJ", "2026-04-16", "21:00"),
+    ],
+  },
+  {
+    round: 22,
+    label: "22.–23. april 2026",
+    matches: [
+      slot("MOBICOM", "POŽARNI INŽENIRING MURŠEC", "2026-04-22", "18:00"),
+      slot("KLASMETAL", "SAUBERMACHER", "2026-04-22", "19:30"),
+      slot("OBČINA LENART", "BOWLING LENART", "2026-04-22", "21:00"),
+      slot("PIVOVARNA VARDAM", "BELI LABOD", "2026-04-23", "18:00"),
+      slot("FRIZERSTVO SIJAJ", "BAR 10", "2026-04-23", "19:30"),
+      slot("FITNES LENART", "PARMA", "2026-04-23", "21:00"),
     ],
   },
 ];

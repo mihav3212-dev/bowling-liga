@@ -163,15 +163,15 @@ describe("uradni razpored 2026/2027", () => {
 });
 
 describe("uradni razpored 2025/2026", () => {
-  it("12 ekip, 66 različnih parov, vsaka 11 tekem", () => {
+  it("12 ekip, 22 krogov, 132 tekem, vsaka ekipa 22 tekem", () => {
     const state = createSeed2025();
     expect(state.teams.map((t) => t.name)).toEqual([...SEASON_TEAM_NAMES_2025]);
-    expect(state.matches).toHaveLength(66);
+    expect(state.matches).toHaveLength(132);
     const pairs = new Set(
       state.matches.map((m) => [m.homeTeamId, m.awayTeamId].sort().join("-")),
     );
     expect(pairs.size).toBe(66);
-    expect(ROUNDS_2025).toHaveLength(11);
+    expect(ROUNDS_2025).toHaveLength(22);
     for (const round of ROUNDS_2025) {
       const games = state.matches.filter((m) => m.round === round.round);
       expect(games).toHaveLength(6);

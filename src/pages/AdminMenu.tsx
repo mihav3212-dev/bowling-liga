@@ -9,7 +9,7 @@ export function AdminMenu({
   canEdit: boolean;
   onNewSeason: () => void;
 }) {
-  const { state, archived, importState } = useStore();
+  const { state, archived, importState, loadSeason2025 } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -18,9 +18,26 @@ export function AdminMenu({
       <div className="admin-menu-panel">
         {archived && <p className="muted">Arhiv — samo branje.</p>}
         {canEdit && (
-          <button className="primary" type="button" onClick={onNewSeason}>
-            Nova sezona
-          </button>
+          <>
+            <button className="primary" type="button" onClick={onNewSeason}>
+              Nova sezona
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "Naloži sezono 2025/26 (12 ekip, 22 krogov) v trenutno sezono? Rezultati te sezone se zbrišejo.",
+                  )
+                ) {
+                  loadSeason2025();
+                }
+              }}
+            >
+              Naloži 2025/26
+            </button>
+          </>
         )}
         <button
           className="ghost"

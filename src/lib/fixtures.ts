@@ -232,7 +232,7 @@ export function seasonCatalog(key: SeasonKey) {
       title: SEASON_TITLE_2025,
       rounds: ROUNDS_2025,
       intro:
-        "Sezona 2025/2026 · sreda in četrtek ob 18:00, 19:30 in 21:00 · 12 ekip, 11 krogov.",
+        "Sezona 2025/2026 · 12 ekip, 22 krogov (1. in 2. del) · običajno sreda in četrtek ob 18:00, 19:30 in 21:00.",
     };
   }
   return {
