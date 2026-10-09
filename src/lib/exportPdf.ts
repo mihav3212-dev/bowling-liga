@@ -159,7 +159,7 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
       row.won,
       row.lost,
       row.drawn,
-      row.big,
+      row.velike,
       row.small,
       row.teamAvg ? row.teamAvg.toFixed(1) : "0.0",
       row.avg ? row.avg.toFixed(2) : "0.00",
@@ -271,8 +271,9 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
       const totals = matchTotals(match, state.players);
       return [
         `${teamName(state, match.homeTeamId)} – ${teamName(state, match.awayTeamId)}`,
-        `${totals.homeSmall}:${totals.awaySmall}`,
+        `${totals.homeMatch}:${totals.awayMatch}`,
         `${totals.homeBig}:${totals.awayBig}`,
+        `${totals.homeSmall}:${totals.awaySmall}`,
       ];
     });
     autoTable(doc, {
@@ -288,8 +289,12 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
         lineColor: [40, 40, 40],
       },
       bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
-      columnStyles: { 1: { halign: "center", cellWidth: 22 }, 2: { halign: "center", cellWidth: 22 } },
-      head: [[`${round}. kolo`, "Male", "Točke"]],
+      columnStyles: {
+        1: { halign: "center", cellWidth: 18 },
+        2: { halign: "center", cellWidth: 18 },
+        3: { halign: "center", cellWidth: 18 },
+      },
+      head: [[`${round}. kolo`, "TOČKE", "Velike", "Male"]],
       body: rows,
     });
     y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 8;

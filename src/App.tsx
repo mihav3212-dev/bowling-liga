@@ -16,7 +16,7 @@ type Page = "schedule" | "results" | "standings" | "players" | "teams";
 
 export function App() {
   const { admin } = useAuth();
-  const { state, archived, archiveSeason, seasons, seasonId, loadSeason } = useStore();
+  const { state, archived, newEmptySeason, seasons, seasonId, loadSeason } = useStore();
   const canEdit = admin && !archived;
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -32,14 +32,7 @@ export function App() {
     const title = window.prompt("Ime nove sezone (npr. 2027/2028)", "");
     if (title == null) return;
     const name = title.trim() || "Nova sezona";
-    if (
-      !window.confirm(
-        "Trenutno sezono arhiviraš (ostane za ogled). Nova bo prazna — ekipe in razpored dodaš na zavihku Ekipe.",
-      )
-    ) {
-      return;
-    }
-    await archiveSeason(name);
+    await newEmptySeason(name);
     go("teams");
   };
 

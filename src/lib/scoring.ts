@@ -74,35 +74,93 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
   let awaySmall = 0;
   let homePins = 0;
   let awayPins = 0;
+  let homeBig = 0;
+  let awayBig = 0;
   let scored = 0;
   const expected = ROUNDS * PLAYERS_ON_LANE;
+  const rounds: MatchTotals["rounds"] = [];
 
   for (const round of match.rounds) {
+    let rh = 0;
+    let ra = 0;
+    let rph = 0;
+    let rpa = 0;
+    let rscored = 0;
     for (const game of round.games) {
-      if (game.homePins != null) homePins += game.homePins;
-      if (game.awayPins != null) awayPins += game.awayPins;
+      if (game.homePins != null) {
+        homePins += game.homePins;
+        rph += game.homePins;
+      }
+      if (game.awayPins != null) {
+        awayPins += game.awayPins;
+        rpa += game.awayPins;
+      }
       const duel = scoreGame(game, players);
       if (!duel) continue;
       scored += 1;
+      rscored += 1;
       homeSmall += duel.homeTotal;
       awaySmall += duel.awayTotal;
+      rh += duel.homeTotal;
+      ra += duel.awayTotal;
     }
+    const roundDone = rscored === PLAYERS_ON_LANE;
+    let rbh = 0;
+    let rba = 0;
+    if (roundDone) {
+      if (rh > ra) rbh = 2;
+      else if (ra > rh) rba = 2;
+      else {
+        rbh = 1;
+        rba = 1;
+      }
+      homeBig += rbh;
+      awayBig += rba;
+    }
+    rounds.push({
+      homeSmall: rh,
+      awaySmall: ra,
+      homeBig: rbh,
+      awayBig: rba,
+      homePins: rph,
+      awayPins: rpa,
+      complete: roundDone,
+    });
   }
 
   const complete = scored === expected;
-  // Točke ekipe: zmaga 2, remi 1, poraz 0 — glede na seštevek malih točk igralcev.
-  let homeBig = 0;
-  let awayBig = 0;
   if (complete) {
-    if (homeSmall > awaySmall) homeBig = 2;
-    else if (awaySmall > homeSmall) awayBig = 2;
+    if (homePins > awayPins) homeBig += 2;
+    else if (awayPins > homePins) awayBig += 2;
+  }
+
+  let homeMatch = 0;
+  let awayMatch = 0;
+  if (complete) {
+    if (homeBig > awayBig) homeMatch = 2;
+    else if (awayBig > homeBig) awayMatch = 2;
     else {
-      homeBig = 1;
-      awayBig = 1;
+      homeMatch = 1;
+      awayMatch = 1;
     }
   }
 
-  return { homeSmall, awaySmall, homeBig, awayBig, homePins, awayPins, complete };
+  return {
+    homeSmall,
+    awaySmall,
+    homeBig,
+    awayBig,
+    homeMatch,
+    awayMatch,
+    homePins,
+    awayPins,
+    complete,
+    rounds,
+  };
+}
+
+export function seasonIsComplete(state: { matches: Match[]; players: Player[] }): boolean {
+  return state.matches.length > 0 && state.matches.every((m) => matchTotals(m, state.players).complete);
 }
 
 export function standingSortKey(row: {

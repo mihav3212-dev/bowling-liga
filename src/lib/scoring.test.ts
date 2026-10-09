@@ -86,24 +86,44 @@ describe("velike točke", () => {
     };
   }
 
-  it("več malih točk = 2 veliki", () => {
-    // 8 zmag doma (2t) proti 8 porazom = 16:0
+  it("krog 2 veliki za več T, plus 2 za več kegljev, TOČKE 2:0", () => {
     const homePins = Array(16).fill(150);
     const awayPins = Array(16).fill(100);
     const totals = matchTotals(fakeMatch(homePins, awayPins), [home, away]);
     expect(totals.homeSmall).toBe(32);
     expect(totals.awaySmall).toBe(0);
-    expect(totals.homeBig).toBe(2);
+    expect(totals.homeBig).toBe(10);
     expect(totals.awayBig).toBe(0);
+    expect(totals.homeMatch).toBe(2);
+    expect(totals.awayMatch).toBe(0);
   });
 
-  it("izenačene male točke = 1:1", () => {
+  it("izenačene velike = TOČKE 1:1", () => {
     const homePins = [...Array(8).fill(150), ...Array(8).fill(100)];
     const awayPins = [...Array(8).fill(100), ...Array(8).fill(150)];
     const totals = matchTotals(fakeMatch(homePins, awayPins), [home, away]);
     expect(totals.homeSmall).toBe(totals.awaySmall);
-    expect(totals.homeBig).toBe(1);
-    expect(totals.awayBig).toBe(1);
+    expect(totals.homeBig).toBe(totals.awayBig);
+    expect(totals.homeMatch).toBe(1);
+    expect(totals.awayMatch).toBe(1);
+  });
+
+  it("Vardam–Parma: 8:2 velike in 2:0 TOČKE", () => {
+    const homePins = [
+      179, 137, 173, 158, 180, 119, 146, 139, 197, 159, 160, 151, 125, 189, 145, 182,
+    ];
+    const awayPins = [
+      106, 144, 148, 180, 117, 147, 127, 116, 128, 145, 126, 160, 155, 150, 158, 125,
+    ];
+    const totals = matchTotals(fakeMatch(homePins, awayPins), [home, away]);
+    expect(totals.homeSmall).toBe(20);
+    expect(totals.awaySmall).toBe(12);
+    expect(totals.homePins).toBe(2539);
+    expect(totals.awayPins).toBe(2232);
+    expect(totals.homeBig).toBe(8);
+    expect(totals.awayBig).toBe(2);
+    expect(totals.homeMatch).toBe(2);
+    expect(totals.awayMatch).toBe(0);
   });
 });
 

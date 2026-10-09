@@ -74,9 +74,14 @@ export type DuelResult = {
 export type MatchTotals = {
   homeSmall: number;
   awaySmall: number;
+  /** Velike točke: 2/1/0 po krogu (rumeni seštevek) + 2 za več kegljev. */
   homeBig: number;
   awayBig: number;
+  /** TOČKE ekipe za lestvico: zmaga 2, remi 1, poraz 0. */
+  homeMatch: number;
+  awayMatch: number;
   homePins: number;
   awayPins: number;
   complete: boolean;
+  rounds: { homeSmall: number; awaySmall: number; homeBig: number; awayBig: number; homePins: number; awayPins: number; complete: boolean }[];
 };

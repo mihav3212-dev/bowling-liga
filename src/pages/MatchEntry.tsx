@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
-import { nominatedIds } from "../lib/pairings";
+import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import type { Player } from "../lib/types";
@@ -44,12 +44,14 @@ function LineupReadout({
 
 function LineupEditor({
   label,
+  side,
   roster,
   starters,
   bench,
   onChange,
 }: {
   label: string;
+  side: "home" | "away";
   roster: Player[];
   starters: string[];
   bench: string[];
@@ -91,7 +93,7 @@ function LineupEditor({
             onChange(next, bench);
           }}
         >
-          <option value="">Igralec {i + 1}</option>
+          <option value="">{slotLabel(side, i)}</option>
           {options(starters[i] ?? "").map((p) => (
             <option key={p.id} value={p.id}>
               {playerTag(p)}
@@ -109,7 +111,7 @@ function LineupEditor({
             onChange(starters, next.filter(Boolean));
           }}
         >
-          <option value="">Menjava {i + 1}</option>
+          <option value="">{slotLabel(side, i + 4)}</option>
           {options(bench[i] ?? "").map((p) => (
             <option key={p.id} value={p.id}>
               {playerTag(p)}
@@ -159,13 +161,15 @@ export function MatchEntry({
             </h2>
           </div>
           <div>
-            <div className="muted">Male točke (igralci skupaj)</div>
+            <div className="muted">Rezultat (TOČKE)</div>
             <div className="big-score">
-              {totals.homeSmall}:{totals.awaySmall}
+              {totals.complete ? `${totals.homeMatch}:${totals.awayMatch}` : "—"}
             </div>
             <div className="muted">
-              Točke ekipe:{" "}
-              {totals.complete ? `${totals.homeBig}:${totals.awayBig}` : "2 za zmago, 1 za remi"}
+              Velike: {totals.homeBig}:{totals.awayBig}
+              {totals.complete ? " (krogi + 2 za več kegljev)" : ""}
+              {" · "}
+              Male: {totals.homeSmall}:{totals.awaySmall}
             </div>
           </div>
         </div>
@@ -182,7 +186,8 @@ export function MatchEntry({
             />
           ) : (
             <LineupEditor
-              label={home?.name ?? "Domači"}
+              label={`${home?.name ?? "Domači"} (A)`}
+              side="home"
               roster={homeRoster}
               starters={match.homeStarters}
               bench={match.homeBench}
@@ -200,7 +205,8 @@ export function MatchEntry({
             />
           ) : (
             <LineupEditor
-              label={away?.name ?? "Gostje"}
+              label={`${away?.name ?? "Gostje"} (B)`}
+              side="away"
               roster={awayRoster}
               starters={match.awayStarters}
               bench={match.awayBench}
@@ -210,19 +216,22 @@ export function MatchEntry({
         </div>
       </div>
 
-      {match.rounds.map((round, ri) => (
+      {match.rounds.map((round, ri) => {
+        const pair = pairingTemplate()[ri] ?? [];
+        const roundTot = totals.rounds[ri];
+        return (
         <div className="scorecard" key={ri} style={{ marginBottom: 16 }}>
-          <h3>Krog {ri + 1}</h3>
+          <h3>{ri + 1}. krog</h3>
           <table>
             <thead>
               <tr>
-                <th>Steza</th>
+                <th>S</th>
                 <th>Domači</th>
-                <th>Keglji</th>
+                <th>Rez.</th>
+                <th>T</th>
+                <th>T</th>
+                <th>Rez.</th>
                 <th>Gostje</th>
-                <th>Keglji</th>
-                <th>Prilagojeno</th>
-                <th>Točke</th>
               </tr>
             </thead>
             <tbody>
@@ -230,10 +239,12 @@ export function MatchEntry({
                 const duel = scoreGame(game, state.players);
                 const homePlayers = homeRoster.filter((p) => homeNom.includes(p.id));
                 const awayPlayers = awayRoster.filter((p) => awayNom.includes(p.id));
+                const slots = pair[gi];
                 return (
                   <tr key={gi}>
                     <td className="mono" data-label="Steza">{game.lane}</td>
                     <td data-label="Domači">
+                      <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>{" "}
                       {readOnly ? (
                         playerName(homeRoster, game.homePlayerId)
                       ) : (
@@ -264,7 +275,28 @@ export function MatchEntry({
                         />
                       )}
                     </td>
+                    <td className="mono t-cell" data-label="T domači">
+                      {duel ? duel.homeTotal : "—"}
+                    </td>
+                    <td className="mono t-cell" data-label="T gostje">
+                      {duel ? duel.awayTotal : "—"}
+                    </td>
+                    <td className="mono" data-label="Keglji (gostje)">
+                      {readOnly ? (
+                        game.awayPins ?? "—"
+                      ) : (
+                        <input
+                          className="mono"
+                          inputMode="numeric"
+                          value={game.awayPins ?? ""}
+                          onChange={(e) =>
+                            setPins(match.id, ri, gi, "away", parsePins(e.target.value))
+                          }
+                        />
+                      )}
+                    </td>
                     <td data-label="Gostje">
+                      <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>{" "}
                       {readOnly ? (
                         playerName(awayRoster, game.awayPlayerId)
                       ) : (
@@ -281,42 +313,22 @@ export function MatchEntry({
                         </select>
                       )}
                     </td>
-                    <td className="mono" data-label="Keglji (gostje)">
-                      {readOnly ? (
-                        game.awayPins ?? "—"
-                      ) : (
-                        <input
-                          className="mono"
-                          inputMode="numeric"
-                          value={game.awayPins ?? ""}
-                          onChange={(e) =>
-                            setPins(match.id, ri, gi, "away", parsePins(e.target.value))
-                          }
-                        />
-                      )}
-                    </td>
-                    <td className="mono" data-label="Prilagojeno">
-                      {duel ? `${duel.homeAdjusted} : ${duel.awayAdjusted}` : "—"}
-                    </td>
-                    <td className="mono" data-label="Točke">
-                      {duel ? (
-                        <span className={duel.homeTotal > duel.awayTotal ? "win" : undefined}>
-                          {duel.homeTotal}:{duel.awayTotal}
-                          {duel.homeBonus || duel.awayBonus
-                            ? ` (prib. ${duel.homeBonus}/${duel.awayBonus})`
-                            : ""}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {roundTot && (
+            <p className="muted" style={{ marginTop: 10 }}>
+              Seštevek T: {roundTot.homeSmall}:{roundTot.awaySmall}
+              {roundTot.complete
+                ? ` · velike tega kroga ${roundTot.homeBig}:${roundTot.awayBig} · keglji ${roundTot.homePins}:${roundTot.awayPins}`
+                : ""}
+            </p>
+          )}
         </div>
-      ))}
+        );
+      })}
     </section>
   );
 }

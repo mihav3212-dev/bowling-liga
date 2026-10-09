@@ -8,6 +8,7 @@ export type StandingRow = {
   drawn: number;
   lost: number;
   big: number;
+  velike: number;
   small: number;
   pins: number;
   games: number;
@@ -28,6 +29,7 @@ export function computeStandings(state: LeagueState): StandingRow[] {
       drawn: 0,
       lost: 0,
       big: 0,
+      velike: 0,
       small: 0,
       pins: 0,
       games: 0,
@@ -48,8 +50,10 @@ export function computeStandings(state: LeagueState): StandingRow[] {
 
     home.played += 1;
     away.played += 1;
-    home.big += totals.homeBig;
-    away.big += totals.awayBig;
+    home.velike += totals.homeBig;
+    away.velike += totals.awayBig;
+    home.big += totals.homeMatch;
+    away.big += totals.awayMatch;
     home.small += totals.homeSmall;
     away.small += totals.awaySmall;
     home.pins += totals.homePins;
@@ -68,10 +72,10 @@ export function computeStandings(state: LeagueState): StandingRow[] {
       }
     }
 
-    if (totals.homeBig === 2) {
+    if (totals.homeMatch === 2) {
       home.won += 1;
       away.lost += 1;
-    } else if (totals.awayBig === 2) {
+    } else if (totals.awayMatch === 2) {
       away.won += 1;
       home.lost += 1;
     } else {

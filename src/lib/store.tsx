@@ -10,9 +10,10 @@ import {
 import { emptyRounds, nominatedIds } from "./pairings";
 import { createSeed, createSeed2025 } from "./seed";
 import { buildSeasonMatches } from "./schedule";
-import { archiveLeague, fetchLeague, saveLeague, type LeaguePayload } from "./leagueApi";
+import { archiveLeague, createLeague, fetchLeague, saveLeague, type LeaguePayload } from "./leagueApi";
 import {
-  archiveVault,
+  addVaultSeason,
+  closeVaultSeason,
   loadVault,
   saveState,
   saveVault,
@@ -59,11 +60,11 @@ type Store = {
     playerId: string,
   ) => void;
   resetDemo: () => void;
-  loadSeason2025: () => void;
-  newEmptySeason: (title: string) => void;
+  loadSeason2025: () => Promise<void>;
+  newEmptySeason: (title: string) => Promise<void>;
   importState: (next: LeagueState) => void;
   loadSeason: (id: string) => Promise<void>;
-  archiveSeason: (nextLabel: string) => Promise<void>;
+  closeSeason: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -167,6 +168,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSeasons(payload.seasons ?? []);
     setState(payload.current.data);
     saveState(payload.current.data);
+  };
+
+  const openSeason = async (label: string, data: LeagueState) => {
+    if (remoteRef.current) {
+      applyRemote(await createLeague(label, data));
+      return;
+    }
+    const next = addVaultSeason(vaultRef.current ?? loadVault(data), label, data);
+    applyVault(next, next.currentId);
   };
 
   useEffect(() => {
@@ -280,15 +290,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }),
         })),
       resetDemo: () => update(() => createSeed()),
-      loadSeason2025: () => update(() => createSeed2025()),
-      newEmptySeason: (title) =>
-        update(() => ({
+      loadSeason2025: async () => {
+        const data = createSeed2025();
+        await openSeason(data.seasonTitle ?? "2025/2026", data);
+      },
+      newEmptySeason: async (title) => {
+        await openSeason(title, {
           seasonTitle: title,
-          seasonKey: undefined,
           teams: [],
           players: [],
           matches: [],
-        })),
+        });
+      },
       importState: (next) =>
         update(() => ({
           seasonKey: next.seasonKey,
@@ -305,20 +318,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         if (vaultRef.current) applyVault(vaultRef.current, id);
       },
-      archiveSeason: async (nextLabel) => {
+      closeSeason: async () => {
         if (remoteRef.current) {
-          const payload = await archiveLeague(nextLabel);
-          applyRemote(payload);
+          applyRemote(await archiveLeague());
           return;
         }
-        const empty: LeagueState = {
-          seasonTitle: nextLabel,
-          teams: [],
-          players: [],
-          matches: [],
-        };
-        const next = archiveVault(vaultRef.current ?? loadVault(empty), nextLabel, empty);
-        applyVault(next, next.currentId);
+        if (!vaultRef.current) return;
+        applyVault(closeVaultSeason(vaultRef.current), vaultRef.current.currentId);
       },
     }),
     [state, remote, archived, seasonId, label, seasons],

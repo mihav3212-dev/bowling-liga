@@ -46,7 +46,7 @@ export function Standings() {
                   <td className="mono">{row.won}</td>
                   <td className="mono">{row.lost}</td>
                   <td className="mono">{row.drawn}</td>
-                  <td className="mono">{row.big}</td>
+                  <td className="mono">{row.velike}</td>
                   <td className="mono">{row.small}</td>
                   <td className="mono">{row.teamAvg ? row.teamAvg.toFixed(1) : "0.0"}</td>
                   <td className="mono">{row.avg ? row.avg.toFixed(2) : "0.00"}</td>

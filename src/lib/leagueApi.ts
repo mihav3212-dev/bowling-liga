@@ -29,13 +29,24 @@ export async function saveLeague(id: string, data: LeagueState): Promise<boolean
   return res.ok;
 }
 
-export async function archiveLeague(nextLabel: string): Promise<LeaguePayload> {
+export async function archiveLeague(): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "archive", nextLabel }),
+    body: JSON.stringify({ action: "archive" }),
   });
   if (!res.ok) throw new Error("archive");
+  return (await res.json()) as LeaguePayload;
+}
+
+export async function createLeague(label: string, data?: LeagueState): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "create", label, data }),
+  });
+  if (!res.ok) throw new Error("create");
   return (await res.json()) as LeaguePayload;
 }

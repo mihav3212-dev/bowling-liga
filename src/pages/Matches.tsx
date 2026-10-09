@@ -71,7 +71,7 @@ export function Matches({
                       </span>
                       <span className="mono">
                         {totals.complete
-                          ? `${totals.homeSmall}:${totals.awaySmall} · ${totals.homeBig}:${totals.awayBig}`
+                          ? `${totals.homeMatch}:${totals.awayMatch} · ${totals.homeBig}:${totals.awayBig} · ${totals.homeSmall}:${totals.awaySmall}`
                           : ""}
                       </span>
                     </>

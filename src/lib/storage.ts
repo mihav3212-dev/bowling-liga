@@ -87,16 +87,20 @@ export function writeCurrent(vault: SeasonVault, data: LeagueState): SeasonVault
   return next;
 }
 
-export function archiveVault(vault: SeasonVault, nextLabel: string, empty: LeagueState): SeasonVault {
+export function addVaultSeason(vault: SeasonVault, label: string, data: LeagueState): SeasonVault {
   const id = uid("s");
   const next: SeasonVault = {
     currentId: id,
-    seasons: [
-      { id, label: nextLabel, archived: false, data: empty },
-      ...vault.seasons.map((s) =>
-        s.id === vault.currentId ? { ...s, archived: true, label: s.label } : s,
-      ),
-    ],
+    seasons: [{ id, label, archived: false, data }, ...vault.seasons],
+  };
+  saveVault(next);
+  return next;
+}
+
+export function closeVaultSeason(vault: SeasonVault): SeasonVault {
+  const next: SeasonVault = {
+    ...vault,
+    seasons: vault.seasons.map((s) => (s.id === vault.currentId ? { ...s, archived: true } : s)),
   };
   saveVault(next);
   return next;

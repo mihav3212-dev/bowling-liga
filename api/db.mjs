@@ -90,15 +90,19 @@ export async function saveSeason(sql, id, data) {
   return rows.length > 0;
 }
 
-export async function archiveCurrent(sql, nextLabel) {
+export async function archiveCurrent(sql) {
   const current = await getCurrentSeason(sql);
   await sql`UPDATE seasons SET archived_at = NOW(), updated_at = NOW() WHERE id = ${current.id}`;
+  return getSeason(sql, current.id);
+}
+
+export async function createSeason(sql, label, data) {
   const id = `s_${Date.now().toString(36)}`;
-  const label = nextLabel || "Nova sezona";
-  const empty = { seasonTitle: label, teams: [], players: [], matches: [] };
+  const payload = asState(data) || { seasonTitle: label, teams: [], players: [], matches: [] };
+  if (!payload.seasonTitle) payload.seasonTitle = label;
   await sql`
     INSERT INTO seasons (id, label, data)
-    VALUES (${id}, ${label}, ${JSON.stringify(empty)}::jsonb)
+    VALUES (${id}, ${label}, ${JSON.stringify(payload)}::jsonb)
   `;
-  return getCurrentSeason(sql);
+  return getSeason(sql, id);
 }
