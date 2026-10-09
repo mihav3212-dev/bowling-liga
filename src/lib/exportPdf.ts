@@ -7,10 +7,12 @@ import {
   playersByAverage,
   playersByHighs,
   seasonLabel,
+  seasonRoundCount,
   teamsByHighs,
   topGames,
   type PlayerStandingRow,
 } from "./standings";
+import { matchTotals } from "./scoring";
 import type { LeagueState } from "./types";
 
 async function fontBase64(path: string): Promise<string> {
@@ -204,6 +206,161 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
 
   const name = round > 0 ? `bowling-liga-lestvica-kolo-${round}.pdf` : "bowling-liga-lestvica.pdf";
   doc.save(name);
+}
+
+function teamName(state: LeagueState, id: string): string {
+  return state.teams.find((t) => t.id === id)?.name ?? "?";
+}
+
+export async function exportResultsPdf(state: LeagueState): Promise<void> {
+  const season = state.seasonTitle ?? seasonLabel();
+  const date = new Date().toLocaleDateString("sl-SI");
+  const done = state.matches.filter((m) => matchTotals(m, state.players).complete);
+  const byRound = new Map<number, typeof done>();
+  for (const match of done) {
+    const list = byRound.get(match.round) ?? [];
+    list.push(match);
+    byRound.set(match.round, list);
+  }
+  const rounds = [...byRound.keys()].sort((a, b) => a - b);
+
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  await withFonts(doc);
+  const logo = await imageDataUrl("/logo-bowling-lenart.png");
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, 0, pageW, 34, "F");
+  doc.addImage(logo, "PNG", margin, 5, 58, 24);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("FreeSans", "bold");
+  doc.setFontSize(11);
+  doc.text(`BOWLING LIGA ${season}`, pageW - margin, 14, { align: "right" });
+  doc.setFontSize(9);
+  doc.setTextColor(255, 78, 200);
+  doc.text("REZULTATI", pageW - margin, 21, { align: "right" });
+
+  let y = 42;
+  doc.setTextColor(20, 16, 10);
+  doc.setFontSize(13);
+  doc.text(`REZULTATI ${season}`, margin, y);
+  y += 4;
+
+  if (rounds.length === 0) {
+    doc.setFont("FreeSans", "normal");
+    doc.setFontSize(10);
+    doc.text("Še ni vnesenih rezultatov.", margin, y + 8);
+  }
+
+  for (const round of rounds) {
+    const rows = (byRound.get(round) ?? []).map((match) => {
+      const totals = matchTotals(match, state.players);
+      return [
+        `${teamName(state, match.homeTeamId)} – ${teamName(state, match.awayTeamId)}`,
+        `${totals.homeSmall}:${totals.awaySmall}`,
+        `${totals.homeBig}:${totals.awayBig}`,
+      ];
+    });
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      styles: { font: "FreeSans", fontSize: 8, cellPadding: 1.4, textColor: [20, 16, 10] },
+      headStyles: {
+        font: "FreeSans",
+        fontStyle: "bold",
+        fillColor: [255, 255, 255],
+        textColor: [20, 16, 10],
+        lineWidth: 0.2,
+        lineColor: [40, 40, 40],
+      },
+      bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
+      columnStyles: { 1: { halign: "center", cellWidth: 22 }, 2: { halign: "center", cellWidth: 22 } },
+      head: [[`${round}. kolo`, "Male", "Točke"]],
+      body: rows,
+    });
+    y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 8;
+  }
+
+  doc.setFont("FreeSans", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(90);
+  doc.text(`Izpis ${date}`, margin, doc.internal.pageSize.getHeight() - 8);
+  doc.save("bowling-liga-rezultati.pdf");
+}
+
+export async function exportPlayersPdf(state: LeagueState): Promise<void> {
+  const season = state.seasonTitle ?? seasonLabel();
+  const date = new Date().toLocaleDateString("sl-SI");
+  const roundCount = seasonRoundCount(state);
+  const players = playersByAverage(computePlayerStandings(state));
+
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+  await withFonts(doc);
+  const logo = await imageDataUrl("/logo-bowling-lenart.png");
+  const margin = 12;
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(0, 0, 0);
+  doc.rect(0, 0, pageW, 28, "F");
+  doc.addImage(logo, "PNG", margin, 4, 48, 20);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("FreeSans", "bold");
+  doc.setFontSize(11);
+  doc.text(`BOWLING LIGA ${season}`, pageW - margin, 12, { align: "right" });
+  doc.setFontSize(9);
+  doc.setTextColor(255, 78, 200);
+  doc.text("LESTVICA IGRALCEV", pageW - margin, 19, { align: "right" });
+
+  const head = [
+    "#",
+    "Igralec",
+    "Ekipa",
+    ...Array.from({ length: roundCount }, (_, i) => String(i + 1)),
+    "Keglji",
+    "Igre",
+    "Povp.",
+  ];
+  const body = players.map((row, i) => [
+    i + 1,
+    row.player.name,
+    row.teamName,
+    ...row.byRound.map((games) => {
+      const pins = games.reduce((sum, n) => sum + n, 0);
+      return games.length ? String(pins) : "—";
+    }),
+    row.pins,
+    row.games,
+    row.avg.toFixed(1),
+  ]);
+
+  autoTable(doc, {
+    startY: 34,
+    margin: { left: margin, right: margin },
+    styles: { font: "FreeSans", fontSize: 7, cellPadding: 1.1, textColor: [20, 16, 10] },
+    headStyles: {
+      font: "FreeSans",
+      fontStyle: "bold",
+      fillColor: [255, 255, 255],
+      textColor: [20, 16, 10],
+      halign: "center",
+      lineWidth: 0.2,
+      lineColor: [40, 40, 40],
+    },
+    bodyStyles: { lineWidth: 0.12, lineColor: [160, 160, 160] },
+    columnStyles: {
+      1: { halign: "left" },
+      2: { halign: "left" },
+    },
+    head: [head],
+    body: body.length ? body : [["", "Še ni odigranih iger.", "", ...Array(roundCount + 3).fill("")]],
+  });
+
+  doc.setFont("FreeSans", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(90);
+  doc.text(`Izpis ${date}`, margin, doc.internal.pageSize.getHeight() - 8);
+  doc.save("bowling-liga-igralci.pdf");
 }
 
 function field(doc: jsPDF, label: string, value: string, x: number, y: number, width: number): void {

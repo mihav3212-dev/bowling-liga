@@ -12,6 +12,8 @@ export function getSql() {
 function asState(data) {
   const value = typeof data === "string" ? JSON.parse(data) : data;
   return {
+    seasonKey: value?.seasonKey,
+    seasonTitle: value?.seasonTitle,
     teams: Array.isArray(value?.teams) ? value.teams : [],
     players: Array.isArray(value?.players) ? value.players : [],
     matches: Array.isArray(value?.matches) ? value.matches : [],
@@ -69,7 +71,7 @@ export async function getCurrentSeason(sql) {
   if (rows[0]) return asSeason(rows[0]);
   const id = `s_${Date.now().toString(36)}`;
   const label = "2026/27";
-  const empty = { teams: [], players: [], matches: [] };
+  const empty = { seasonTitle: label, teams: [], players: [], matches: [] };
   await sql`
     INSERT INTO seasons (id, label, data)
     VALUES (${id}, ${label}, ${JSON.stringify(empty)}::jsonb)
@@ -93,7 +95,7 @@ export async function archiveCurrent(sql, nextLabel) {
   await sql`UPDATE seasons SET archived_at = NOW(), updated_at = NOW() WHERE id = ${current.id}`;
   const id = `s_${Date.now().toString(36)}`;
   const label = nextLabel || "Nova sezona";
-  const empty = { teams: [], players: [], matches: [] };
+  const empty = { seasonTitle: label, teams: [], players: [], matches: [] };
   await sql`
     INSERT INTO seasons (id, label, data)
     VALUES (${id}, ${label}, ${JSON.stringify(empty)}::jsonb)

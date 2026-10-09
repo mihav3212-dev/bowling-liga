@@ -464,16 +464,8 @@ select {
   font-weight: 650;
 }
 
-.admin-box {
-  margin-top: 36px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-}
-
-.admin-box summary {
-  cursor: pointer;
-  margin-bottom: 12px;
+.page-export {
+  margin: 8px 0 32px;
 }
 
 @media (max-width: 800px) {

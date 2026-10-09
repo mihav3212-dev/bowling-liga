@@ -53,10 +53,10 @@ type Store = {
   ) => void;
   resetDemo: () => void;
   loadSeason2025: () => void;
-  newEmptySeason: () => void;
+  newEmptySeason: (title: string) => void;
   importState: (next: LeagueState) => void;
   loadSeason: (id: string) => Promise<void>;
-  archiveSeason: () => Promise<void>;
+  archiveSeason: (nextLabel: string) => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -195,7 +195,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updatePlayer: (player) =>
         update((s) => ({ ...s, players: s.players.map((p) => (p.id === player.id ? player : p)) })),
       removePlayer: (id) => update((s) => ({ ...s, players: s.players.filter((p) => p.id !== id) })),
-      generateSchedule: () => update((s) => ({ ...s, matches: buildSeasonMatches(s.teams) })),
+      generateSchedule: () =>
+        update((s) => {
+          if (s.matches.length > 0) return s;
+          return { ...s, matches: buildSeasonMatches(s.teams) };
+        }),
       setLineup: (matchId, side, starters, bench) =>
         update((s) => ({
           ...s,
@@ -249,7 +253,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       resetDemo: () => update(() => createSeed()),
       loadSeason2025: () => update(() => createSeed2025()),
-      newEmptySeason: () => update(() => ({ teams: [], players: [], matches: [] })),
+      newEmptySeason: (title) =>
+        update(() => ({
+          seasonTitle: title,
+          seasonKey: undefined,
+          teams: [],
+          players: [],
+          matches: [],
+        })),
       importState: (next) =>
         update(() => ({
           seasonKey: next.seasonKey,
@@ -262,8 +273,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const payload = await fetchLeague(id);
         applyRemote(payload);
       },
-      archiveSeason: async () => {
-        const payload = await archiveLeague(seasonLabel());
+      archiveSeason: async (nextLabel) => {
+        const payload = await archiveLeague(nextLabel);
         applyRemote(payload);
       },
     }),
