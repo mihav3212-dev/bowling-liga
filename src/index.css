@@ -1,0 +1,641 @@
+:root {
+  --bg: #2a2929;
+  --bg-2: #1f1e1e;
+  --paper: #f1f2f3;
+  --ink: #111;
+  --muted: #b8b6b4;
+  --title: #dddada;
+  --copper: #0006ff;
+  --copper-2: #cc3366;
+  --accent: #af4b2f;
+  --round: #595dff;
+  --green: #7cffb2;
+  --line: rgba(255, 255, 255, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: #fff;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 400;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 18px 40px;
+  padding-left: max(40px, env(safe-area-inset-left));
+  padding-right: max(40px, env(safe-area-inset-right));
+  background: #000;
+}
+
+.site-header .logo {
+  height: 72px;
+  width: auto;
+  display: block;
+}
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 22px 48px;
+  padding-left: max(22px, env(safe-area-inset-left));
+  padding-right: max(22px, env(safe-area-inset-right));
+}
+
+.page-title {
+  color: var(--title);
+  font-size: clamp(36px, 7vw, 66px);
+  letter-spacing: -0.06em;
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.season-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  align-items: center;
+  margin: -12px 0 24px;
+}
+
+.season-bar label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+}
+
+.season-bar select {
+  min-width: 12rem;
+}
+
+.liga-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 -22px 32px;
+  padding: 8px 22px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  background: var(--bg);
+}
+
+.liga-tabs button {
+  background: var(--paper);
+  color: #000;
+  border: 0;
+  border-radius: 50px;
+  padding: 12px 22px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.liga-tabs button.active,
+.liga-tabs button:hover {
+  background: var(--copper);
+  color: #fff;
+}
+
+.panel {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0 0 22px;
+}
+
+.panel h3,
+.round-title {
+  color: var(--round);
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.scorecard {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.scorecard table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.scorecard th,
+.scorecard td {
+  border-bottom: 1px dashed #c5cbe8;
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.scorecard th {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a64a0;
+}
+
+.mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+
+button.primary,
+button.ghost,
+button.danger {
+  border-radius: 50px;
+  padding: 10px 16px;
+  cursor: pointer;
+  border: 0;
+}
+
+button.primary {
+  background: var(--copper);
+  color: #fff;
+  font-weight: 500;
+}
+
+button.ghost {
+  background: var(--paper);
+  color: #000;
+}
+
+button.danger {
+  background: transparent;
+  color: var(--copper-2);
+  border: 1px solid var(--copper-2);
+}
+
+input,
+select {
+  background: #141414;
+  color: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 16px;
+  max-width: 100%;
+}
+
+.panel select {
+  display: block;
+  width: 100%;
+  margin: 6px 0;
+}
+
+.scorecard input,
+.scorecard select {
+  background: #fff;
+  color: var(--ink);
+  border-color: #c5cbe8;
+  width: 100%;
+  min-width: 72px;
+  max-width: 220px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.standings-extras {
+  margin-top: 16px;
+}
+
+.round-highlights {
+  margin: 0 0 24px;
+}
+
+.stat-block {
+  margin-bottom: 18px;
+}
+
+.stat-block h3 {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 8px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.stat-block ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stat-block li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.stat-block li span:first-child {
+  overflow-wrap: anywhere;
+}
+
+.lineup-list {
+  margin: 8px 0;
+  padding-left: 1.2rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: var(--round);
+}
+
+.big-score {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 42px;
+  letter-spacing: -0.06em;
+}
+
+.list {
+  display: grid;
+  gap: 2px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.login-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.header-login {
+  justify-content: flex-end;
+}
+
+.header-login input {
+  background: #1a1a1a;
+  border-color: #333;
+  color: #eee;
+  min-width: 8rem;
+  max-width: 12rem;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.header-login .ghost,
+.header-logout {
+  color: #ddd;
+  border-color: #444;
+  background: transparent;
+  min-height: 40px;
+}
+
+.login-error {
+  color: var(--copper-2);
+  font-size: 13px;
+}
+
+.list .row {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  padding: 10px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list button.row:hover {
+  color: var(--round);
+}
+
+.list div.row {
+  cursor: default;
+}
+
+.list .match-row {
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.match-when {
+  min-width: 11.5rem;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.match-names {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.season-note {
+  margin: 0 0 22px;
+  padding: 10px 0;
+  color: var(--copper-2);
+  font-size: 14px;
+}
+
+.standings {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.standings th,
+.standings td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+.standings th:nth-child(2),
+.standings td:nth-child(2),
+.standings.players th:nth-child(3),
+.standings.players td:nth-child(3) {
+  text-align: left;
+}
+
+.standings.teams th:last-child,
+.standings.teams td:last-child {
+  font-weight: 650;
+}
+
+.standings.players th.kolo,
+.standings.players td.kolo {
+  text-align: center;
+  min-width: 2.6rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-row input,
+.form-row select,
+.form-row button {
+  min-height: 44px;
+}
+
+.match-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.match-title {
+  font-size: clamp(20px, 5vw, 32px);
+  overflow-wrap: anywhere;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.win {
+  color: var(--green);
+  font-weight: 650;
+}
+
+.admin-box {
+  margin-top: 36px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.admin-box summary {
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 800px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .site-header {
+    padding: 12px 16px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .site-header .logo {
+    height: 56px;
+  }
+
+  .header-actions {
+    margin-left: auto;
+  }
+
+  .header-login input {
+    min-width: 6.5rem;
+    max-width: 9rem;
+  }
+
+  .app-shell {
+    padding: 24px 16px 40px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .page-title {
+    font-size: 32px;
+    letter-spacing: -0.04em;
+    margin-bottom: 16px;
+  }
+
+  .liga-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -16px 20px;
+    padding: 8px 16px 12px;
+    scrollbar-width: none;
+  }
+
+  .liga-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .liga-tabs button {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .list .match-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 0;
+    min-height: 56px;
+  }
+
+  .match-when,
+  .match-names {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .match-names {
+    font-size: 16px;
+  }
+
+  .row-actions button,
+  button.primary,
+  button.ghost,
+  button.danger {
+    min-height: 44px;
+  }
+
+  .form-row > * {
+    flex: 1 1 100%;
+  }
+
+  .standings {
+    font-size: 13px;
+  }
+
+  .standings th,
+  .standings td {
+    padding: 8px 6px;
+    white-space: nowrap;
+  }
+
+  .standings.players td.kolo {
+    white-space: nowrap;
+  }
+
+  .standings th:nth-child(2),
+  .standings td:nth-child(2) {
+    white-space: normal;
+    min-width: 8rem;
+  }
+
+  .standings.teams th:nth-child(4),
+  .standings.teams td:nth-child(4),
+  .standings.teams th:nth-child(5),
+  .standings.teams td:nth-child(5),
+  .standings.teams th:nth-child(6),
+  .standings.teams td:nth-child(6) {
+    display: none;
+  }
+
+  .scorecard {
+    padding: 12px;
+  }
+
+  .scorecard thead {
+    display: none;
+  }
+
+  .scorecard table,
+  .scorecard tbody,
+  .scorecard tr,
+  .scorecard td {
+    display: block;
+    width: 100%;
+  }
+
+  .scorecard tr {
+    border: 1px solid #c5cbe8;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 6px 8px 2px;
+  }
+
+  .scorecard td {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 8px;
+    align-items: center;
+    border: 0;
+    padding: 6px 0;
+  }
+
+  .scorecard td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #5a64a0;
+  }
+
+  .scorecard input,
+  .scorecard select {
+    max-width: none;
+    min-height: 44px;
+  }
+
+  .big-score {
+    font-size: 32px;
+  }
+}
