@@ -9,31 +9,13 @@ export function AdminMenu({
   canEdit: boolean;
   onNewSeason: () => void;
 }) {
-  const { state, remote, archived, seasonId, seasons, importState, loadSeason } = useStore();
+  const { state, archived, importState } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (
     <details className="admin-menu">
       <summary>Admin</summary>
       <div className="admin-menu-panel">
-        {remote && seasons.length > 0 && (
-          <label>
-            Sezona
-            <select
-              value={seasonId ?? ""}
-              onChange={(e) => {
-                if (e.target.value) void loadSeason(e.target.value);
-              }}
-            >
-              {seasons.map((season) => (
-                <option key={season.id} value={season.id}>
-                  {season.label}
-                  {season.archived ? " (arhiv)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         {archived && <p className="muted">Arhiv — samo branje.</p>}
         {canEdit && (
           <button className="primary" type="button" onClick={onNewSeason}>

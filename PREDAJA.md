@@ -37,14 +37,15 @@ Nato v Vercel projektu **bowling-lenart** dodaj domeno `liga.bowlinglenart.si` (
 
 ---
 
-## 3. Skupni podatki za vse obiskovalce
+## 3. Skupni podatki in izbira sezone
 
-Brez baze vsak brskalnik vidi svoje podatke. Za skupno lestvico:
+Zavihek **Sezona** je zgoraj za vse obiskovalce (tekoča in arhiv). Da vsi vidijo iste sezone:
 
-1. Neon ali Vercel Postgres.
-2. V Vercel Environment Variables: `DATABASE_URL` (in `ADMIN_PASSWORD`).
-3. Shema: `sql/schema.sql`.
-4. Redeploy.
+1. V Vercel projektu: Storage → Create Database → Postgres (Neon).
+2. Environment Variables: `DATABASE_URL` (in `ADMIN_PASSWORD`).
+3. Redeploy. Shema `sql/schema.sql` se ustvari ob prvem klicu.
+
+Brez baze ostanejo sezone v brskalniku (`localStorage`) — samo na tistem računalniku.
 
 Admin se prijavi zgoraj desno. Geslo je samo v okoljskih spremenljivkah, ne v kodi.
 

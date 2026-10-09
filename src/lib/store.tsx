@@ -11,10 +11,17 @@ import { emptyRounds, nominatedIds } from "./pairings";
 import { createSeed, createSeed2025 } from "./seed";
 import { buildSeasonMatches } from "./schedule";
 import { archiveLeague, fetchLeague, saveLeague, type LeaguePayload } from "./leagueApi";
-import { loadState, saveState } from "./storage";
+import {
+  archiveVault,
+  loadVault,
+  saveState,
+  saveVault,
+  vaultInfos,
+  writeCurrent,
+  type SeasonVault,
+} from "./storage";
 import { uid } from "./ids";
 import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
-import { seasonLabel } from "./standings";
 import type { Gender, LeagueState, Match, Player, SeasonInfo, Team } from "./types";
 
 type Store = {
@@ -93,25 +100,46 @@ function applyLineup(match: Match, side: "home" | "away", starters: string[], be
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<LeagueState>(() => loadState() ?? createSeed());
+  const vaultRef = useRef<SeasonVault | null>(null);
+  if (!vaultRef.current) vaultRef.current = loadVault(createSeed());
+  const opening = vaultRef.current.seasons.find((s) => s.id === vaultRef.current!.currentId)
+    ?? vaultRef.current.seasons[0];
+
+  const [state, setState] = useState<LeagueState>(opening.data);
   const [remote, setRemote] = useState(false);
-  const [archived, setArchived] = useState(false);
-  const [seasonId, setSeasonId] = useState<string | null>(null);
-  const [label, setLabel] = useState(seasonLabel());
-  const [seasons, setSeasons] = useState<SeasonInfo[]>([]);
+  const [archived, setArchived] = useState(opening.archived);
+  const [seasonId, setSeasonId] = useState<string | null>(opening.id);
+  const [label, setLabel] = useState(opening.label);
+  const [seasons, setSeasons] = useState<SeasonInfo[]>(() => vaultInfos(vaultRef.current!));
   const remoteRef = useRef(false);
-  const archivedRef = useRef(false);
-  const seasonIdRef = useRef<string | null>(null);
+  const archivedRef = useRef(opening.archived);
+  const seasonIdRef = useRef<string | null>(opening.id);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  const applyVault = (nextVault: SeasonVault, id: string) => {
+    const season = nextVault.seasons.find((s) => s.id === id) ?? nextVault.seasons[0];
+    const stored: SeasonVault = { ...nextVault, currentId: season.id };
+    vaultRef.current = stored;
+    saveVault(stored);
+    archivedRef.current = season.archived;
+    seasonIdRef.current = season.id;
+    setArchived(season.archived);
+    setSeasonId(season.id);
+    setLabel(season.label);
+    setSeasons(vaultInfos(stored));
+    setState(season.data);
+  };
+
   const persist = (next: LeagueState): LeagueState => {
-    saveState(next);
     if (remoteRef.current && !archivedRef.current && seasonIdRef.current) {
       const id = seasonIdRef.current;
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void saveLeague(id, next);
       }, 600);
+    } else if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
+      vaultRef.current = writeCurrent(vaultRef.current, next);
+      setSeasons(vaultInfos(vaultRef.current));
     }
     return next;
   };
@@ -270,12 +298,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: next.matches ?? [],
         })),
       loadSeason: async (id) => {
-        const payload = await fetchLeague(id);
-        applyRemote(payload);
+        if (remoteRef.current) {
+          const payload = await fetchLeague(id);
+          applyRemote(payload);
+          return;
+        }
+        if (vaultRef.current) applyVault(vaultRef.current, id);
       },
       archiveSeason: async (nextLabel) => {
-        const payload = await archiveLeague(nextLabel);
-        applyRemote(payload);
+        if (remoteRef.current) {
+          const payload = await archiveLeague(nextLabel);
+          applyRemote(payload);
+          return;
+        }
+        const empty: LeagueState = {
+          seasonTitle: nextLabel,
+          teams: [],
+          players: [],
+          matches: [],
+        };
+        const next = archiveVault(vaultRef.current ?? loadVault(empty), nextLabel, empty);
+        applyVault(next, next.currentId);
       },
     }),
     [state, remote, archived, seasonId, label, seasons],

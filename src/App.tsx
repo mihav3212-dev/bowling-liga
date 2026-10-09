@@ -16,7 +16,7 @@ type Page = "schedule" | "results" | "standings" | "players" | "teams";
 
 export function App() {
   const { admin } = useAuth();
-  const { state, archived, newEmptySeason, archiveSeason, remote } = useStore();
+  const { state, archived, archiveSeason, seasons, seasonId, loadSeason } = useStore();
   const canEdit = admin && !archived;
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
@@ -32,23 +32,14 @@ export function App() {
     const title = window.prompt("Ime nove sezone (npr. 2027/2028)", "");
     if (title == null) return;
     const name = title.trim() || "Nova sezona";
-    if (remote) {
-      if (
-        !window.confirm(
-          "Trenutno sezono arhiviraš. Nova bo prazna — ekipe in razpored dodaš na zavihku Ekipe.",
-        )
-      ) {
-        return;
-      }
-      await archiveSeason(name);
-    } else if (state.teams.length > 0 || state.matches.length > 0) {
-      if (!window.confirm("Briše ekipe in tekme v tem brskalniku in začne prazno sezono.")) {
-        return;
-      }
-      newEmptySeason(name);
-    } else {
-      newEmptySeason(name);
+    if (
+      !window.confirm(
+        "Trenutno sezono arhiviraš (ostane za ogled). Nova bo prazna — ekipe in razpored dodaš na zavihku Ekipe.",
+      )
+    ) {
+      return;
     }
+    await archiveSeason(name);
     go("teams");
   };
 
@@ -74,6 +65,27 @@ export function App() {
 
       <div className="app-shell">
         <h1 className="page-title">Bowling liga Lenart.</h1>
+        {seasons.length > 0 && (
+          <div className="season-bar">
+            <label>
+              Sezona
+              <select
+                value={seasonId ?? ""}
+                onChange={(e) => {
+                  if (e.target.value) void loadSeason(e.target.value);
+                }}
+              >
+                {seasons.map((season) => (
+                  <option key={season.id} value={season.id}>
+                    {season.label}
+                    {season.archived ? " (arhiv)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {archived && <span className="muted">Arhiv — samo branje.</span>}
+          </div>
+        )}
         <nav className="liga-tabs">
           {(
             [

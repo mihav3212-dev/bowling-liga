@@ -12,6 +12,7 @@ export type StandingRow = {
   pins: number;
   games: number;
   avg: number;
+  teamAvg: number;
   over200: number;
   over220: number;
   over240: number;
@@ -31,6 +32,7 @@ export function computeStandings(state: LeagueState): StandingRow[] {
       pins: 0,
       games: 0,
       avg: 0,
+      teamAvg: 0,
       over200: 0,
       over220: 0,
       over240: 0,
@@ -79,7 +81,11 @@ export function computeStandings(state: LeagueState): StandingRow[] {
   }
 
   return [...rows.values()]
-    .map((row) => ({ ...row, avg: row.games ? row.pins / row.games : 0 }))
+    .map((row) => ({
+      ...row,
+      avg: row.games ? row.pins / row.games : 0,
+      teamAvg: row.played ? row.pins / row.played : 0,
+    }))
     .sort((a, b) => {
     const ka = standingSortKey(a);
     const kb = standingSortKey(b);

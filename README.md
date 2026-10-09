@@ -15,9 +15,7 @@ Odpri naslov, ki ga izpiše Vite (ponavadi `http://localhost:5173`).
 
 Testi pravil: `npm test`.
 
-Brez `DATABASE_URL` ostanejo podatki v brskalniku (`localStorage`).
-
-Z `DATABASE_URL` (Neon / Vercel Postgres) so rezultati skupni za vse obiskovalce. Staro sezono arhiviraš v **Urejanje sezone**. Arhiv je samo za branje.
+Brez `DATABASE_URL` sezone ostanejo v brskalniku. Z `DATABASE_URL` (Neon / Vercel Postgres) so rezultati in arhiv skupni za vse; zgoraj je izbira sezone. Staro sezono arhiviraš v **Admin → Nova sezona**. Arhiv je samo za branje.
 
 Vnos je za admina: v `.env.local` in na Vercelu nastavi `ADMIN_PASSWORD`. Prijava in odjava sta zgoraj desno. Bazo dodaš v Vercel (Storage → Postgres) in povežeš `DATABASE_URL`.
 
