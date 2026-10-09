@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { MatchEntry } from "./pages/MatchEntry";
 import { Matches } from "./pages/Matches";
 import { Standings } from "./pages/Standings";
@@ -6,32 +6,21 @@ import { PlayerStandings } from "./pages/PlayerStandings";
 import { TeamDetail } from "./pages/TeamDetail";
 import { Teams } from "./pages/Teams";
 import { Login } from "./pages/Login";
+import { AdminMenu } from "./pages/AdminMenu";
 import { PdfButton } from "./pages/PdfButton";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { useStore } from "./lib/store";
-import type { LeagueState } from "./lib/types";
 
 type Page = "schedule" | "results" | "standings" | "players" | "teams";
 
 export function App() {
   const { admin } = useAuth();
-  const {
-    state,
-    remote,
-    archived,
-    seasonId,
-    seasons,
-    newEmptySeason,
-    importState,
-    loadSeason,
-    archiveSeason,
-  } = useStore();
+  const { state, archived, newEmptySeason, archiveSeason, remote } = useStore();
   const canEdit = admin && !archived;
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const go = (next: Page) => {
     setPage(next);
@@ -78,86 +67,13 @@ export function App() {
           <img className="logo" src="/logo-bowling-lenart.png" alt="Bowling Lenart" />
         </a>
         <div className="header-actions">
+          {admin && <AdminMenu canEdit={canEdit} onNewSeason={() => void startNewSeason()} />}
           <Login />
         </div>
       </header>
 
       <div className="app-shell">
         <h1 className="page-title">Bowling liga Lenart.</h1>
-        {(admin || (remote && seasons.length > 0)) && (
-          <div className="season-bar">
-            {remote && seasons.length > 0 && (
-              <label>
-                Sezona
-                <select
-                  value={seasonId ?? ""}
-                  onChange={(e) => {
-                    if (e.target.value) void loadSeason(e.target.value);
-                  }}
-                >
-                  {seasons.map((season) => (
-                    <option key={season.id} value={season.id}>
-                      {season.label}
-                      {season.archived ? " (arhiv)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {archived && <span className="muted">Arhiv — samo branje.</span>}
-            {canEdit && (
-              <button className="primary" type="button" onClick={() => void startNewSeason()}>
-                Nova sezona
-              </button>
-            )}
-            {admin && (
-              <>
-                <button
-                  className="ghost"
-                  type="button"
-                  onClick={() => {
-                    const blob = new Blob([JSON.stringify(state, null, 2)], {
-                      type: "application/json",
-                    });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "bowling-liga.json";
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                >
-                  Izvozi JSON
-                </button>
-                {canEdit && (
-                  <button className="ghost" type="button" onClick={() => fileRef.current?.click()}>
-                    Uvozi JSON
-                  </button>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="application/json"
-                  hidden
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!file) return;
-                    try {
-                      const next = JSON.parse(await file.text()) as LeagueState;
-                      if (!Array.isArray(next.teams) || !Array.isArray(next.players)) {
-                        throw new Error("invalid");
-                      }
-                      importState(next);
-                    } catch {
-                      window.alert("Datoteka ni veljaven izvoz lige.");
-                    }
-                  }}
-                />
-              </>
-            )}
-          </div>
-        )}
         <nav className="liga-tabs">
           {(
             [

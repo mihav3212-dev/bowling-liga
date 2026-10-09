@@ -14,9 +14,10 @@ export function Standings() {
         <div>
           <h2 className="round-title">Lestvica ekip</h2>
           <p className="muted">
-            Sezona {leagueSeasonTitle(state)}
-            {round > 0 ? ` · po ${round}. kolu` : " · pred začetkom"}.
-            Razvrstitev: točke ekipe (zmaga 2, remi 1), male točke, podrti keglji.
+            {round > 0
+              ? `LESTVICA ${leagueSeasonTitle(state)} PO ${round}. KOLU`
+              : `LESTVICA ${leagueSeasonTitle(state)} · pred začetkom`}
+            . Razvrstitev: velike točke (zmaga 2, remi 1), male točke, podrti keglji.
           </p>
         </div>
         <div className="table-scroll">
@@ -25,13 +26,14 @@ export function Standings() {
               <tr>
                 <th>#</th>
                 <th>Ekipa</th>
-                <th>T</th>
-                <th>Z</th>
-                <th>N</th>
-                <th>P</th>
-                <th>Male</th>
-                <th>Keglji</th>
-                <th>Točke</th>
+                <th>Točk</th>
+                <th>Zmag</th>
+                <th>Porazov</th>
+                <th>Remijev</th>
+                <th>Malih točk</th>
+                <th>Podrtih kegljev</th>
+                <th>Povp./igro</th>
+                <th>Velike točke</th>
               </tr>
             </thead>
             <tbody>
@@ -41,10 +43,11 @@ export function Standings() {
                   <td>{row.team.name}</td>
                   <td className="mono">{row.played}</td>
                   <td className="mono">{row.won}</td>
-                  <td className="mono">{row.drawn}</td>
                   <td className="mono">{row.lost}</td>
+                  <td className="mono">{row.drawn}</td>
                   <td className="mono">{row.small}</td>
                   <td className="mono">{row.pins}</td>
+                  <td className="mono">{row.avg ? row.avg.toFixed(2) : "0.00"}</td>
                   <td className="mono">{row.big}</td>
                 </tr>
               ))}
