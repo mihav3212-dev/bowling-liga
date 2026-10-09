@@ -1,4 +1,5 @@
 import { uid } from "./ids";
+import { seasonIsComplete } from "./scoring";
 import type { LeagueState, SeasonInfo } from "./types";
 
 const STATE_KEY = "bowling-liga-v2";
@@ -42,10 +43,28 @@ function labelOf(state: LeagueState, fallback: string): string {
   return state.seasonTitle?.trim() || fallback;
 }
 
+function isSeason2026(season: StoredSeason): boolean {
+  const label = season.label ?? season.data.seasonTitle ?? "";
+  return season.data.seasonKey === "2026-27" || /2026\s*\/\s*2027|2026\s*\/\s*27/.test(label);
+}
+
+/** Napačno zaprte nedokončane sezone 2026/27 spet odpre in jih naredi trenutne. */
+function recoverActive2026(vault: SeasonVault): SeasonVault {
+  const closed = vault.seasons.filter((s) => isSeason2026(s) && s.archived && !seasonIsComplete(s.data));
+  if (closed.length === 0) return vault;
+  const id = closed[0].id;
+  const next: SeasonVault = {
+    currentId: id,
+    seasons: vault.seasons.map((s) => (closed.some((c) => c.id === s.id) ? { ...s, archived: false } : s)),
+  };
+  saveVault(next);
+  return next;
+}
+
 export function loadVault(fallbackState: LeagueState): SeasonVault {
   const stored = readJson<SeasonVault>(VAULT_KEY);
   if (stored?.seasons?.length && stored.currentId) {
-    return stored;
+    return recoverActive2026(stored);
   }
   const legacy = loadState() ?? fallbackState;
   const id = uid("s");
@@ -101,6 +120,15 @@ export function closeVaultSeason(vault: SeasonVault): SeasonVault {
   const next: SeasonVault = {
     ...vault,
     seasons: vault.seasons.map((s) => (s.id === vault.currentId ? { ...s, archived: true } : s)),
+  };
+  saveVault(next);
+  return next;
+}
+
+export function reopenVaultSeason(vault: SeasonVault, id: string): SeasonVault {
+  const next: SeasonVault = {
+    currentId: id,
+    seasons: vault.seasons.map((s) => (s.id === id ? { ...s, archived: false } : s)),
   };
   saveVault(next);
   return next;

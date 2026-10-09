@@ -40,6 +40,17 @@ export async function archiveLeague(): Promise<LeaguePayload> {
   return (await res.json()) as LeaguePayload;
 }
 
+export async function reopenLeague(id?: string): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "reopen", id }),
+  });
+  if (!res.ok) throw new Error("reopen");
+  return (await res.json()) as LeaguePayload;
+}
+
 export async function createLeague(label: string, data?: LeagueState): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",

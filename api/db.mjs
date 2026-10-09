@@ -96,6 +96,31 @@ export async function archiveCurrent(sql) {
   return getSeason(sql, current.id);
 }
 
+export async function reopenSeason(sql, id) {
+  let targetId = id;
+  if (!targetId) {
+    const rows = await sql`
+      SELECT id FROM seasons
+      WHERE archived_at IS NOT NULL
+        AND (
+          label ILIKE '%2026/2027%'
+          OR label ILIKE '%2026/27%'
+          OR data->>'seasonKey' = '2026-27'
+        )
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+    targetId = rows[0]?.id;
+  }
+  if (!targetId) return getCurrentSeason(sql);
+  await sql`
+    UPDATE seasons
+    SET archived_at = NULL, updated_at = NOW()
+    WHERE id = ${targetId}
+  `;
+  return getSeason(sql, targetId);
+}
+
 export async function createSeason(sql, label, data) {
   const id = `s_${Date.now().toString(36)}`;
   const payload = asState(data) || { seasonTitle: label, teams: [], players: [], matches: [] };

@@ -10,11 +10,12 @@ import {
 import { emptyRounds, nominatedIds } from "./pairings";
 import { createSeed, createSeed2025 } from "./seed";
 import { buildSeasonMatches } from "./schedule";
-import { archiveLeague, createLeague, fetchLeague, saveLeague, type LeaguePayload } from "./leagueApi";
+import { archiveLeague, createLeague, fetchLeague, reopenLeague, saveLeague, type LeaguePayload } from "./leagueApi";
 import {
   addVaultSeason,
   closeVaultSeason,
   loadVault,
+  reopenVaultSeason,
   saveState,
   saveVault,
   vaultInfos,
@@ -65,6 +66,7 @@ type Store = {
   importState: (next: LeagueState) => void;
   loadSeason: (id: string) => Promise<void>;
   closeSeason: () => Promise<void>;
+  reopenSeason: () => Promise<void>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -325,6 +327,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         if (!vaultRef.current) return;
         applyVault(closeVaultSeason(vaultRef.current), vaultRef.current.currentId);
+      },
+      reopenSeason: async () => {
+        const id = seasonIdRef.current;
+        if (remoteRef.current) {
+          applyRemote(await reopenLeague(id ?? undefined));
+          return;
+        }
+        if (!vaultRef.current || !id) return;
+        applyVault(reopenVaultSeason(vaultRef.current, id), id);
       },
     }),
     [state, remote, archived, seasonId, label, seasons],

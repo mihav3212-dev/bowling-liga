@@ -2,6 +2,7 @@ import { tokenValid, readToken } from "./session.mjs";
 import {
   archiveCurrent,
   createSeason,
+  reopenSeason,
   ensureSchema,
   getCurrentSeason,
   getSeason,
@@ -72,6 +73,15 @@ export async function handleLeague(req, res) {
       const body = await readBody(req);
       if (body.action === "archive") {
         const current = await archiveCurrent(sql);
+        json(res, 200, {
+          storage: "db",
+          current,
+          seasons: await listSeasons(sql),
+        });
+        return;
+      }
+      if (body.action === "reopen") {
+        const current = await reopenSeason(sql, body.id);
         json(res, 200, {
           storage: "db",
           current,

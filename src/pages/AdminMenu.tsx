@@ -10,7 +10,7 @@ export function AdminMenu({
   canEdit: boolean;
   onNewSeason: () => void;
 }) {
-  const { state, archived, importState, loadSeason2025, closeSeason } = useStore();
+  const { state, archived, importState, loadSeason2025, closeSeason, reopenSeason } = useStore();
   const complete = seasonIsComplete(state);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -18,7 +18,14 @@ export function AdminMenu({
     <details className="admin-menu">
       <summary>Admin</summary>
       <div className="admin-menu-panel">
-        {archived && <p className="muted">Arhiv — samo branje.</p>}
+        {archived && (
+          <>
+            <p className="muted">Arhiv — samo branje.</p>
+            <button className="primary" type="button" onClick={() => void reopenSeason()}>
+              Odpri sezono
+            </button>
+          </>
+        )}
         <button className="primary" type="button" onClick={onNewSeason}>
           Nova sezona
         </button>
