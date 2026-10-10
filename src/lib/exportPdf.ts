@@ -9,7 +9,8 @@ import {
   seasonLabel,
   seasonRoundCount,
 } from "./standings";
-import { matchTotals } from "./scoring";
+import { pairingTemplate, slotLabel } from "./pairings";
+import { matchTotals, scoreGame } from "./scoring";
 import type { LeagueState } from "./types";
 
 async function fontBase64(path: string): Promise<string> {
@@ -474,6 +475,194 @@ function drawRegistrationPage(
   doc.text("Seznam se po odigranem 1. kola NE SME VEČ SPREMINJATI.", pageW / 2, y, {
     align: "center",
   });
+}
+
+export async function exportMatchPdf(state: LeagueState, matchId: string): Promise<void> {
+  const match = state.matches.find((m) => m.id === matchId);
+  if (!match) return;
+  const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "Domači";
+  const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "Gostje";
+  const players = new Map(state.players.map((p) => [p.id, p.name]));
+  const totals = matchTotals(match, state.players);
+  const template = pairingTemplate();
+  const season = state.seasonTitle ?? seasonLabel();
+  const when = match.startsAt
+    ? new Date(match.startsAt).toLocaleString("sl-SI", { dateStyle: "short", timeStyle: "short" })
+    : "";
+
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  await withFonts(doc);
+  const logo = await imageDataUrl("/logo-bowling-lenart.png");
+  const margin = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const inner = pageW - margin * 2;
+
+  doc.addImage(logo, "PNG", margin, 6, 42, 17);
+  doc.setFont("FreeSans", "bold");
+  doc.setTextColor(20, 16, 10);
+  doc.setFontSize(13);
+  doc.text(`BOWLING LIGA ${season}`, pageW - margin, 13, { align: "right" });
+  doc.setFontSize(10);
+  doc.setTextColor(255, 78, 200);
+  doc.text("ZAPISNIK", pageW - margin, 19, { align: "right" });
+  doc.setDrawColor(40);
+  doc.setLineWidth(0.35);
+  doc.line(margin, 26, pageW - margin, 26);
+
+  doc.setTextColor(20, 16, 10);
+  doc.setFont("FreeSans", "normal");
+  doc.setFontSize(10);
+  doc.text(`${match.round}. kolo${when ? `   ${when}` : ""}`, margin, 33);
+
+  const boxW = (inner - 4) / 2;
+  doc.setFillColor(232, 236, 255);
+  doc.rect(margin, 36, boxW, 12, "F");
+  doc.setFillColor(255, 236, 244);
+  doc.rect(margin + boxW + 4, 36, boxW, 12, "F");
+  doc.setFont("FreeSans", "bold");
+  doc.setFontSize(8);
+  doc.text("DOMAČI", margin + 3, 40);
+  doc.text("GOSTI", margin + boxW + 7, 40);
+  doc.setFontSize(11);
+  doc.text(home, margin + 3, 46);
+  doc.text(away, margin + boxW + 7, 46);
+
+  let y = 52;
+  const tableHead = {
+    font: "FreeSans",
+    fontStyle: "bold" as const,
+    fillColor: [245, 245, 247] as [number, number, number],
+    textColor: [20, 16, 10] as [number, number, number],
+    lineWidth: 0.2,
+    lineColor: [80, 80, 80] as [number, number, number],
+  };
+
+  for (let ri = 0; ri < 4; ri++) {
+    const round = match.rounds[ri];
+    const roundTot = totals.rounds[ri];
+    const body = (round?.games ?? []).map((game, gi) => {
+      const slots = template[ri]?.[gi];
+      const duel = scoreGame(game, state.players);
+      const homeName = players.get(game.homePlayerId) ?? "";
+      const awayName = players.get(game.awayPlayerId) ?? "";
+      return [
+        String(game.lane),
+        `${slots ? slotLabel("home", slots.homeSlot) : ""}  ${homeName}`.trim(),
+        game.homePins ?? "",
+        duel ? String(duel.homeTotal) : "",
+        `${slots ? slotLabel("away", slots.awaySlot) : ""}  ${awayName}`.trim(),
+        game.awayPins ?? "",
+        duel ? String(duel.awayTotal) : "",
+      ];
+    });
+    if (roundTot) {
+      body.push([
+        "",
+        "Seštevek",
+        roundTot.homePins || "",
+        String(roundTot.homeSmall),
+        roundTot.complete ? `Velike  ${roundTot.homeBig} : ${roundTot.awayBig}` : "",
+        roundTot.awayPins || "",
+        String(roundTot.awaySmall),
+      ]);
+    }
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: margin, right: margin },
+      styles: { font: "FreeSans", fontSize: 9, cellPadding: 1.8, textColor: [20, 16, 10], valign: "middle" },
+      headStyles: tableHead,
+      bodyStyles: { lineWidth: 0.15, lineColor: [170, 170, 170] },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 12 },
+        1: { halign: "left", cellWidth: 52 },
+        2: { halign: "center", cellWidth: 16, fontStyle: "bold" },
+        3: { halign: "center", cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
+        4: { halign: "left", cellWidth: 52 },
+        5: { halign: "center", cellWidth: 16, fontStyle: "bold" },
+        6: { halign: "center", cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
+      },
+      head: [[`${ri + 1}. krog`, home, "Rez.", "T", away, "Rez.", "T"]],
+      body,
+      didParseCell: (data) => {
+        if (data.section === "body" && data.row.index === body.length - 1 && roundTot) {
+          data.cell.styles.fillColor = [248, 248, 248];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+    });
+    y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 5;
+  }
+
+  const benchHome = match.homeBench.map((id) => players.get(id)).filter(Boolean);
+  const benchAway = match.awayBench.map((id) => players.get(id)).filter(Boolean);
+  if (benchHome.length || benchAway.length) {
+    doc.setFont("FreeSans", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(70, 70, 70);
+    doc.text(
+      `Menjave:  ${home}: ${benchHome.join(", ") || "—"}    ·    ${away}: ${benchAway.join(", ") || "—"}`,
+      margin,
+      y,
+    );
+    y += 6;
+  }
+
+  let homeGames = 0;
+  let awayGames = 0;
+  for (const round of match.rounds) {
+    for (const game of round.games) {
+      if (game.homePins != null) homeGames += 1;
+      if (game.awayPins != null) awayGames += 1;
+    }
+  }
+  const sl = (n: number) => n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: margin, right: margin },
+    styles: {
+      font: "FreeSans",
+      fontSize: 10,
+      cellPadding: 2.4,
+      textColor: [20, 16, 10],
+      halign: "center",
+      valign: "middle",
+    },
+    headStyles: tableHead,
+    bodyStyles: { lineWidth: 0.2, lineColor: [80, 80, 80] },
+    columnStyles: { 0: { halign: "left", fontStyle: "bold", cellWidth: 52 } },
+    head: [["Seštevek", "Skupaj kegljev", "Povp.", "Velike točke", "TOČKE"]],
+    body: [
+      [
+        home,
+        totals.homePins,
+        homeGames ? sl(totals.homePins / homeGames) : "—",
+        totals.homeBig,
+        totals.complete ? totals.homeMatch : "—",
+      ],
+      [
+        away,
+        totals.awayPins,
+        awayGames ? sl(totals.awayPins / awayGames) : "—",
+        totals.awayBig,
+        totals.complete ? totals.awayMatch : "—",
+      ],
+    ],
+    didParseCell: (data) => {
+      if (data.section !== "body" || data.column.index !== 4) return;
+      const win =
+        (data.row.index === 0 && totals.complete && totals.homeMatch === 2) ||
+        (data.row.index === 1 && totals.complete && totals.awayMatch === 2);
+      if (win) {
+        data.cell.styles.fillColor = [245, 225, 74];
+        data.cell.styles.fontStyle = "bold";
+        data.cell.styles.fontSize = 12;
+      }
+    },
+  });
+
+  doc.save(`zapisnik-${match.round}-kolo-${fileSafe(home)}-${fileSafe(away)}.pdf`);
 }
 
 function fileSafe(name: string): string {

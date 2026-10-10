@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
+import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
+import { PdfButton } from "./PdfButton";
 import type { Player } from "../lib/types";
 
 function playerName(roster: Player[], id: string): string {
@@ -389,18 +391,17 @@ export function MatchEntry({
         </table>
       </div>
 
-      {!readOnly && (
-        <div className="match-actions">
-          <button
-            className="primary"
-            type="button"
-            onClick={onBack}
-          >
-            Shrani
-          </button>
-          <span className="muted">Rezultat se sproti zapiše; gumb te vrne na seznam.</span>
-        </div>
-      )}
+      <div className="match-actions">
+        <PdfButton label="Izvozi zapisnik PDF" onExport={() => exportMatchPdf(state, match.id)} />
+        {!readOnly && (
+          <>
+            <button className="primary" type="button" onClick={onBack}>
+              Shrani
+            </button>
+            <span className="muted">Rezultat se sproti zapiše; gumb te vrne na seznam.</span>
+          </>
+        )}
+      </div>
     </section>
   );
 }
