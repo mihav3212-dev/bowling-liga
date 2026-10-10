@@ -17,6 +17,8 @@ function asState(data) {
     teams: Array.isArray(value?.teams) ? value.teams : [],
     players: Array.isArray(value?.players) ? value.players : [],
     matches: Array.isArray(value?.matches) ? value.matches : [],
+    roundNotes: value?.roundNotes && typeof value.roundNotes === "object" ? value.roundNotes : undefined,
+    roundLabels: value?.roundLabels && typeof value.roundLabels === "object" ? value.roundLabels : undefined,
   };
 }
 

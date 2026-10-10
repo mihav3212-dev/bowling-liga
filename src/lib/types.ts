@@ -51,6 +51,10 @@ export type LeagueState = {
   teams: Team[];
   players: Player[];
   matches: Match[];
+  /** Opomba po kolu (pavza, počitnice), npr. iz CSV stolpca opomba. */
+  roundNotes?: Record<string, string>;
+  /** Oznaka kola (datumi), npr. iz žreba s koledarjem. */
+  roundLabels?: Record<string, string>;
 };
 
 export type SeasonInfo = {

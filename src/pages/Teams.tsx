@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import { leagueSeasonTitle } from "../lib/fixtures";
+import { daysNeededForHalf, daysNeededPerRound, firstHalfComplete, halfRoundCount } from "../lib/schedule";
 import { useStore } from "../lib/store";
+import { DayPicker } from "./DayPicker";
 
 export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
-  const { state, addTeam, generateSchedule, resetDemo, loadSeason2025 } = useStore();
+  const { state, addTeam, drawSchedule, drawReturnSchedule, resetDemo, loadSeason2025 } = useStore();
   const [name, setName] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [picker, setPicker] = useState<"first" | "return" | null>(null);
   const emptySchedule = state.matches.length === 0;
   const canBuild = emptySchedule && state.teams.length >= 2;
+  const canReturn = firstHalfComplete(state);
+  const needed = daysNeededForHalf(state.teams.length);
+  const rounds = halfRoundCount(state.teams.length);
 
   return (
     <section className="panel">
@@ -27,20 +33,13 @@ export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
           Dodaj
         </button>
         {canBuild && (
-          <button
-            className="primary"
-            type="button"
-            onClick={() => {
-              if (
-                window.confirm(
-                  `Sestavi razpored za ${state.teams.length} ekip? Če imena ustrezajo uradni sezoni, se naloži uradni koledar, sicer krožni razpored.`,
-                )
-              ) {
-                generateSchedule();
-              }
-            }}
-          >
+          <button className="primary" type="button" onClick={() => setPicker("first")}>
             Sestavi razpored
+          </button>
+        )}
+        {canReturn && (
+          <button className="primary" type="button" onClick={() => setPicker("return")}>
+            Žreb 2. dela
           </button>
         )}
         <button
@@ -61,13 +60,16 @@ export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
       </form>
       {emptySchedule ? (
         <p className="muted">
-          Nova sezona {leagueSeasonTitle(state)}: dodaj ekipe, nato sestavi razpored. Razpored se
-          naredi samo enkrat, ko še ni tekem.
+          Nova sezona {leagueSeasonTitle(state)}: dodaj ekipe, nato sestavi razpored. Na koledarju izbereš
+          dneve tekem, sistem naredi žreb (sreda/četrtek ob 18:00, 19:30 in 21:00).
         </p>
       ) : (
         <p className="muted">
           Sezona {leagueSeasonTitle(state)}: {state.teams.length} ekip, {state.matches.length} tekem.
           Vodjo, telefon, e-pošto in igralce vpišeš v ekipi.
+          {canReturn
+            ? " Ko je 1. del odigran v razporedu, dodaš 2. del: domačin in gost se zamenjata, dan in ura se premešata."
+            : ""}
         </p>
       )}
       {emptySchedule && (
@@ -108,6 +110,25 @@ export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
           );
         })}
       </div>
+      {picker && (
+        <DayPicker
+          title={picker === "return" ? "Dnevi 2. dela sezone" : "Dnevi tekem"}
+          needed={needed}
+          rounds={rounds}
+          daysPerRound={daysNeededPerRound(state.teams.length)}
+          returnHalf={picker === "return"}
+          onCancel={() => setPicker(null)}
+          onConfirm={(dates) => {
+            try {
+              if (picker === "return") drawReturnSchedule(dates);
+              else drawSchedule(dates);
+              setPicker(null);
+            } catch (err) {
+              window.alert(err instanceof Error ? err.message : "Žreba ni bilo mogoče narediti.");
+            }
+          }}
+        />
+      )}
     </section>
   );
 }

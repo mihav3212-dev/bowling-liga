@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
@@ -10,9 +11,20 @@ export function AdminMenu({
   canEdit: boolean;
   onNewSeason: () => void;
 }) {
-  const { state, archived, importState, loadSeason2025, closeSeason, reopenSeason } = useStore();
+  const {
+    state,
+    remote,
+    archived,
+    importSeason,
+    importFixtures,
+    appendOfficialSchedule,
+    closeSeason,
+    reopenSeason,
+  } = useStore();
   const complete = seasonIsComplete(state);
+  const leftover = remainingOfficialRounds(state);
   const fileRef = useRef<HTMLInputElement>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
 
   return (
     <details className="admin-menu">
@@ -28,17 +40,6 @@ export function AdminMenu({
         )}
         <button className="primary" type="button" onClick={onNewSeason}>
           Nova sezona
-        </button>
-        <button
-          className="ghost"
-          type="button"
-          onClick={() => {
-            if (window.confirm("Odpre sezono 2025/26 (22 krogov) poleg obstoječih. Trenutna ostane.")) {
-              void loadSeason2025();
-            }
-          }}
-        >
-          Naloži 2025/26
         </button>
         {canEdit && (
           <button
@@ -71,14 +72,46 @@ export function AdminMenu({
         >
           Izvozi JSON
         </button>
+        {canEdit && leftover > 0 && (
+          <button
+            className="ghost"
+            type="button"
+            title="Doda preostala uradna kola (npr. 2. del sezone) k obstoječemu razporedu."
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Dodam ${leftover} preostalih krogov iz uradnega razporeda? Obstoječe tekme ostanejo.`,
+                )
+              ) {
+                try {
+                  appendOfficialSchedule();
+                } catch (err) {
+                  window.alert(err instanceof Error ? err.message : "Razporeda ni bilo mogoče dodati.");
+                }
+              }
+            }}
+          >
+            Dodaj preostali razpored
+          </button>
+        )}
         {canEdit && (
           <button
             className="ghost"
             type="button"
-            title="Naloži prej izvožen JSON. Zamenja celotno trenutno sezono."
+            title="CSV s stolpci kolo, datum, ura, domači, gostje. Doda tekme k sezoni."
+            onClick={() => csvRef.current?.click()}
+          >
+            Uvozi razpored (CSV)
+          </button>
+        )}
+        {canEdit && (
+          <button
+            className="ghost"
+            type="button"
+            title="Naloži prej izvožen JSON kot novo sezono (obstoječe ostanejo)."
             onClick={() => fileRef.current?.click()}
           >
-            Uvozi JSON
+            Uvozi JSON kot sezono
           </button>
         )}
         <input
@@ -95,14 +128,35 @@ export function AdminMenu({
               if (!Array.isArray(next.teams) || !Array.isArray(next.players)) {
                 throw new Error("invalid");
               }
-              importState(next);
+              await importSeason(next);
             } catch {
               window.alert("Datoteka ni veljaven izvoz lige.");
             }
           }}
         />
+        <input
+          ref={csvRef}
+          type="file"
+          accept=".csv,text/csv,text/plain"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            try {
+              const parsed = parseScheduleCsv(await file.text());
+              if (parsed.error) throw new Error(parsed.error);
+              importFixtures(parsed.rows);
+            } catch (err) {
+              window.alert(err instanceof Error ? err.message : "CSV ni veljaven razpored.");
+            }
+          }}
+        />
         <p className="muted admin-menu-hint">
-          JSON je varnostna kopija cele sezone, ne obrazec za vnos posamezne tekme.
+          {remote
+            ? "Sezone se shranjujejo na strežnik — vsi vidijo isto."
+            : "Zdaj so sezone samo v tem brskalniku. Pred vklopom baze nujno Izvozi JSON, sicer se lanski vnosi ne prenesejo."}{" "}
+          JSON je varnostna kopija cele sezone. CSV: kolo, datum, ura, domači, gostje, opomba.
         </p>
       </div>
     </details>

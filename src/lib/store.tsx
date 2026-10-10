@@ -9,7 +9,14 @@ import {
 } from "react";
 import { emptyRounds, nominatedIds } from "./pairings";
 import { createSeed, createSeed2025 } from "./seed";
-import { buildSeasonMatches } from "./schedule";
+import {
+  appendFixtureRows,
+  appendOfficialRemaining,
+  buildDrawMatches,
+  buildReturnDraw,
+  buildSeasonMatches,
+  type FixtureRow,
+} from "./schedule";
 import { archiveLeague, createLeague, fetchLeague, reopenLeague, saveLeague, type LeaguePayload } from "./leagueApi";
 import {
   addVaultSeason,
@@ -40,6 +47,8 @@ type Store = {
   updatePlayer: (player: Player) => void;
   removePlayer: (id: string) => void;
   generateSchedule: () => void;
+  drawSchedule: (dates: string[]) => void;
+  drawReturnSchedule: (dates: string[]) => void;
   setLineup: (
     matchId: string,
     side: "home" | "away",
@@ -64,6 +73,9 @@ type Store = {
   loadSeason2025: () => Promise<void>;
   newEmptySeason: (title: string) => Promise<void>;
   importState: (next: LeagueState) => void;
+  importSeason: (next: LeagueState) => Promise<void>;
+  importFixtures: (rows: FixtureRow[]) => void;
+  appendOfficialSchedule: () => void;
   loadSeason: (id: string) => Promise<void>;
   closeSeason: () => Promise<void>;
   reopenSeason: () => Promise<void>;
@@ -240,6 +252,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (s.matches.length > 0) return s;
           return { ...s, matches: buildSeasonMatches(s.teams) };
         }),
+      drawSchedule: (dates) =>
+        update((s) => {
+          if (s.matches.length > 0) return s;
+          const drawn = buildDrawMatches(s.teams, dates);
+          return {
+            ...s,
+            matches: drawn.matches,
+            roundLabels: drawn.roundLabels,
+            roundNotes: drawn.roundNotes,
+          };
+        }),
+      drawReturnSchedule: (dates) =>
+        update((s) => {
+          const drawn = buildReturnDraw(s, dates);
+          return {
+            ...s,
+            matches: drawn.matches,
+            roundLabels: drawn.roundLabels,
+            roundNotes: drawn.roundNotes,
+          };
+        }),
       setLineup: (matchId, side, starters, bench) =>
         update((s) => ({
           ...s,
@@ -311,7 +344,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           teams: next.teams ?? [],
           players: next.players ?? [],
           matches: next.matches ?? [],
+          roundNotes: next.roundNotes,
+          roundLabels: next.roundLabels,
         })),
+      importSeason: async (next) => {
+        const title = next.seasonTitle?.trim() || "Uvožena sezona";
+        await openSeason(title, {
+          seasonKey: next.seasonKey,
+          seasonTitle: title,
+          teams: next.teams ?? [],
+          players: next.players ?? [],
+          matches: next.matches ?? [],
+          roundNotes: next.roundNotes,
+          roundLabels: next.roundLabels,
+        });
+      },
+      importFixtures: (rows) => update((s) => appendFixtureRows(s, rows)),
+      appendOfficialSchedule: () => update((s) => appendOfficialRemaining(s)),
       loadSeason: async (id) => {
         if (remoteRef.current) {
           const payload = await fetchLeague(id);

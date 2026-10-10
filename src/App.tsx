@@ -6,6 +6,7 @@ import { PlayerStandings } from "./pages/PlayerStandings";
 import { TeamDetail } from "./pages/TeamDetail";
 import { Teams } from "./pages/Teams";
 import { Login } from "./pages/Login";
+import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
 import { PdfButton } from "./pages/PdfButton";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
@@ -54,6 +55,7 @@ export function App() {
           {admin && <AdminMenu canEdit={canEdit} onNewSeason={() => void startNewSeason()} />}
           <Login />
         </div>
+        <ThemePicker />
       </header>
 
       <div className="app-shell">

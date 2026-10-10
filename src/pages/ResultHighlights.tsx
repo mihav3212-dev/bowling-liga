@@ -1,138 +1,101 @@
-import {
-  computePlayerStandings,
-  computeStandings,
-  lastCompletedRound,
-  playersByAverage,
-  playersByHighs,
-  teamsByHighs,
-  topGames,
-} from "../lib/standings";
+import { computeWeekRecap, recapHasData, type RecapLine } from "../lib/recap";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
-
-function StatList({
-  title,
-  items,
-}: {
-  title: string;
-  items: { name: string; value: string }[];
-}) {
-  return (
-    <div className="stat-block">
-      <h3>{title}</h3>
-      {items.length === 0 ? (
-        <p className="muted">—</p>
-      ) : (
-        <ol>
-          {items.map((item) => (
-            <li key={`${title}-${item.name}-${item.value}`}>
-              <span>{item.name}</span>
-              <span className="mono">{item.value}</span>
-            </li>
-          ))}
-        </ol>
-      )}
-    </div>
-  );
-}
 
 function sliceRound(state: LeagueState, round: number): LeagueState {
   return { ...state, matches: state.matches.filter((m) => m.round === round) };
 }
 
+function Line({ line }: { line: RecapLine }) {
+  return (
+    <li>
+      <span>
+        {line.showRank && line.rank != null ? `${line.rank}. ` : ""}
+        <span className="mono">{line.value}</span> {line.name}
+        {line.team ? ` (${line.team})` : ""}
+      </span>
+    </li>
+  );
+}
+
+function Head({ title, lines }: { title: string; lines: RecapLine[] }) {
+  return (
+    <div className="recap-head">
+      <span>{title}</span>
+      <span className="recap-head-value">
+        {lines.length === 0
+          ? "—"
+          : lines.map((line, i) => (
+              <span key={`${line.name}-${line.value}`}>
+                {i > 0 ? <br /> : null}
+                <span className="mono">{line.value}</span>
+                {` — ${line.name}`}
+                {line.team ? ` (${line.team})` : ""}
+              </span>
+            ))}
+      </span>
+    </div>
+  );
+}
+
+function RecapBody({ state }: { state: LeagueState }) {
+  const recap = computeWeekRecap(state);
+  if (!recapHasData(recap)) return null;
+  return (
+    <div className="week-recap">
+      <Head title="Največ kegljev — posamezno:" lines={recap.bestSingle} />
+      <Head title="Najboljša igra — skupaj:" lines={recap.bestSeries} />
+      <Head title="Največ kegljev — ekipno:" lines={recap.bestTeam} />
+      <div className="stat-block">
+        <h3>Lestvica TOP 5 — posamezna igra</h3>
+        <ol>
+          {recap.topSingles.map((line) => (
+            <Line key={`s-${line.name}-${line.value}-${line.rank}`} line={line} />
+          ))}
+        </ol>
+      </div>
+      <div className="stat-block">
+        <h3>Lestvica TOP 5 — posamezno 4 igre</h3>
+        <ol>
+          {recap.topSeries.map((line) => (
+            <Line key={`q-${line.name}-${line.value}-${line.rank}`} line={line} />
+          ))}
+        </ol>
+      </div>
+      <div className="stat-block">
+        <h3>Lestvica TOP 5 — največ kegljev po igri ekipa</h3>
+        <ol>
+          {recap.topTeams.map((line) => (
+            <Line key={`t-${line.name}-${line.value}-${line.rank}`} line={line} />
+          ))}
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 export function ResultHighlights({
   scope,
+  round,
+  state: given,
 }: {
   scope: "season" | "round";
+  round?: number;
+  state?: LeagueState;
 }) {
-  const { state } = useStore();
-  const round = lastCompletedRound(state);
-  if (scope === "round" && round === 0) return null;
-
-  const data = scope === "round" ? sliceRound(state, round) : state;
-  const rows = computeStandings(data);
-  const players = computePlayerStandings(data);
-  const highs = topGames(data, 8);
+  const store = useStore();
+  const state = given ?? store.state;
+  const data = scope === "round" && round ? sliceRound(state, round) : state;
   const title =
-    scope === "round" ? `Najboljši rezultati ${round}. kola` : "Najboljši rezultati sezone";
+    scope === "round" && round
+      ? `Najboljši rezultati ${round}. kola`
+      : "Najboljši rezultati sezone";
 
   return (
-    <section className={`panel standings-extras${scope === "round" ? " round-highlights" : ""}`}>
-      <h2 className="round-title">{title}</h2>
-      <div className="grid-2">
-        <div>
-          <StatList
-            title="Največ iger nad 200 — ekipe"
-            items={teamsByHighs(rows, "over200")
-              .slice(0, 8)
-              .map((row) => ({ name: row.team.name, value: String(row.over200) }))}
-          />
-          <StatList
-            title="Največ iger nad 220 — ekipe"
-            items={teamsByHighs(rows, "over220")
-              .slice(0, 8)
-              .map((row) => ({ name: row.team.name, value: String(row.over220) }))}
-          />
-          <StatList
-            title="Največ iger nad 240 — ekipe"
-            items={teamsByHighs(rows, "over240")
-              .slice(0, 8)
-              .map((row) => ({ name: row.team.name, value: String(row.over240) }))}
-          />
-        </div>
-        <div>
-          <StatList
-            title="Najvišji rezultati"
-            items={highs.map((game) => ({
-              name: `${game.playerName} (${game.teamName})`,
-              value: String(game.pins),
-            }))}
-          />
-          <StatList
-            title="Največ iger nad 200 — igralci"
-            items={playersByHighs(players, "over200")
-              .slice(0, 5)
-              .map((row) => ({
-                name: `${row.player.name} (${row.teamName})`,
-                value: String(row.over200),
-              }))}
-          />
-          <StatList
-            title="Največ iger nad 220 — igralci"
-            items={playersByHighs(players, "over220")
-              .slice(0, 5)
-              .map((row) => ({
-                name: `${row.player.name} (${row.teamName})`,
-                value: String(row.over220),
-              }))}
-          />
-          <StatList
-            title="Največ iger nad 240 — igralci"
-            items={playersByHighs(players, "over240")
-              .slice(0, 5)
-              .map((row) => ({
-                name: `${row.player.name} (${row.teamName})`,
-                value: String(row.over240),
-              }))}
-          />
-          <StatList
-            title="TOP 5 — male točke"
-            items={players.slice(0, 5).map((row) => ({
-              name: `${row.player.name} (${row.teamName})`,
-              value: String(row.points),
-            }))}
-          />
-          <StatList
-            title="TOP 5 — povprečje"
-            items={playersByAverage(players)
-              .slice(0, 5)
-              .map((row) => ({
-                name: `${row.player.name} (${row.teamName})`,
-                value: row.avg.toFixed(1),
-              }))}
-          />
-        </div>
-      </div>
+    <section className={`standings-extras${scope === "round" ? " round-highlights" : " panel"}`}>
+      {scope === "season" && <h2 className="round-title">{title}</h2>}
+      {scope === "round" && <h3 className="recap-title">{title}</h3>}
+      <RecapBody state={data} />
     </section>
   );
 }

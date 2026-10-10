@@ -1,16 +1,13 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { computeWeekRecap } from "./recap";
 import {
   computePlayerStandings,
   computeStandings,
   lastCompletedRound,
   playersByAverage,
-  playersByHighs,
   seasonLabel,
   seasonRoundCount,
-  teamsByHighs,
-  topGames,
-  type PlayerStandingRow,
 } from "./standings";
 import { matchTotals } from "./scoring";
 import type { LeagueState } from "./types";
@@ -85,13 +82,8 @@ function line(
   return y + 4;
 }
 
-function playerLabel(row: PlayerStandingRow): string {
-  return `${row.player.name}  ${row.teamName}`;
-}
-
 export async function exportStandingsPdf(state: LeagueState): Promise<void> {
   const teams = computeStandings(state);
-  const players = computePlayerStandings(state);
   const round = lastCompletedRound(state);
   const season = state.seasonTitle ?? seasonLabel();
   const date = new Date().toLocaleDateString("sl-SI");
@@ -104,16 +96,17 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
   const margin = 14;
   const pageW = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(0, 0, 0);
-  doc.rect(0, 0, pageW, 34, "F");
   doc.addImage(logo, "PNG", margin, 5, 58, 24);
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(20, 16, 10);
   doc.setFontSize(11);
   doc.text(`BOWLING LIGA ${season}`, pageW - margin, 14, { align: "right" });
   const roundText = round > 0 ? `PO ${round}. KOLU` : "PRED ZAČETKOM";
   doc.setFontSize(9);
   doc.setTextColor(255, 78, 200);
   doc.text(roundText, pageW - margin, 21, { align: "right" });
+  doc.setDrawColor(40);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 32, pageW - margin, 32);
 
   doc.setTextColor(20, 16, 10);
   let y = 42;
@@ -169,44 +162,60 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
 
   y = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
   y += 12;
+  const recap = computeWeekRecap(state);
+  const fmt = (row: { name: string; team?: string }) =>
+    row.team ? `${row.name}  (${row.team})` : row.name;
   const colW = (pageW - margin * 2 - 10) / 2;
   const col1 = margin;
   const col2 = margin + colW + 10;
-
-  const highs = topGames(state, 8).map((game) => ({
-    name: `${game.playerName}  ${game.teamName}`,
-    value: String(game.pins),
-  }));
-  const team200 = teamsByHighs(teams, "over200")
-    .slice(0, 8)
-    .map((row) => ({ name: row.team.name, value: String(row.over200) }));
-  const team220 = teamsByHighs(teams, "over220")
-    .slice(0, 8)
-    .map((row) => ({ name: row.team.name, value: String(row.over220) }));
-  const team240 = teamsByHighs(teams, "over240")
-    .slice(0, 8)
-    .map((row) => ({ name: row.team.name, value: String(row.over240) }));
-  const byPoints = players.slice(0, 5).map((row) => ({
-    name: playerLabel(row),
-    value: String(row.points),
-  }));
-  const byAvg = playersByAverage(players)
-    .slice(0, 5)
-    .map((row) => ({
-      name: playerLabel(row),
-      value: row.avg.toFixed(1),
-    }));
-  const p200 = playersByHighs(players, "over200")
-    .slice(0, 5)
-    .map((row) => ({ name: playerLabel(row), value: String(row.over200) }));
-
-  let yLeft = line(doc, team200, col1, y, colW, "NAJVEČ IGER NAD 200 — EKIPE");
-  yLeft = line(doc, team220, col1, yLeft, colW, "NAJVEČ IGER NAD 220 — EKIPE");
-  yLeft = line(doc, team240, col1, yLeft, colW, "NAJVEČ IGER NAD 240 — EKIPE");
-  let yRight = line(doc, highs, col2, y, colW, "NAJVIŠJI REZULTATI");
-  yRight = line(doc, p200, col2, yRight, colW, "NAJVEČ IGER NAD 200 — IGRALCI");
-  yRight = line(doc, byPoints, col2, yRight, colW, "TOP 5 — MALE TOČKE");
-  yRight = line(doc, byAvg, col2, yRight, colW, "TOP 5 — POVPREČJE");
+  let yLeft = line(
+    doc,
+    recap.bestSingle.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    col1,
+    y,
+    colW,
+    "NAJVEČ KEGLJEV — POSAMEZNO",
+  );
+  yLeft = line(
+    doc,
+    recap.bestSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    col1,
+    yLeft,
+    colW,
+    "NAJBOLJŠA IGRA — SKUPAJ",
+  );
+  yLeft = line(
+    doc,
+    recap.bestTeam.map((row) => ({ name: row.name, value: String(row.value) })),
+    col1,
+    yLeft,
+    colW,
+    "NAJVEČ KEGLJEV — EKIPNO",
+  );
+  let yRight = line(
+    doc,
+    recap.topSingles.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    col2,
+    y,
+    colW,
+    "TOP 5 — POSAMEZNA IGRA",
+  );
+  yRight = line(
+    doc,
+    recap.topSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    col2,
+    yRight,
+    colW,
+    "TOP 5 — POSAMEZNO 4 IGRE",
+  );
+  yRight = line(
+    doc,
+    recap.topTeams.map((row) => ({ name: row.name, value: String(row.value) })),
+    col2,
+    yRight,
+    colW,
+    "TOP 5 — KEGLJI PO IGRI EKIPA",
+  );
 
   doc.setFont("FreeSans", "normal");
   doc.setFontSize(7);
@@ -243,16 +252,17 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
   const margin = 14;
   const pageW = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(0, 0, 0);
-  doc.rect(0, 0, pageW, 34, "F");
   doc.addImage(logo, "PNG", margin, 5, 58, 24);
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(20, 16, 10);
   doc.setFont("FreeSans", "bold");
   doc.setFontSize(11);
   doc.text(`BOWLING LIGA ${season}`, pageW - margin, 14, { align: "right" });
   doc.setFontSize(9);
   doc.setTextColor(255, 78, 200);
   doc.text("REZULTATI", pageW - margin, 21, { align: "right" });
+  doc.setDrawColor(40);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 32, pageW - margin, 32);
 
   let y = 42;
   doc.setTextColor(20, 16, 10);
@@ -273,7 +283,7 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
         `${teamName(state, match.homeTeamId)} – ${teamName(state, match.awayTeamId)}`,
         `${totals.homeMatch}:${totals.awayMatch}`,
         `${totals.homeBig}:${totals.awayBig}`,
-        `${totals.homeSmall}:${totals.awaySmall}`,
+        `${totals.homePins}:${totals.awayPins}`,
       ];
     });
     autoTable(doc, {
@@ -294,7 +304,7 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
         2: { halign: "center", cellWidth: 18 },
         3: { halign: "center", cellWidth: 18 },
       },
-      head: [[`${round}. kolo`, "TOČKE", "Velike", "Male"]],
+      head: [[`${round}. kolo`, "TOČKE", "Velike točke", "Keglji"]],
       body: rows,
     });
     y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 8;
@@ -319,16 +329,17 @@ export async function exportPlayersPdf(state: LeagueState): Promise<void> {
   const margin = 12;
   const pageW = doc.internal.pageSize.getWidth();
 
-  doc.setFillColor(0, 0, 0);
-  doc.rect(0, 0, pageW, 28, "F");
   doc.addImage(logo, "PNG", margin, 4, 48, 20);
-  doc.setTextColor(255, 255, 255);
+  doc.setTextColor(20, 16, 10);
   doc.setFont("FreeSans", "bold");
   doc.setFontSize(11);
   doc.text(`BOWLING LIGA ${season}`, pageW - margin, 12, { align: "right" });
   doc.setFontSize(9);
   doc.setTextColor(255, 78, 200);
   doc.text("LESTVICA IGRALCEV", pageW - margin, 19, { align: "right" });
+  doc.setDrawColor(40);
+  doc.setLineWidth(0.3);
+  doc.line(margin, 26, pageW - margin, 26);
 
   const head = [
     "#",

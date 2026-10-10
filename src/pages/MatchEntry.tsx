@@ -143,6 +143,16 @@ export function MatchEntry({
   const totals = matchTotals(match, state.players);
   const homeNom = nominatedIds(match.homeStarters, match.homeBench);
   const awayNom = nominatedIds(match.awayStarters, match.awayBench);
+  let homeGames = 0;
+  let awayGames = 0;
+  for (const round of match.rounds) {
+    for (const game of round.games) {
+      if (game.homePins != null) homeGames += 1;
+      if (game.awayPins != null) awayGames += 1;
+    }
+  }
+  const homeAvg = homeGames ? totals.homePins / homeGames : null;
+  const awayAvg = awayGames ? totals.awayPins / awayGames : null;
 
   return (
     <section>
@@ -170,6 +180,8 @@ export function MatchEntry({
               {totals.complete ? " (krogi + 2 za več kegljev)" : ""}
               {" · "}
               Male: {totals.homeSmall}:{totals.awaySmall}
+              {" · "}
+              Keglji: {totals.homePins}:{totals.awayPins}
             </div>
           </div>
         </div>
@@ -329,6 +341,66 @@ export function MatchEntry({
         </div>
         );
       })}
+
+      <div className="scorecard match-summary">
+        <h3>Seštevek</h3>
+        <table>
+          <thead>
+            <tr>
+              <th />
+              <th>Skupaj</th>
+              <th>Povp.</th>
+              <th>Sk. točk</th>
+              <th>Rezultat</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(
+              [
+                {
+                  name: home?.name ?? "Domači",
+                  pins: totals.homePins,
+                  avg: homeAvg,
+                  velike: totals.homeBig,
+                  rezultat: totals.complete ? totals.homeMatch : "—",
+                  win: totals.complete && totals.homeMatch === 2,
+                },
+                {
+                  name: away?.name ?? "Gostje",
+                  pins: totals.awayPins,
+                  avg: awayAvg,
+                  velike: totals.awayBig,
+                  rezultat: totals.complete ? totals.awayMatch : "—",
+                  win: totals.complete && totals.awayMatch === 2,
+                },
+              ] as const
+            ).map((row) => (
+              <tr key={row.name}>
+                <td className="team-cell">{row.name}</td>
+                <td className="sum-box mono">{row.pins}</td>
+                <td className="sum-box mono">
+                  {row.avg != null ? row.avg.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                </td>
+                <td className="points-box mono">{row.velike}</td>
+                <td className={`result-box mono${row.win ? " is-win" : ""}`}>{row.rezultat}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {!readOnly && (
+        <div className="match-actions">
+          <button
+            className="primary"
+            type="button"
+            onClick={onBack}
+          >
+            Shrani
+          </button>
+          <span className="muted">Rezultat se sproti zapiše; gumb te vrne na seznam.</span>
+        </div>
+      )}
     </section>
   );
 }
