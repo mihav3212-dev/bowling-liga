@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import JSZip from "jszip";
 import { computeWeekRecap } from "./recap";
 import {
   computePlayerStandings,
@@ -83,7 +84,26 @@ function line(
   return y + 4;
 }
 
+type BuiltPdf = { filename: string; doc: jsPDF };
+
+function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 export async function exportStandingsPdf(state: LeagueState): Promise<void> {
+  const built = await buildStandingsPdf(state);
+  built.doc.save(built.filename);
+}
+
+async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
   const teams = computeStandings(state);
   const round = lastCompletedRound(state);
   const season = state.seasonTitle ?? seasonLabel();
@@ -227,8 +247,8 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
     Math.min(Math.max(yLeft, yRight) + 6, doc.internal.pageSize.getHeight() - 8),
   );
 
-  const name = round > 0 ? `bowling-liga-lestvica-kolo-${round}.pdf` : "bowling-liga-lestvica.pdf";
-  doc.save(name);
+  const filename = round > 0 ? `bowling-liga-lestvica-kolo-${round}.pdf` : "bowling-liga-lestvica.pdf";
+  return { filename, doc };
 }
 
 function teamName(state: LeagueState, id: string): string {
@@ -319,6 +339,11 @@ export async function exportResultsPdf(state: LeagueState): Promise<void> {
 }
 
 export async function exportPlayersPdf(state: LeagueState): Promise<void> {
+  const built = await buildPlayersPdf(state);
+  built.doc.save(built.filename);
+}
+
+async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
   const season = state.seasonTitle ?? seasonLabel();
   const date = new Date().toLocaleDateString("sl-SI");
   const roundCount = seasonRoundCount(state);
@@ -390,7 +415,7 @@ export async function exportPlayersPdf(state: LeagueState): Promise<void> {
   doc.setFontSize(7);
   doc.setTextColor(90);
   doc.text(`Izpis ${date}`, margin, doc.internal.pageSize.getHeight() - 8);
-  doc.save("bowling-liga-igralci.pdf");
+  return { filename: "bowling-liga-igralci.pdf", doc };
 }
 
 function field(doc: jsPDF, label: string, value: string, x: number, y: number, width: number): void {
@@ -478,8 +503,13 @@ function drawRegistrationPage(
 }
 
 export async function exportMatchPdf(state: LeagueState, matchId: string): Promise<void> {
+  const built = await buildMatchPdf(state, matchId);
+  if (built) built.doc.save(built.filename);
+}
+
+async function buildMatchPdf(state: LeagueState, matchId: string): Promise<BuiltPdf | null> {
   const match = state.matches.find((m) => m.id === matchId);
-  if (!match) return;
+  if (!match) return null;
   const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "Domači";
   const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "Gostje";
   const players = new Map(state.players.map((p) => [p.id, p.name]));
@@ -636,7 +666,27 @@ export async function exportMatchPdf(state: LeagueState, matchId: string): Promi
     },
   });
 
-  doc.save(`zapisnik-${match.round}-kolo-${fileSafe(home)}-${fileSafe(away)}.pdf`);
+  return {
+    filename: `zapisnik-${match.round}-kolo-${fileSafe(home)}-${fileSafe(away)}.pdf`,
+    doc,
+  };
+}
+
+export async function exportRoundPdfs(state: LeagueState, round: number): Promise<void> {
+  const zip = new JSZip();
+  const matches = state.matches
+    .filter((m) => m.round === round)
+    .sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""));
+  for (const match of matches) {
+    const built = await buildMatchPdf(state, match.id);
+    if (built) zip.file(built.filename, built.doc.output("blob"));
+  }
+  const standings = await buildStandingsPdf(state);
+  zip.file(standings.filename, standings.doc.output("blob"));
+  const players = await buildPlayersPdf(state);
+  zip.file(players.filename, players.doc.output("blob"));
+  const blob = await zip.generateAsync({ type: "blob" });
+  downloadBlob(blob, `bowling-liga-kolo-${round}.zip`);
 }
 
 function fileSafe(name: string): string {

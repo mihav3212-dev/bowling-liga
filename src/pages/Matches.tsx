@@ -1,8 +1,10 @@
+import { exportRoundPdfs } from "../lib/exportPdf";
 import { inferSeasonKey, officialRoundMeta, seasonCatalog } from "../lib/fixtures";
 import { formatMatchWhen } from "../lib/labels";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
+import { PdfButton } from "./PdfButton";
 import { ResultHighlights } from "./ResultHighlights";
 
 export function Matches({
@@ -103,7 +105,15 @@ export function Matches({
                 );
               })}
             </div>
-            {mode === "results" && <ResultHighlights scope="round" round={round} state={state} />}
+            {mode === "results" && (
+              <>
+                <PdfButton
+                  label={`Izvozi PDF-je ${round}. kola`}
+                  onExport={() => exportRoundPdfs(state, round)}
+                />
+                <ResultHighlights scope="round" round={round} state={state} />
+              </>
+            )}
           </>
         );
 

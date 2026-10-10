@@ -757,6 +757,10 @@ select {
   margin: 8px 0 32px;
 }
 
+.round-fold .page-export {
+  margin: 12px 0 4px;
+}
+
 @media (max-width: 800px) {
   .grid-2 {
     grid-template-columns: 1fr;
