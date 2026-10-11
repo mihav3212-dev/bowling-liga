@@ -547,7 +547,7 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   doc.text(`DOMAČI: ${home}`, margin, 38);
   doc.text(`GOSTI: ${away}`, pageW / 2 + 4, 38);
 
-  let y = 41;
+  let y = 47;
   const tableHead = {
     font: "FreeSans",
     fontStyle: "bold" as const,
@@ -569,11 +569,10 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
         players.get(game.homePlayerId)?.name ?? "",
         scoredPins(game.homePins, players.get(game.homePlayerId)) ?? "",
         duel ? String(duel.homeTotal) : "",
-        String(game.lane),
-        slots ? slotLabel("away", slots.awaySlot) : "",
-        players.get(game.awayPlayerId)?.name ?? "",
-        scoredPins(game.awayPins, players.get(game.awayPlayerId)) ?? "",
         duel ? String(duel.awayTotal) : "",
+        scoredPins(game.awayPins, players.get(game.awayPlayerId)) ?? "",
+        players.get(game.awayPlayerId)?.name ?? "",
+        slots ? slotLabel("away", slots.awaySlot) : "",
       ];
     });
     doc.setFont("FreeSans", "bold");
@@ -588,12 +587,17 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
       headStyles: tableHead,
       bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
       columnStyles: {
-        2: { halign: "left", cellWidth: 42 },
-        7: { halign: "left", cellWidth: 42 },
-        4: { fontStyle: "bold", fillColor: [245, 225, 74] },
-        9: { fontStyle: "bold", fillColor: [245, 225, 74] },
+        0: { cellWidth: 10 },
+        1: { cellWidth: 10 },
+        2: { halign: "left", cellWidth: 48 },
+        3: { cellWidth: 16 },
+        4: { cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
+        5: { cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
+        6: { cellWidth: 16 },
+        7: { halign: "left", cellWidth: 48 },
+        8: { cellWidth: 10 },
       },
-      head: [["S", "", "Priimek in ime", "Rez.", "T", "S", "", "Priimek in ime", "Rez.", "T"]],
+      head: [["S", "", "Priimek in ime", "Rez.", "T", "T", "Rez.", "Priimek in ime", ""]],
       body,
     });
     y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 4;
