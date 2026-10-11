@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../lib/auth";
 import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
 import { useStore } from "../lib/store";
@@ -23,13 +24,44 @@ export function AdminMenu({
   } = useStore();
   const complete = seasonIsComplete(state);
   const leftover = remainingOfficialRounds(state);
+  const { logout } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
-    <details className="admin-menu">
-      <summary>Admin</summary>
+    <div className="admin-menu">
+      <button
+        className="ghost header-admin"
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="true"
+        onClick={() => setOpen((v) => !v)}
+      >
+        Admin
+      </button>
+      {open && (
+        <button
+          className="admin-menu-backdrop"
+          type="button"
+          aria-label="Zapri meni"
+          onClick={() => setOpen(false)}
+        />
+      )}
+      {open && (
       <div className="admin-menu-panel">
+        <button className="ghost admin-menu-logout" type="button" onClick={() => void logout()}>
+          Odjava
+        </button>
         {archived && (
           <>
             <p className="muted">Arhiv — samo branje.</p>
@@ -159,6 +191,7 @@ export function AdminMenu({
           JSON je varnostna kopija cele sezone. CSV: kolo, datum, ura, domači, gostje, opomba.
         </p>
       </div>
-    </details>
+      )}
+    </div>
   );
 }

@@ -553,6 +553,7 @@ select {
 }
 
 .header-actions {
+  position: relative;
   display: flex;
   gap: 8px;
   align-items: center;
@@ -562,23 +563,28 @@ select {
 }
 
 .admin-menu {
-  position: relative;
-}
-
-.admin-menu > summary {
-  list-style: none;
-  cursor: pointer;
-  color: var(--header-fg);
-  border: 1px solid var(--header-line);
-  border-radius: 50px;
-  padding: 8px 16px;
-  min-height: 40px;
   display: flex;
   align-items: center;
 }
 
-.admin-menu > summary::-webkit-details-marker {
-  display: none;
+.header-admin {
+  color: var(--header-fg);
+  border: 1px solid var(--header-line);
+  background: transparent;
+  border-radius: 50px;
+  padding: 8px 16px;
+  min-height: 40px;
+}
+
+.admin-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 18;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
 }
 
 .admin-menu-panel {
@@ -586,7 +592,8 @@ select {
   right: 0;
   top: calc(100% + 8px);
   z-index: 20;
-  width: min(18rem, calc(100vw - 24px));
+  width: min(18rem, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
   background: var(--surface);
   border: 1px solid var(--header-line);
   border-radius: 12px;
@@ -595,6 +602,10 @@ select {
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.admin-menu-logout {
+  display: none;
 }
 
 .admin-menu-panel label {
@@ -812,7 +823,18 @@ select {
 
   .header-actions {
     margin-left: auto;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .header-logout {
+    display: none;
+  }
+
+  .admin-menu-logout {
+    display: block;
   }
 
   .header-login input {
