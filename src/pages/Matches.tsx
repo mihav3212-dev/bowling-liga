@@ -81,10 +81,10 @@ export function Matches({
                     </span>
                     {mode === "results" && totals.complete && (
                       <span className="match-scores mono">
-                        <span>
+                        <span className="score-tocke">
                           {totals.homeMatch}:{totals.awayMatch}
                         </span>
-                        <span>
+                        <span className="score-velike">
                           {totals.homeBig}:{totals.awayBig}
                         </span>
                         <span>

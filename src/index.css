@@ -20,6 +20,10 @@ html[data-theme="dark"] {
   --round: #595dff;
   --green: #7cffb2;
   --line: rgba(255, 255, 255, 0.12);
+  --card: #353433;
+  --row-alt: rgba(89, 93, 255, 0.14);
+  --table-head: #2a2d6b;
+  --score: #f5e14a;
 }
 
 html[data-theme="light"] {
@@ -43,6 +47,10 @@ html[data-theme="light"] {
   --round: #0006ff;
   --green: #0a7a3e;
   --line: rgba(0, 0, 0, 0.12);
+  --card: #ffffff;
+  --row-alt: rgba(0, 6, 255, 0.06);
+  --table-head: #e4e6ff;
+  --score: #b88600;
 }
 
 @media (prefers-color-scheme: light) {
@@ -67,6 +75,10 @@ html[data-theme="light"] {
     --round: #0006ff;
     --green: #0a7a3e;
     --line: rgba(0, 0, 0, 0.12);
+    --card: #ffffff;
+    --row-alt: rgba(0, 6, 255, 0.06);
+    --table-head: #e4e6ff;
+    --score: #b88600;
   }
 }
 
@@ -359,15 +371,18 @@ select {
 }
 
 .round-fold {
-  border-bottom: 1px solid var(--line);
-  padding: 4px 0 16px;
-  margin-bottom: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px 14px 16px;
+  margin-bottom: 14px;
 }
 
 .round-fold > summary {
   cursor: pointer;
   list-style: none;
-  padding: 10px 0;
+  padding: 12px 0;
+  color: var(--round);
 }
 
 .round-fold > summary::-webkit-details-marker {
@@ -399,14 +414,19 @@ select {
   display: grid;
   grid-template-columns: minmax(12rem, 1.4fr) minmax(10rem, 1fr);
   gap: 12px 20px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--line);
+  padding: 12px 14px;
+  margin: 8px 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--row-alt);
   font-size: 15px;
   line-height: 1.45;
 }
 
 .recap-head-value {
   text-align: right;
+  color: var(--score);
+  font-weight: 650;
 }
 
 .round-highlights {
@@ -414,14 +434,18 @@ select {
 }
 
 .stat-block {
-  margin-top: 28px;
+  margin-top: 16px;
   margin-bottom: 8px;
+  padding: 12px 14px 8px;
+  border-radius: 10px;
+  background: var(--card);
+  border-left: 4px solid var(--copper-2);
 }
 
 .stat-block h3 {
   font-size: 13px;
-  color: var(--muted);
-  margin: 0 0 14px;
+  color: var(--round);
+  margin: 0 0 10px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -436,10 +460,15 @@ select {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 0;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 15px;
   line-height: 1.4;
+}
+
+.stat-block .mono {
+  color: var(--score);
+  font-weight: 650;
 }
 
 .stat-block li span:first-child {
@@ -682,6 +711,7 @@ select {
 
 .list button.row:hover {
   color: var(--round);
+  background: var(--row-alt);
 }
 
 .list div.row {
@@ -720,6 +750,16 @@ select {
   width: 5.8rem;
 }
 
+.match-scores .score-tocke {
+  color: var(--score);
+  font-weight: 800;
+}
+
+.match-scores .score-velike {
+  color: var(--round);
+  font-weight: 650;
+}
+
 .match-score-head {
   border-bottom-color: transparent;
   padding-bottom: 0;
@@ -749,6 +789,20 @@ select {
   text-align: right;
 }
 
+.standings thead th {
+  background: var(--table-head);
+  color: var(--title);
+  font-weight: 650;
+}
+
+.standings tbody tr:nth-child(even) {
+  background: var(--row-alt);
+}
+
+.standings tbody tr:hover {
+  background: rgba(204, 51, 102, 0.16);
+}
+
 .standings th:nth-child(2),
 .standings td:nth-child(2),
 .standings.players th:nth-child(3),
@@ -758,7 +812,8 @@ select {
 
 .standings.teams th:last-child,
 .standings.teams td:last-child {
-  font-weight: 650;
+  font-weight: 800;
+  color: var(--score);
 }
 
 .standings.players th.kolo,
@@ -803,6 +858,11 @@ select {
 .standings.players td:nth-last-child(-n + 3) {
   width: 3.3rem;
   white-space: nowrap;
+}
+
+.standings.players td:nth-last-child(1) {
+  color: var(--score);
+  font-weight: 800;
 }
 
 .standings.players th.kolo,
@@ -1021,7 +1081,7 @@ select {
     position: sticky;
     top: 0;
     z-index: 2;
-    background: var(--bg);
+    background: var(--table-head);
   }
 
   .standings th:nth-child(2),
