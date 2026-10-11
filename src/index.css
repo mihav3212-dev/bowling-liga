@@ -23,7 +23,7 @@ html[data-theme="dark"] {
   --card: #353433;
   --row-alt: rgba(89, 93, 255, 0.14);
   --table-head: #2a2d6b;
-  --score: #e56bcd;
+  --score: #c83d8e;
 }
 
 html[data-theme="light"] {
@@ -50,7 +50,7 @@ html[data-theme="light"] {
   --card: #ffffff;
   --row-alt: rgba(0, 6, 255, 0.06);
   --table-head: #e4e6ff;
-  --score: #c23d9a;
+  --score: #9a1f73;
 }
 
 @media (prefers-color-scheme: light) {
@@ -78,7 +78,7 @@ html[data-theme="light"] {
     --card: #ffffff;
     --row-alt: rgba(0, 6, 255, 0.06);
     --table-head: #e4e6ff;
-    --score: #c23d9a;
+    --score: #9a1f73;
   }
 }
 
@@ -418,15 +418,21 @@ select {
   margin: 8px 0;
   border: 0;
   border-radius: 10px;
-  background: var(--row-alt);
+  background: var(--bg-2);
+  color: var(--title);
   font-size: 15px;
   line-height: 1.45;
 }
 
 .recap-head-value {
   text-align: right;
+  color: var(--title);
+  font-weight: 500;
+}
+
+.recap-head-value .mono {
   color: var(--score);
-  font-weight: 650;
+  font-weight: 700;
 }
 
 .round-highlights {
