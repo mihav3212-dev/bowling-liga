@@ -258,22 +258,24 @@ export function MatchEntry({
                   <tr key={gi}>
                     <td className="mono" data-label="Steza">{game.lane}</td>
                     <td data-label="Domači">
-                      <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>{" "}
-                      {readOnly ? (
-                        playerName(homeRoster, game.homePlayerId)
-                      ) : (
-                        <select
-                          value={game.homePlayerId}
-                          onChange={(e) => setRoundPlayer(match.id, ri, gi, "home", e.target.value)}
-                        >
-                          <option value="">—</option>
-                          {homePlayers.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {playerTag(p)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <span className="player-pick">
+                        <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
+                        {readOnly ? (
+                          playerName(homeRoster, game.homePlayerId)
+                        ) : (
+                          <select
+                            value={game.homePlayerId}
+                            onChange={(e) => setRoundPlayer(match.id, ri, gi, "home", e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {homePlayers.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {playerTag(p)}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </span>
                     </td>
                     <td className="mono" data-label="Keglji (domači)">
                       {readOnly ? (
@@ -310,22 +312,24 @@ export function MatchEntry({
                       )}
                     </td>
                     <td data-label="Gostje">
-                      <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>{" "}
-                      {readOnly ? (
-                        playerName(awayRoster, game.awayPlayerId)
-                      ) : (
-                        <select
-                          value={game.awayPlayerId}
-                          onChange={(e) => setRoundPlayer(match.id, ri, gi, "away", e.target.value)}
-                        >
-                          <option value="">—</option>
-                          {awayPlayers.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {playerTag(p)}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <span className="player-pick">
+                        <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
+                        {readOnly ? (
+                          playerName(awayRoster, game.awayPlayerId)
+                        ) : (
+                          <select
+                            value={game.awayPlayerId}
+                            onChange={(e) => setRoundPlayer(match.id, ri, gi, "away", e.target.value)}
+                          >
+                            <option value="">—</option>
+                            {awayPlayers.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {playerTag(p)}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </span>
                     </td>
                   </tr>
                 );

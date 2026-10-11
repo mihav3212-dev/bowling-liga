@@ -248,6 +248,19 @@ a {
   color: #0006ff;
 }
 
+.player-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.player-pick select {
+  flex: 1;
+  min-width: 0;
+}
+
 .mono {
   font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
@@ -524,6 +537,8 @@ select {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   margin-left: auto;
 }
 
@@ -778,6 +793,7 @@ select {
 
   .header-actions {
     margin-left: auto;
+    justify-content: flex-end;
   }
 
   .header-login input {
@@ -922,12 +938,12 @@ select {
   }
 
   .scorecard td {
-    display: grid;
-    grid-template-columns: 7.5rem 1fr;
-    gap: 8px;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
     border: 0;
-    padding: 6px 0;
+    padding: 8px 0;
   }
 
   .scorecard td::before {
@@ -938,10 +954,26 @@ select {
     color: #5a64a0;
   }
 
+  .scorecard td:not([data-label])::before {
+    display: none;
+  }
+
   .scorecard input,
   .scorecard select {
     max-width: none;
     min-height: 44px;
+    width: 100%;
+  }
+
+  .player-pick {
+    flex-wrap: wrap;
+  }
+
+  .player-pick select,
+  .player-pick {
+    font-size: 16px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .big-score {

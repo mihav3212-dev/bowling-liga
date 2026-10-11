@@ -54,8 +54,8 @@ export function App() {
         <div className="header-actions">
           {admin && <AdminMenu canEdit={canEdit} onNewSeason={() => void startNewSeason()} />}
           <Login />
+          <ThemePicker />
         </div>
-        <ThemePicker />
       </header>
 
       <div className="app-shell">
