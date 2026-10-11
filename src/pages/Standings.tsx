@@ -26,7 +26,7 @@ export function Standings() {
               <tr>
                 <th>#</th>
                 <th>Ekipa</th>
-                <th>Iger</th>
+                <th>Igre</th>
                 <th title="Zmag">Z</th>
                 <th title="Porazov">P</th>
                 <th title="Remijev">R</th>

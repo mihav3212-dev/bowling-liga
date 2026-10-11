@@ -156,7 +156,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
     head: [[
       "#",
       "Ekipa",
-      "Iger",
+      "Igre",
       "Z",
       "P",
       "R",

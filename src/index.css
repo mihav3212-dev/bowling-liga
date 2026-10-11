@@ -816,6 +816,11 @@ select {
   text-align: left;
 }
 
+.standings.teams th:nth-child(n + 3):nth-child(-n + 8),
+.standings.teams td:nth-child(n + 3):nth-child(-n + 8) {
+  text-align: center;
+}
+
 .standings.teams th:last-child,
 .standings.teams td:last-child {
   font-weight: 800;
