@@ -138,7 +138,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
-    styles: { font: "FreeSans", fontSize: 8, cellPadding: 1.3, textColor: [20, 16, 10] },
+    styles: { font: "FreeSans", fontSize: 8, cellPadding: 1.3, textColor: [20, 16, 10], halign: "center" },
     headStyles: {
       font: "FreeSans",
       fontStyle: "bold",
@@ -151,7 +151,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
     bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
     columnStyles: {
       1: { halign: "left", cellWidth: 32 },
-      10: { fontStyle: "bold" },
+      10: { fontStyle: "bold", halign: "center" },
     },
     head: [[
       "#",

@@ -23,7 +23,7 @@ html[data-theme="dark"] {
   --card: #353433;
   --row-alt: rgba(89, 93, 255, 0.14);
   --table-head: #2a2d6b;
-  --score: #f5e14a;
+  --score: #e56bcd;
 }
 
 html[data-theme="light"] {
@@ -50,7 +50,7 @@ html[data-theme="light"] {
   --card: #ffffff;
   --row-alt: rgba(0, 6, 255, 0.06);
   --table-head: #e4e6ff;
-  --score: #b88600;
+  --score: #c23d9a;
 }
 
 @media (prefers-color-scheme: light) {
@@ -78,7 +78,7 @@ html[data-theme="light"] {
     --card: #ffffff;
     --row-alt: rgba(0, 6, 255, 0.06);
     --table-head: #e4e6ff;
-    --score: #b88600;
+    --score: #c23d9a;
   }
 }
 
