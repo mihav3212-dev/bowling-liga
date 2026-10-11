@@ -1,4 +1,4 @@
-import { matchTotals, scoreGame, standingSortKey } from "./scoring";
+import { matchTotals, scoreGame, scoredPins, standingSortKey } from "./scoring";
 import type { LeagueState, Player, Team } from "./types";
 
 export type StandingRow = {
@@ -61,13 +61,15 @@ export function computeStandings(state: LeagueState): StandingRow[] {
 
     for (const round of match.rounds) {
       for (const game of round.games) {
-        if (game.homePins != null) {
+        const hp = scoredPins(game.homePins, state.players.find((p) => p.id === game.homePlayerId));
+        const ap = scoredPins(game.awayPins, state.players.find((p) => p.id === game.awayPlayerId));
+        if (hp != null) {
           home.games += 1;
-          bumpHighs(home, game.homePins);
+          bumpHighs(home, hp);
         }
-        if (game.awayPins != null) {
+        if (ap != null) {
           away.games += 1;
-          bumpHighs(away, game.awayPins);
+          bumpHighs(away, ap);
         }
       }
     }
@@ -164,20 +166,22 @@ export function computePlayerStandings(state: LeagueState): PlayerStandingRow[] 
         const duel = scoreGame(game, state.players);
         const home = rows.get(game.homePlayerId);
         const away = rows.get(game.awayPlayerId);
-        if (home && game.homePins != null && ri >= 0 && ri < roundCount) {
+        const hp = scoredPins(game.homePins, home?.player);
+        const ap = scoredPins(game.awayPins, away?.player);
+        if (home && hp != null && ri >= 0 && ri < roundCount) {
           home.games += 1;
-          home.pins += game.homePins;
-          home.best = Math.max(home.best, game.homePins);
-          home.byRound[ri].push(game.homePins);
-          bumpHighs(home, game.homePins);
+          home.pins += hp;
+          home.best = Math.max(home.best, hp);
+          home.byRound[ri].push(hp);
+          bumpHighs(home, hp);
           if (duel) home.points += duel.homeTotal;
         }
-        if (away && game.awayPins != null && ri >= 0 && ri < roundCount) {
+        if (away && ap != null && ri >= 0 && ri < roundCount) {
           away.games += 1;
-          away.pins += game.awayPins;
-          away.best = Math.max(away.best, game.awayPins);
-          away.byRound[ri].push(game.awayPins);
-          bumpHighs(away, game.awayPins);
+          away.pins += ap;
+          away.best = Math.max(away.best, ap);
+          away.byRound[ri].push(ap);
+          bumpHighs(away, ap);
           if (duel) away.points += duel.awayTotal;
         }
       }
@@ -246,7 +250,7 @@ export function topGames(state: LeagueState, limit = 8): HighGame[] {
           const player = players.get(game.homePlayerId);
           if (player) {
             games.push({
-              pins: game.homePins,
+              pins: scoredPins(game.homePins, player) ?? game.homePins,
               playerName: player.name,
               teamName: teams.get(player.teamId) ?? "",
             });
@@ -256,7 +260,7 @@ export function topGames(state: LeagueState, limit = 8): HighGame[] {
           const player = players.get(game.awayPlayerId);
           if (player) {
             games.push({
-              pins: game.awayPins,
+              pins: scoredPins(game.awayPins, player) ?? game.awayPins,
               playerName: player.name,
               teamName: teams.get(player.teamId) ?? "",
             });

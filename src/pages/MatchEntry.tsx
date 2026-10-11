@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
-import { matchTotals, scoreGame } from "../lib/scoring";
+import { matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
 import type { Player } from "../lib/types";
@@ -10,6 +10,33 @@ import type { Player } from "../lib/types";
 function playerName(roster: Player[], id: string): string {
   const player = roster.find((p) => p.id === id);
   return player ? playerTag(player) : "—";
+}
+
+function PinField({
+  raw,
+  player,
+  readOnly,
+  onChange,
+}: {
+  raw: number | null;
+  player?: Player;
+  readOnly: boolean;
+  onChange: (pins: number | null) => void;
+}) {
+  const final = scoredPins(raw, player);
+  if (readOnly) return <>{final ?? "—"}</>;
+  const showAdj = raw != null && final != null && final !== raw;
+  return (
+    <span className="pin-entry">
+      <input
+        className="mono"
+        inputMode="numeric"
+        value={raw ?? ""}
+        onChange={(e) => onChange(parsePins(e.target.value))}
+      />
+      {showAdj ? <span className="pin-adj">({final})</span> : null}
+    </span>
+  );
 }
 
 function LineupReadout({
@@ -278,18 +305,12 @@ export function MatchEntry({
                       </span>
                     </td>
                     <td className="mono" data-label="Keglji (domači)">
-                      {readOnly ? (
-                        game.homePins ?? "—"
-                      ) : (
-                        <input
-                          className="mono"
-                          inputMode="numeric"
-                          value={game.homePins ?? ""}
-                          onChange={(e) =>
-                            setPins(match.id, ri, gi, "home", parsePins(e.target.value))
-                          }
-                        />
-                      )}
+                      <PinField
+                        raw={game.homePins}
+                        player={homeRoster.find((p) => p.id === game.homePlayerId)}
+                        readOnly={readOnly}
+                        onChange={(pins) => setPins(match.id, ri, gi, "home", pins)}
+                      />
                     </td>
                     <td className="mono t-cell" data-label="T domači">
                       {duel ? duel.homeTotal : "—"}
@@ -298,18 +319,12 @@ export function MatchEntry({
                       {duel ? duel.awayTotal : "—"}
                     </td>
                     <td className="mono" data-label="Keglji (gostje)">
-                      {readOnly ? (
-                        game.awayPins ?? "—"
-                      ) : (
-                        <input
-                          className="mono"
-                          inputMode="numeric"
-                          value={game.awayPins ?? ""}
-                          onChange={(e) =>
-                            setPins(match.id, ri, gi, "away", parsePins(e.target.value))
-                          }
-                        />
-                      )}
+                      <PinField
+                        raw={game.awayPins}
+                        player={awayRoster.find((p) => p.id === game.awayPlayerId)}
+                        readOnly={readOnly}
+                        onChange={(pins) => setPins(match.id, ri, gi, "away", pins)}
+                      />
                     </td>
                     <td data-label="Gostje">
                       <span className="player-pick">

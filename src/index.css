@@ -325,6 +325,25 @@ select {
   max-width: 220px;
 }
 
+.pin-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pin-entry input {
+  flex: 1 1 4.5rem;
+  min-width: 4.5rem;
+  max-width: 7.5rem;
+}
+
+.pin-adj {
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
 .grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -963,6 +982,10 @@ select {
     max-width: none;
     min-height: 44px;
     width: 100%;
+  }
+
+  .pin-entry input {
+    max-width: none;
   }
 
   .player-pick {

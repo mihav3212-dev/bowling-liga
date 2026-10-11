@@ -1,4 +1,4 @@
-import { matchTotals } from "./scoring";
+import { matchTotals, scoredPins } from "./scoring";
 import type { LeagueState } from "./types";
 
 export type RecapLine = {
@@ -77,8 +77,12 @@ function playerSeries(state: LeagueState): RecapLine[] {
   for (const match of state.matches) {
     for (const round of match.rounds) {
       for (const game of round.games) {
-        if (game.homePins != null) add(game.homePlayerId, match.id, game.homePins);
-        if (game.awayPins != null) add(game.awayPlayerId, match.id, game.awayPins);
+        if (game.homePins != null) {
+          add(game.homePlayerId, match.id, scoredPins(game.homePins, players.get(game.homePlayerId)) ?? game.homePins);
+        }
+        if (game.awayPins != null) {
+          add(game.awayPlayerId, match.id, scoredPins(game.awayPins, players.get(game.awayPlayerId)) ?? game.awayPins);
+        }
       }
     }
   }
@@ -99,7 +103,7 @@ function singles(state: LeagueState): RecapLine[] {
           if (player) {
             rows.push({
               showRank: false,
-              value: game.homePins,
+              value: scoredPins(game.homePins, player) ?? game.homePins,
               name: player.name,
               team: teams.get(player.teamId),
             });
@@ -110,7 +114,7 @@ function singles(state: LeagueState): RecapLine[] {
           if (player) {
             rows.push({
               showRank: false,
-              value: game.awayPins,
+              value: scoredPins(game.awayPins, player) ?? game.awayPins,
               name: player.name,
               team: teams.get(player.teamId),
             });

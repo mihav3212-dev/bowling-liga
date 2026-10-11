@@ -16,6 +16,12 @@ export function adjustedPins(raw: number, player: Player): number {
   return pins;
 }
 
+/** Vpisana številka; za ženske +8, za člane BZS −8. */
+export function scoredPins(raw: number | null, player?: Player): number | null {
+  if (raw == null) return null;
+  return player ? adjustedPins(raw, player) : raw;
+}
+
 export function bonusPoints(adjusted: number): number {
   if (adjusted > BONUS_DOUBLE) return 2;
   if (adjusted > BONUS_SINGLE) return 1;
@@ -87,13 +93,15 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     let rpa = 0;
     let rscored = 0;
     for (const game of round.games) {
-      if (game.homePins != null) {
-        homePins += game.homePins;
-        rph += game.homePins;
+      const hp = scoredPins(game.homePins, playerById(players, game.homePlayerId));
+      const ap = scoredPins(game.awayPins, playerById(players, game.awayPlayerId));
+      if (hp != null) {
+        homePins += hp;
+        rph += hp;
       }
-      if (game.awayPins != null) {
-        awayPins += game.awayPins;
-        rpa += game.awayPins;
+      if (ap != null) {
+        awayPins += ap;
+        rpa += ap;
       }
       const duel = scoreGame(game, players);
       if (!duel) continue;

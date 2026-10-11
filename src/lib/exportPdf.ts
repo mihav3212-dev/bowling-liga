@@ -11,7 +11,7 @@ import {
   seasonRoundCount,
 } from "./standings";
 import { pairingTemplate, slotLabel } from "./pairings";
-import { matchTotals, scoreGame } from "./scoring";
+import { matchTotals, scoreGame, scoredPins } from "./scoring";
 import type { LeagueState } from "./types";
 
 async function fontBase64(path: string): Promise<string> {
@@ -512,7 +512,7 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   if (!match) return null;
   const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "Domači";
   const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "Gostje";
-  const players = new Map(state.players.map((p) => [p.id, p.name]));
+  const players = new Map(state.players.map((p) => [p.id, p]));
   const totals = matchTotals(match, state.players);
   const template = pairingTemplate();
   const season = state.seasonTitle ?? seasonLabel();
@@ -566,13 +566,13 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
       return [
         String(game.lane),
         slots ? slotLabel("home", slots.homeSlot) : "",
-        players.get(game.homePlayerId) ?? "",
-        game.homePins ?? "",
+        players.get(game.homePlayerId)?.name ?? "",
+        scoredPins(game.homePins, players.get(game.homePlayerId)) ?? "",
         duel ? String(duel.homeTotal) : "",
         String(game.lane),
         slots ? slotLabel("away", slots.awaySlot) : "",
-        players.get(game.awayPlayerId) ?? "",
-        game.awayPins ?? "",
+        players.get(game.awayPlayerId)?.name ?? "",
+        scoredPins(game.awayPins, players.get(game.awayPlayerId)) ?? "",
         duel ? String(duel.awayTotal) : "",
       ];
     });
@@ -615,9 +615,9 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   const awayLine = [...match.awayStarters, ...match.awayBench];
   const lineup = [0, 1, 2, 3, 4, 5].map((i) => [
     slotLabel("home", i),
-    players.get(homeLine[i] ?? "") ?? "",
+    players.get(homeLine[i] ?? "")?.name ?? "",
     slotLabel("away", i),
-    players.get(awayLine[i] ?? "") ?? "",
+    players.get(awayLine[i] ?? "")?.name ?? "",
   ]);
   autoTable(doc, {
     startY: y,

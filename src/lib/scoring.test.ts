@@ -46,6 +46,33 @@ describe("dvoboj", () => {
     expect(scoreDuel(180, 180, a, b)).toMatchObject({ homeDuel: 1, awayDuel: 1 });
   });
 
+  it("seštevek kegljev šteje +8 pri ženskah", () => {
+    const home = player({ id: "h", teamId: "H", gender: "F" });
+    const away = player({ id: "a", teamId: "A" });
+    const games = Array.from({ length: 16 }, (_, i) => ({
+      homePlayerId: "h",
+      awayPlayerId: "a",
+      lane: (i % 4) + 1,
+      homePins: 119,
+      awayPins: 110,
+    }));
+    const match: Match = {
+      id: "m",
+      round: 1,
+      homeTeamId: "H",
+      awayTeamId: "A",
+      homeStarters: ["h"],
+      awayStarters: ["a"],
+      homeBench: [],
+      awayBench: [],
+      rounds: [0, 1, 2, 3].map((r) => ({ games: games.slice(r * 4, r * 4 + 4) })),
+      status: "done",
+    };
+    const totals = matchTotals(match, [home, away]);
+    expect(totals.homePins).toBe(16 * 127);
+    expect(totals.awayPins).toBe(16 * 110);
+  });
+
   it("ženska zmaga zaradi pribitka in dobi točko za 221", () => {
     const w = player({ id: "w", gender: "F" });
     const m = player({ id: "m" });
