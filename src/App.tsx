@@ -58,7 +58,7 @@ export function App() {
         </div>
       </header>
 
-      <div className="app-shell">
+      <div className={page === "players" ? "app-shell is-wide" : "app-shell"}>
         <h1 className="page-title">Bowling liga Lenart.</h1>
         {seasons.length > 0 && (
           <div className="season-bar">

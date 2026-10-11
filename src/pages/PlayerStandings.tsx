@@ -15,7 +15,7 @@ export function PlayerStandings() {
           Keglji na tekmo, skupaj, odigrane igre in povprečje. Razvrstitev po povprečju.
         </p>
       </div>
-      <div className="table-scroll">
+      <div className="table-scroll players-scroll">
         <table className="standings players">
           <thead>
             <tr>

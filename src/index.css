@@ -133,6 +133,10 @@ a {
   padding-right: max(22px, env(safe-area-inset-right));
 }
 
+.app-shell.is-wide {
+  max-width: min(1680px, 100%);
+}
+
 .page-title {
   color: var(--title);
   font-size: clamp(36px, 7vw, 66px);
@@ -763,6 +767,53 @@ select {
   min-width: 2.6rem;
 }
 
+.players-scroll {
+  overflow-x: visible;
+}
+
+.standings.players {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 13px;
+}
+
+.standings.players th,
+.standings.players td {
+  padding: 8px 3px;
+}
+
+.standings.players th:nth-child(1),
+.standings.players td:nth-child(1) {
+  width: 2.2rem;
+}
+
+.standings.players th:nth-child(2),
+.standings.players td:nth-child(2) {
+  width: 10.5rem;
+  white-space: normal;
+}
+
+.standings.players th:nth-child(3),
+.standings.players td:nth-child(3) {
+  width: 7.5rem;
+  white-space: normal;
+}
+
+.standings.players th:nth-last-child(-n + 3),
+.standings.players td:nth-last-child(-n + 3) {
+  width: 3.3rem;
+  white-space: nowrap;
+}
+
+.standings.players th.kolo,
+.standings.players td.kolo {
+  min-width: 0;
+  width: auto;
+  padding-left: 1px;
+  padding-right: 1px;
+  font-size: 12px;
+}
+
 .form-row {
   display: flex;
   gap: 8px;
@@ -936,8 +987,41 @@ select {
     white-space: nowrap;
   }
 
+  .standings.players {
+    font-size: 12px;
+  }
+
+  .standings.players th,
+  .standings.players td {
+    padding: 7px 2px;
+  }
+
+  .standings.players th:nth-child(2),
+  .standings.players td:nth-child(2) {
+    min-width: 0;
+    width: 7.5rem;
+  }
+
+  .standings.players th:nth-child(3),
+  .standings.players td:nth-child(3) {
+    width: 5.5rem;
+  }
+
   .standings.players td.kolo {
     white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .players-scroll {
+    overflow-x: auto;
+    max-height: calc(100dvh - 12rem);
+  }
+
+  .standings.players thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg);
   }
 
   .standings th:nth-child(2),
