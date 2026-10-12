@@ -9,12 +9,10 @@ import type { LeagueState } from "../lib/types";
 export function AdminMenu({
   canEdit,
   onNewSeason,
-  onTrainingSeason,
   onAccess,
 }: {
   canEdit: boolean;
   onNewSeason: () => void;
-  onTrainingSeason: () => void;
   onAccess: () => void;
 }) {
   const {
@@ -119,17 +117,6 @@ export function AdminMenu({
       <div className="admin-menu-panel">
         {panel === "home" && (
           <>
-            <button
-              className="ghost"
-              type="button"
-              title="Testna sezona za vajo vnosa. Vidiš jo samo prijavljeni."
-              onClick={() => {
-                closeMenu();
-                onTrainingSeason();
-              }}
-            >
-              Trening / test
-            </button>
             <button
               className="ghost"
               type="button"

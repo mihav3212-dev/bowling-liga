@@ -128,10 +128,6 @@ export function App() {
               canEdit={canEdit}
               onNewSeason={() => void startNewSeason()}
               onAccess={() => go("access")}
-              onTrainingSeason={() => {
-                go("training");
-                setTrainingSessionId(null);
-              }}
             />
           )}
           <Login />
@@ -189,7 +185,6 @@ export function App() {
               ...(canEdit || (loginTeamId && (teamCaps.roster || teamCaps.season))
                 ? [["teams", "Ekipe"] as [Page, string]]
                 : []),
-              ...(canEdit ? [["access", "Dovoljenja"] as [Page, string]] : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
