@@ -45,6 +45,7 @@ import {
 import { useAuth } from "./auth";
 import { uid } from "./ids";
 import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
+import { emptyTrainingState, padGames, todayDate, TRAINING_TEAM_ID } from "./training";
 import type { Gender, LeagueState, Match, Player, SeasonInfo, Team } from "./types";
 
 type Store = {
@@ -87,6 +88,14 @@ type Store = {
   loadSeason2025: () => Promise<void>;
   newEmptySeason: (title: string) => Promise<void>;
   openTrainingSeason: () => Promise<void>;
+  startNewTraining: () => Promise<string>;
+  newTrainingSession: () => string;
+  setTrainingDate: (sessionId: string, date: string) => void;
+  addTrainingPlayer: (sessionId: string, name: string, gender: Gender, bzsMember: boolean) => void;
+  pickTrainingPlayer: (sessionId: string, playerId: string) => void;
+  setTrainingPins: (sessionId: string, playerId: string, gameIndex: number, pins: number | null) => void;
+  removeTrainingScore: (sessionId: string, playerId: string) => void;
+  deleteTrainingSession: (sessionId: string) => void;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
   replaceSeason: (id: string, next: LeagueState, label?: string) => Promise<void>;
@@ -367,14 +376,128 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (vaultRef.current) applyVault(vaultRef.current, existing.id);
           return;
         }
-        await openSeason("Trening", {
-          seasonTitle: "Trening",
-          training: true,
-          teams: [],
-          players: [],
-          matches: [],
-        });
+        await openSeason("Trening", emptyTrainingState());
       },
+      startNewTraining: async () => {
+        const id = uid("tr");
+        const session = { id, date: todayDate(), scores: [] };
+        const merge = (data: LeagueState): LeagueState => ({
+          ...emptyTrainingState(),
+          ...data,
+          training: true,
+          teams: data.teams?.length ? data.teams : emptyTrainingState().teams,
+          players: data.players ?? [],
+          matches: data.matches ?? [],
+          trainingSessions: [session, ...(data.trainingSessions ?? [])],
+        });
+        const existing = seasons.find((s) => s.training);
+        if (remoteRef.current) {
+          if (existing) {
+            const payload = await fetchLeague(existing.id);
+            const data = merge(payload.current?.data ?? emptyTrainingState());
+            applyRemote(await replaceLeague(existing.id, data, existing.label));
+          } else {
+            applyRemote(await createLeague("Trening", merge(emptyTrainingState())));
+          }
+          return id;
+        }
+        if (existing && vaultRef.current) {
+          const season = vaultRef.current.seasons.find((s) => s.id === existing.id);
+          const data = merge(season?.data ?? emptyTrainingState());
+          applyVault(replaceVaultSeason(vaultRef.current, existing.id, existing.label, data), existing.id);
+          return id;
+        }
+        await openSeason("Trening", merge(emptyTrainingState()));
+        return id;
+      },
+      newTrainingSession: () => {
+        const id = uid("tr");
+        update((s) => ({
+          ...s,
+          training: true,
+          teams: s.teams.length ? s.teams : [{ id: TRAINING_TEAM_ID, name: "Trening" }],
+          trainingSessions: [{ id, date: todayDate(), scores: [] }, ...(s.trainingSessions ?? [])],
+        }));
+        return id;
+      },
+      setTrainingDate: (sessionId, date) =>
+        update((s) => ({
+          ...s,
+          trainingSessions: (s.trainingSessions ?? []).map((session) =>
+            session.id === sessionId ? { ...session, date } : session,
+          ),
+        })),
+      addTrainingPlayer: (sessionId, name, gender, bzsMember) =>
+        update((s) => {
+          const trimmed = name.trim();
+          if (!trimmed) return s;
+          const sessions = s.trainingSessions ?? [];
+          const session = sessions.find((item) => item.id === sessionId);
+          if (!session) return s;
+          const existing = s.players.find((p) => p.name.toLowerCase() === trimmed.toLowerCase());
+          const player = existing ?? {
+            id: uid("p"),
+            teamId: s.teams[0]?.id || TRAINING_TEAM_ID,
+            name: trimmed,
+            gender,
+            bzsMember,
+          };
+          if (session.scores.some((row) => row.playerId === player.id)) return s;
+          return {
+            ...s,
+            players: existing ? s.players : [...s.players, player],
+            trainingSessions: sessions.map((item) =>
+              item.id === sessionId
+                ? { ...item, scores: [...item.scores, { playerId: player.id, games: padGames([]) }] }
+                : item,
+            ),
+          };
+        }),
+      pickTrainingPlayer: (sessionId, playerId) =>
+        update((s) => {
+          const sessions = s.trainingSessions ?? [];
+          const session = sessions.find((item) => item.id === sessionId);
+          if (!session || !playerId || session.scores.some((row) => row.playerId === playerId)) return s;
+          if (!s.players.some((p) => p.id === playerId)) return s;
+          return {
+            ...s,
+            trainingSessions: sessions.map((item) =>
+              item.id === sessionId
+                ? { ...item, scores: [...item.scores, { playerId, games: padGames([]) }] }
+                : item,
+            ),
+          };
+        }),
+      setTrainingPins: (sessionId, playerId, gameIndex, pins) =>
+        update((s) => ({
+          ...s,
+          trainingSessions: (s.trainingSessions ?? []).map((session) => {
+            if (session.id !== sessionId) return session;
+            return {
+              ...session,
+              scores: session.scores.map((row) => {
+                if (row.playerId !== playerId) return row;
+                const games = padGames(row.games);
+                games[gameIndex] = pins;
+                return { ...row, games };
+              }),
+            };
+          }),
+        })),
+      removeTrainingScore: (sessionId, playerId) =>
+        update((s) => ({
+          ...s,
+          trainingSessions: (s.trainingSessions ?? []).map((session) =>
+            session.id === sessionId
+              ? { ...session, scores: session.scores.filter((row) => row.playerId !== playerId) }
+              : session,
+          ),
+        })),
+      deleteTrainingSession: (sessionId) =>
+        update((s) => ({
+          ...s,
+          trainingSessions: (s.trainingSessions ?? []).filter((session) => session.id !== sessionId),
+        })),
       importState: (next) =>
         update(() => ({
           seasonKey: next.seasonKey,
@@ -384,6 +507,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: next.matches ?? [],
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
+          trainingSessions: next.trainingSessions,
         })),
       importSeason: async (next) => {
         const title = next.seasonTitle?.trim() || "Uvožena sezona";
@@ -396,6 +520,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: next.matches ?? [],
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
+          trainingSessions: next.trainingSessions,
         });
       },
       replaceSeason: async (id, next, label) => {
@@ -410,6 +535,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: next.matches ?? [],
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
+          trainingSessions: next.trainingSessions,
         };
         if (remoteRef.current) {
           applyRemote(await replaceLeague(id, data, title));

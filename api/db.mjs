@@ -20,6 +20,7 @@ function asState(data) {
     matches: Array.isArray(value?.matches) ? value.matches : [],
     roundNotes: value?.roundNotes && typeof value.roundNotes === "object" ? value.roundNotes : undefined,
     roundLabels: value?.roundLabels && typeof value.roundLabels === "object" ? value.roundLabels : undefined,
+    trainingSessions: Array.isArray(value?.trainingSessions) ? value.trainingSessions : undefined,
   };
 }
 

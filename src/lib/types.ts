@@ -45,6 +45,18 @@ export type Match = {
   status: MatchStatus;
 };
 
+export type TrainingScore = {
+  playerId: string;
+  games: (number | null)[];
+};
+
+export type TrainingSession = {
+  id: string;
+  /** Koledarski datum YYYY-MM-DD, lokalni. */
+  date: string;
+  scores: TrainingScore[];
+};
+
 export type LeagueState = {
   seasonKey?: "2026-27" | "2025-26";
   seasonTitle?: string;
@@ -53,6 +65,8 @@ export type LeagueState = {
   teams: Team[];
   players: Player[];
   matches: Match[];
+  /** Seje treninga (samo ko je training: true). */
+  trainingSessions?: TrainingSession[];
   /** Opomba po kolu (pavza, počitnice), npr. iz CSV stolpca opomba. */
   roundNotes?: Record<string, string>;
   /** Oznaka kola (datumi), npr. iz žreba s koledarjem. */

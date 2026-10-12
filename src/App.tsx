@@ -5,6 +5,7 @@ import { Standings } from "./pages/Standings";
 import { PlayerStandings } from "./pages/PlayerStandings";
 import { TeamDetail } from "./pages/TeamDetail";
 import { Teams } from "./pages/Teams";
+import { Training } from "./pages/Training";
 import { Login } from "./pages/Login";
 import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
@@ -22,7 +23,7 @@ export function App() {
     state,
     archived,
     newEmptySeason,
-    openTrainingSeason,
+    startNewTraining,
     seasons,
     seasonId,
     loadSeason,
@@ -33,6 +34,7 @@ export function App() {
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
+  const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
 
   const go = (next: Page) => {
     setPage(next);
@@ -62,6 +64,10 @@ export function App() {
     if (id && id !== seasonId) void loadSeason(id);
   }, [admin, training, seasons, seasonId, loadSeason]);
 
+  useEffect(() => {
+    if (!training) setTrainingSessionId(null);
+  }, [training]);
+
   return (
     <div>
       <header className="site-header">
@@ -74,8 +80,8 @@ export function App() {
               canEdit={canEdit}
               onNewSeason={() => void startNewSeason()}
               onTrainingSeason={async () => {
-                await openTrainingSeason();
-                go("teams");
+                const id = await startNewTraining();
+                setTrainingSessionId(id);
               }}
             />
           )}
@@ -113,6 +119,14 @@ export function App() {
             )}
           </div>
         )}
+        {training && admin ? (
+          <Training
+            sessionId={trainingSessionId}
+            onOpen={setTrainingSessionId}
+            onBack={() => setTrainingSessionId(null)}
+          />
+        ) : (
+          <>
         <nav className="liga-tabs">
           {(
             [
@@ -164,6 +178,8 @@ export function App() {
         {canEdit && page === "teams" && !teamId && <Teams onOpen={setTeamId} />}
         {canEdit && page === "teams" && teamId && (
           <TeamDetail teamId={teamId} onBack={() => setTeamId(null)} />
+        )}
+          </>
         )}
       </div>
     </div>
