@@ -28,10 +28,11 @@ function sanitize_state($data, $viewer)
     return $data;
 }
 
-function preserve_secrets($payload, $existing)
+function preserve_secrets($payload, $existing, $opts = [])
 {
     $prevTeams = $existing['teams'] ?? [];
-    $payload['teams'] = array_map(function ($team) use ($prevTeams) {
+    $lockPerms = !empty($opts['lockPerms']);
+    $payload['teams'] = array_map(function ($team) use ($prevTeams, $lockPerms) {
         $incoming = $team['passwordHash'] ?? null;
         unset($team['passwordHash'], $team['hasAccess']);
         $prev = null;
@@ -40,6 +41,9 @@ function preserve_secrets($payload, $existing)
                 $prev = $item;
                 break;
             }
+        }
+        if ($lockPerms) {
+            $team['perms'] = $prev['perms'] ?? ($team['perms'] ?? null);
         }
         if ($incoming === '') {
             return $team;

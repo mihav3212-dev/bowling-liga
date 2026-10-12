@@ -1,5 +1,13 @@
 export type Gender = "M" | "F";
 
+export type TeamPerms = {
+  roster: boolean;
+  lineup: boolean;
+  results: boolean;
+  resultsEdit: boolean;
+  season: boolean;
+};
+
 export type Team = {
   id: string;
   name: string;
@@ -9,6 +17,7 @@ export type Team = {
   /** Samo v shrambi; klient dobi hasAccess. */
   passwordHash?: string;
   hasAccess?: boolean;
+  perms?: Partial<TeamPerms>;
 };
 
 export type Player = {

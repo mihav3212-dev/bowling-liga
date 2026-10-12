@@ -17,11 +17,12 @@ export function sanitizeState(data, { admin = false, teamId = null } = {}) {
   };
 }
 
-export function preserveSecrets(payload, existing) {
+export function preserveSecrets(payload, existing, opts = {}) {
   const prevTeams = existing?.teams ?? [];
   payload.teams = (payload.teams ?? []).map((team) => {
     const { passwordHash: incoming, hasAccess: _hasAccess, ...rest } = team;
     const prev = prevTeams.find((item) => item.id === team.id);
+    if (opts.lockPerms) rest.perms = prev?.perms ?? rest.perms;
     if (incoming === "") return rest;
     const passwordHash = incoming || prev?.passwordHash;
     return passwordHash ? { ...rest, passwordHash } : rest;

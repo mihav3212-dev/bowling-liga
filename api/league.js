@@ -13,9 +13,13 @@ import {
   getSql,
   listSeasons,
   saveSeason,
+  saveMatchGame,
+  saveMatchLineup,
+  saveTeamRoster,
   saveTeamTrainings,
   setTeamPassword,
 } from "./db.mjs";
+import { teamPerms } from "./access.mjs";
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -76,19 +80,90 @@ export async function handleLeague(req, res) {
     }
 
     if (req.method === "PUT") {
-      if (!viewer.admin) {
-        json(res, 401, { ok: false });
-        return;
-      }
       const body = await readBody(req);
       const id = body.id || (await getCurrentSeason(sql)).id;
-      const ok = await saveSeason(sql, id, body.data);
+      if (!viewer.admin) {
+        const current = await getSeason(sql, id);
+        const team = (current?.data?.teams ?? []).find((item) => item.id === viewer.teamId);
+        if (!teamPerms(team).season) {
+          json(res, 401, { ok: false });
+          return;
+        }
+      }
+      const ok = await saveSeason(sql, id, body.data, { lockPerms: !viewer.admin });
       json(res, ok ? 200 : 409, { ok });
       return;
     }
 
     if (req.method === "POST") {
       const body = await readBody(req);
+      if (body.action === "saveGame") {
+        const teamId = viewer.teamId;
+        if (!teamId) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const current = await saveMatchGame(sql, teamId, body, body.id);
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
+      if (body.action === "saveRoster") {
+        const teamId = viewer.teamId;
+        if (!teamId) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const current = await saveTeamRoster(sql, teamId, body.players, body.id);
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
+      if (body.action === "saveLineup") {
+        const teamId = viewer.teamId;
+        if (!teamId) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const side = body.side === "away" ? "away" : body.side === "home" ? "home" : null;
+        if (!side || !body.matchId) {
+          json(res, 400, { ok: false });
+          return;
+        }
+        const current = await saveMatchLineup(
+          sql,
+          teamId,
+          body.matchId,
+          side,
+          body.starters,
+          body.bench,
+          body.id,
+        );
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
       if (body.action === "saveTraining") {
         const teamId = viewer.admin ? body.teamId : viewer.teamId;
         if (!teamId) {

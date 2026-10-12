@@ -168,18 +168,85 @@ if ($route === 'league') {
         }
 
         if ($method === 'PUT') {
-            if (empty($viewer['admin'])) {
-                json_out(401, ['ok' => false]);
-            }
             $body = read_json_body();
             $id = $body['id'] ?? get_current_season($pdo)['id'];
-            $ok = save_season($pdo, $id, $body['data'] ?? []);
+            if (empty($viewer['admin'])) {
+                $current = get_season($pdo, $id);
+                $teamRow = null;
+                foreach ($current['data']['teams'] ?? [] as $item) {
+                    if (($item['id'] ?? '') === ($viewer['teamId'] ?? '')) {
+                        $teamRow = $item;
+                        break;
+                    }
+                }
+                if (empty(liga_team_perms($teamRow)['season'])) {
+                    json_out(401, ['ok' => false]);
+                }
+            }
+            $ok = save_season($pdo, $id, $body['data'] ?? [], ['lockPerms' => empty($viewer['admin'])]);
             json_out($ok ? 200 : 409, ['ok' => $ok]);
         }
 
         if ($method === 'POST') {
             $body = read_json_body();
             $action = $body['action'] ?? '';
+            if ($action === 'saveGame') {
+                $teamId = $viewer['teamId'] ?? null;
+                if (!$teamId) {
+                    json_out(401, ['ok' => false]);
+                }
+                $current = save_match_game($pdo, $teamId, $body, $body['id'] ?? null);
+                if (!$current) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'storage' => 'db',
+                    'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                ]);
+            }
+            if ($action === 'saveRoster') {
+                $teamId = $viewer['teamId'] ?? null;
+                if (!$teamId) {
+                    json_out(401, ['ok' => false]);
+                }
+                $current = save_team_roster($pdo, $teamId, $body['players'] ?? [], $body['id'] ?? null);
+                if (!$current) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'storage' => 'db',
+                    'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                ]);
+            }
+            if ($action === 'saveLineup') {
+                $teamId = $viewer['teamId'] ?? null;
+                if (!$teamId) {
+                    json_out(401, ['ok' => false]);
+                }
+                $side = ($body['side'] ?? '') === 'away' ? 'away' : (($body['side'] ?? '') === 'home' ? 'home' : null);
+                if (!$side || empty($body['matchId'])) {
+                    json_out(400, ['ok' => false]);
+                }
+                $current = save_match_lineup(
+                    $pdo,
+                    $teamId,
+                    $body['matchId'],
+                    $side,
+                    $body['starters'] ?? [],
+                    $body['bench'] ?? [],
+                    $body['id'] ?? null
+                );
+                if (!$current) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'storage' => 'db',
+                    'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                ]);
+            }
             if ($action === 'saveTraining') {
                 $teamId = !empty($viewer['admin']) ? ($body['teamId'] ?? null) : ($viewer['teamId'] ?? null);
                 if (!$teamId) {

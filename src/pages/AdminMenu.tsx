@@ -10,10 +10,12 @@ export function AdminMenu({
   canEdit,
   onNewSeason,
   onTrainingSeason,
+  onAccess,
 }: {
   canEdit: boolean;
   onNewSeason: () => void;
   onTrainingSeason: () => void;
+  onAccess: () => void;
 }) {
   const {
     state,
@@ -127,6 +129,16 @@ export function AdminMenu({
               }}
             >
               Trening / test
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => {
+                closeMenu();
+                onAccess();
+              }}
+            >
+              Dovoljenja ekip
             </button>
             <button className="primary" type="button" onClick={() => setPanel("seasons")}>
               Urejaj sezone

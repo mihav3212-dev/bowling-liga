@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { emptyRounds, nominatedIds } from "./pairings";
+import { nominatedIds } from "./pairings";
 import { lineupLocked } from "./scoring";
 import { createSeed, createSeed2025 } from "./seed";
 import {
@@ -27,6 +27,9 @@ import {
   replaceLeague,
   reopenLeague,
   saveLeague,
+  saveMatchGame,
+  saveMatchLineup,
+  saveTeamRoster,
   saveTeamTrainings,
   setTeamPassword,
   type LeaguePayload,
@@ -45,9 +48,10 @@ import {
   writeCurrent,
   type SeasonVault,
 } from "./storage";
+import { canEnterPins, canTeam, defaultTeamPerms, teamPerms } from "./access";
+import { applyLineup, rosterIdsForTeam, sanitizeLineup, teamMatchSide } from "./lineup";
 import { useAuth } from "./auth";
 import { uid } from "./ids";
-import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import { hashPassword } from "./passwords";
 import {
   compactGames,
@@ -60,7 +64,7 @@ import {
   todayDate,
   TRAINING_TEAM_ID,
 } from "./training";
-import type { Gender, LeagueState, Match, Player, SeasonInfo, Team, TrainingMatch } from "./types";
+import type { Gender, LeagueState, Match, Player, SeasonInfo, Team, TeamPerms, TrainingMatch } from "./types";
 
 type Store = {
   state: LeagueState;
@@ -148,7 +152,9 @@ type Store = {
   removeTrainingScore: (sessionId: string, playerId: string, teamId?: string) => void;
   deleteTrainingSession: (sessionId: string, teamId?: string) => void;
   saveTrainingNow: () => Promise<boolean>;
+  saveMatchLineupNow: (matchId: string) => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
+  setTeamPerms: (teamId: string, perms: Partial<TeamPerms>) => void;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
   replaceSeason: (id: string, next: LeagueState, label?: string) => Promise<void>;
@@ -178,37 +184,6 @@ function asMatch(id: string, match: TrainingMatch): Match {
   };
 }
 
-function applyLineup(match: Match, side: "home" | "away", starters: string[], bench: string[]): Match {
-  const cleanStarters = starters.slice(0, PLAYERS_ON_LANE);
-  while (cleanStarters.length < PLAYERS_ON_LANE) cleanStarters.push("");
-  const cleanBench = bench.filter(Boolean).slice(0, MAX_BENCH);
-  const next: Match = {
-    ...match,
-    ...(side === "home"
-      ? { homeStarters: cleanStarters, homeBench: cleanBench }
-      : { awayStarters: cleanStarters, awayBench: cleanBench }),
-  };
-  const home = side === "home" ? cleanStarters : next.homeStarters;
-  const away = side === "away" ? cleanStarters : next.awayStarters;
-  const template = emptyRounds(home, away);
-  next.rounds = template.map((round, ri) => ({
-    games: round.games.map((game, gi) => ({
-      ...game,
-      homePins: match.rounds[ri]?.games[gi]?.homePins ?? null,
-      awayPins: match.rounds[ri]?.games[gi]?.awayPins ?? null,
-      homePlayerId:
-        side === "home"
-          ? game.homePlayerId
-          : (match.rounds[ri]?.games[gi]?.homePlayerId || game.homePlayerId),
-      awayPlayerId:
-        side === "away"
-          ? game.awayPlayerId
-          : (match.rounds[ri]?.games[gi]?.awayPlayerId || game.awayPlayerId),
-    })),
-  }));
-  return next;
-}
-
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { admin, ready, teamId: viewerTeamId } = useAuth();
   const viewerTeamRef = useRef<string | null>(viewerTeamId);
@@ -224,6 +199,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [seasonId, setSeasonId] = useState<string | null>(opening.id);
   const [label, setLabel] = useState(opening.label);
   const [seasons, setSeasons] = useState<SeasonInfo[]>(() => vaultInfos(vaultRef.current!));
+  const stateRef = useRef(opening.data);
   const remoteRef = useRef(false);
   const archivedRef = useRef(opening.archived);
   const seasonIdRef = useRef<string | null>(opening.id);
@@ -241,6 +217,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLabel(season.label);
     setSeasons(vaultInfos(stored));
     setState(season.data);
+    stateRef.current = season.data;
   };
 
   const persist = (next: LeagueState): LeagueState => {
@@ -251,7 +228,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         if (team) {
-          void saveTeamTrainings(id, team, packed.teamTrainings?.[team] ?? []);
+          const perms = teamPerms(packed.teams.find((item) => item.id === team));
+          if (perms.season) void saveLeague(id, packed);
+          else void saveTeamTrainings(id, team, packed.teamTrainings?.[team] ?? []);
         } else {
           void saveLeague(id, packed);
         }
@@ -260,6 +239,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       vaultRef.current = writeCurrent(vaultRef.current, packed);
       setSeasons(vaultInfos(vaultRef.current));
     }
+    stateRef.current = packed;
     return packed;
   };
 
@@ -268,6 +248,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (archivedRef.current) return s;
       return persist(recipe(s));
     });
+  };
+
+  const flushRoster = (s: LeagueState) => {
+    const team = viewerTeamRef.current;
+    if (!remoteRef.current || !team || !seasonIdRef.current) return;
+    if (teamPerms(s.teams.find((item) => item.id === team)).season) return;
+    void saveTeamRoster(
+      seasonIdRef.current,
+      team,
+      s.players.filter((player) => player.teamId === team),
+    );
   };
 
   const applyRemote = (payload: LeaguePayload) => {
@@ -285,6 +276,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setLabel(payload.current.label);
     setSeasons(payload.seasons ?? []);
     setState(payload.current.data);
+    stateRef.current = payload.current.data;
     saveState(payload.current.data);
   };
 
@@ -323,7 +315,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       seasonId,
       seasonLabel: label,
       seasons,
-      addTeam: (name, contact) =>
+      addTeam: (name, contact) => {
+        if (viewerTeamRef.current && !canTeam(stateRef.current.teams.find((t) => t.id === viewerTeamRef.current), "season")) {
+          return;
+        }
         update((s) => ({
           ...s,
           teams: [
@@ -336,7 +331,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               email: contact?.email?.trim() || undefined,
             },
           ],
-        })),
+        }));
+      },
       renameTeam: (id, name) =>
         update((s) => ({ ...s, teams: s.teams.map((t) => (t.id === id ? { ...t, name: name.trim() } : t)) })),
       updateTeam: (id, patch) =>
@@ -344,14 +340,43 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           teams: s.teams.map((t) => (t.id === id ? { ...t, ...patch } : t)),
         })),
-      addPlayer: (teamId, name, gender, bzsMember) =>
-        update((s) => ({
-          ...s,
-          players: [...s.players, { id: uid("p"), teamId, name: name.trim(), gender, bzsMember }],
-        })),
-      updatePlayer: (player) =>
-        update((s) => ({ ...s, players: s.players.map((p) => (p.id === player.id ? player : p)) })),
-      removePlayer: (id) => update((s) => ({ ...s, players: s.players.filter((p) => p.id !== id) })),
+      addPlayer: (teamId, name, gender, bzsMember) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer && (viewer !== teamId || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+          return;
+        }
+        update((s) => {
+          const next = {
+            ...s,
+            players: [...s.players, { id: uid("p"), teamId, name: name.trim(), gender, bzsMember }],
+          };
+          flushRoster(next);
+          return next;
+        });
+      },
+      updatePlayer: (player) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer && (player.teamId !== viewer || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+          return;
+        }
+        update((s) => {
+          const next = { ...s, players: s.players.map((p) => (p.id === player.id ? player : p)) };
+          flushRoster(next);
+          return next;
+        });
+      },
+      removePlayer: (id) => {
+        const viewer = viewerTeamRef.current;
+        const player = stateRef.current.players.find((p) => p.id === id);
+        if (viewer && (player?.teamId !== viewer || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+          return;
+        }
+        update((s) => {
+          const next = { ...s, players: s.players.filter((p) => p.id !== id) };
+          flushRoster(next);
+          return next;
+        });
+      },
       generateSchedule: () =>
         update((s) => {
           if (s.matches.length > 0) return s;
@@ -378,14 +403,40 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             roundNotes: drawn.roundNotes,
           };
         }),
-      setLineup: (matchId, side, starters, bench) =>
+      setLineup: (matchId, side, starters, bench) => {
+        const team = viewerTeamRef.current;
+        if (team && !canTeam(stateRef.current.teams.find((t) => t.id === team), "lineup")) return;
         update((s) => ({
           ...s,
-          matches: s.matches.map((m) =>
-            m.id === matchId && !lineupLocked(m.rounds) ? applyLineup(m, side, starters, bench) : m,
-          ),
-        })),
-      setPins: (matchId, roundIndex, gameIndex, side, pins) =>
+          matches: s.matches.map((m) => {
+            if (m.id !== matchId || lineupLocked(m.rounds)) return m;
+            if (team) {
+              const own = teamMatchSide(m, team);
+              if (own !== side) return m;
+              const clean = sanitizeLineup(starters, bench, rosterIdsForTeam(s.players, team));
+              return applyLineup(m, side, clean.starters, clean.bench);
+            }
+            return applyLineup(m, side, starters, bench);
+          }),
+        }));
+        if (remoteRef.current && team && seasonIdRef.current) {
+          const clean = sanitizeLineup(
+            starters,
+            bench,
+            rosterIdsForTeam(stateRef.current.players, team),
+          );
+          void saveMatchLineup(seasonIdRef.current, matchId, side, clean.starters, clean.bench);
+        }
+      },
+      setPins: (matchId, roundIndex, gameIndex, side, pins) => {
+        const team = viewerTeamRef.current;
+        if (team) {
+          const match = stateRef.current.matches.find((m) => m.id === matchId);
+          if (!match || teamMatchSide(match, team) == null) return;
+          const existing =
+            match.rounds[roundIndex]?.games[gameIndex]?.[side === "home" ? "homePins" : "awayPins"] ?? null;
+          if (!canEnterPins(stateRef.current.teams.find((t) => t.id === team), existing)) return;
+        }
         update((s) => ({
           ...s,
           matches: s.matches.map((m) => {
@@ -404,8 +455,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             );
             return { ...m, rounds, status: filled ? "done" : "scheduled" };
           }),
-        })),
-      setRoundPlayer: (matchId, roundIndex, gameIndex, side, playerId) =>
+        }));
+        if (remoteRef.current && team && seasonIdRef.current) {
+          void saveMatchGame(seasonIdRef.current, { matchId, roundIndex, gameIndex, side, pins });
+        }
+      },
+      setRoundPlayer: (matchId, roundIndex, gameIndex, side, playerId) => {
+        const team = viewerTeamRef.current;
+        if (team) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === team), "lineup")) return;
+          const match = stateRef.current.matches.find((m) => m.id === matchId);
+          if (!match || teamMatchSide(match, team) !== side) return;
+        }
         update((s) => ({
           ...s,
           matches: s.matches.map((m) => {
@@ -431,7 +492,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               }),
             };
           }),
-        })),
+        }));
+        if (remoteRef.current && team && seasonIdRef.current) {
+          void saveMatchGame(seasonIdRef.current, { matchId, roundIndex, gameIndex, side, playerId });
+        }
+      },
       resetDemo: () => update(() => createSeed()),
       loadSeason2025: async () => {
         const data = createSeed2025();
@@ -698,6 +763,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getTeamSessions(s, teamId).filter((session) => session.id !== sessionId),
           ),
         ),
+      saveMatchLineupNow: async (matchId) => {
+        const packed = compactTrainings(stateRef.current);
+        update(() => packed);
+        const team = viewerTeamRef.current;
+        if (!team || !seasonIdRef.current) return true;
+        const match = packed.matches.find((item) => item.id === matchId);
+        const side = match ? teamMatchSide(match, team) : null;
+        if (!match || !side) return false;
+        if (!remoteRef.current) return true;
+        try {
+          const starters = side === "home" ? match.homeStarters : match.awayStarters;
+          const bench = side === "home" ? match.homeBench : match.awayBench;
+          return await saveMatchLineup(seasonIdRef.current, matchId, side, starters, bench);
+        } catch {
+          return false;
+        }
+      },
       saveTrainingNow: async () => {
         const packed = compactTrainings(state);
         update(() => packed);
@@ -713,6 +795,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
         }
         return true;
+      },
+      setTeamPerms: (teamId, perms) => {
+        if (viewerTeamRef.current) return;
+        update((s) => ({
+          ...s,
+          teams: s.teams.map((team) =>
+            team.id === teamId ? { ...team, perms: defaultTeamPerms({ ...teamPerms(team), ...perms }) } : team,
+          ),
+        }));
       },
       setTeamAccess: async (id, password) => {
         const season = seasonIdRef.current;

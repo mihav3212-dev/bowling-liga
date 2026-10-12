@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
+import { canEnterPins, teamPerms } from "../lib/access";
+import { teamMatchSide } from "../lib/lineup";
 import { lineupLocked, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
@@ -156,14 +158,23 @@ export function MatchEntry({
   matchId,
   onBack,
   readOnly = false,
+  lineupTeamId = null,
 }: {
   matchId: string;
   onBack: () => void;
   readOnly?: boolean;
+  lineupTeamId?: string | null;
 }) {
-  const { state, setLineup, setPins, setRoundPlayer } = useStore();
+  const { state, setLineup, setPins, setRoundPlayer, saveMatchLineupNow } = useStore();
   const match = state.matches.find((m) => m.id === matchId);
   if (!match) return <p>Tekma ne obstaja.</p>;
+  const ownSide = teamMatchSide(match, lineupTeamId);
+  const viewerTeam = lineupTeamId ? state.teams.find((t) => t.id === lineupTeamId) : undefined;
+  const perms = teamPerms(viewerTeam);
+  const teamLineup = Boolean(lineupTeamId && ownSide && perms.lineup);
+  const canResults = Boolean(lineupTeamId && ownSide && (perms.results || perms.resultsEdit));
+  const hideScores = Boolean(lineupTeamId && ownSide && !canResults);
+  const pinsReadOnly = readOnly || (Boolean(lineupTeamId) && !canResults);
 
   const home = state.teams.find((t) => t.id === match.homeTeamId);
   const away = state.teams.find((t) => t.id === match.awayTeamId);
@@ -182,7 +193,13 @@ export function MatchEntry({
   }
   const homeAvg = homeGames ? totals.homePins / homeGames : null;
   const awayAvg = awayGames ? totals.awayPins / awayGames : null;
-  const playersLocked = readOnly || lineupLocked(match.rounds);
+  const playersLocked = (readOnly && !teamLineup) || lineupLocked(match.rounds);
+  const homeEditable = lineupTeamId
+    ? ownSide === "home" && perms.lineup && !playersLocked
+    : !playersLocked;
+  const awayEditable = lineupTeamId
+    ? ownSide === "away" && perms.lineup && !playersLocked
+    : !playersLocked;
 
   return (
     <section>
@@ -201,23 +218,38 @@ export function MatchEntry({
             </h2>
           </div>
           <div>
-            <div className="muted">Rezultat (TOČKE)</div>
-            <div className="big-score">
-              {totals.complete ? `${totals.homeMatch}:${totals.awayMatch}` : "—"}
-            </div>
-            <div className="muted">
-              Velike: {totals.homeBig}:{totals.awayBig}
-              {totals.complete ? " (krogi + 2 za več kegljev)" : ""}
-              {" · "}
-              Male: {totals.homeSmall}:{totals.awaySmall}
-              {" · "}
-              Keglji: {totals.homePins}:{totals.awayPins}
-            </div>
+            {!hideScores && (
+              <>
+                <div className="muted">Rezultat (TOČKE)</div>
+                <div className="big-score">
+                  {totals.complete ? `${totals.homeMatch}:${totals.awayMatch}` : "—"}
+                </div>
+                <div className="muted">
+                  Velike: {totals.homeBig}:{totals.awayBig}
+                  {totals.complete ? " (krogi + 2 za več kegljev)" : ""}
+                  {" · "}
+                  Male: {totals.homeSmall}:{totals.awaySmall}
+                  {" · "}
+                  Keglji: {totals.homePins}:{totals.awayPins}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {playersLocked && !readOnly && (
+      {teamLineup && !playersLocked && (
+        <p className="muted" style={{ margin: "12px 0 0" }}>
+          Vnesi svojo sestavo ({ownSide === "home" ? "A1–A6" : "B1–B6"}).
+          {canResults ? "" : " Rezultate vnaša admin, razen če imaš dovoljenje."}
+        </p>
+      )}
+      {playersLocked && teamLineup && (
+        <p className="muted" style={{ margin: "12px 0 0" }}>
+          Sestava je zaklenjena, ker so že vneseni rezultati 1. kroga.
+        </p>
+      )}
+      {playersLocked && !readOnly && !lineupTeamId && (
         <p className="muted" style={{ margin: "12px 0 0" }}>
           Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
           keglje v 1. krogu.
@@ -225,14 +257,7 @@ export function MatchEntry({
       )}
       <div className="grid-2" style={{ margin: "16px 0" }}>
         <div className="panel">
-          {playersLocked ? (
-            <LineupReadout
-              label={home?.name ?? "Domači"}
-              roster={homeRoster}
-              starters={match.homeStarters}
-              bench={match.homeBench}
-            />
-          ) : (
+          {homeEditable ? (
             <LineupEditor
               label={`${home?.name ?? "Domači"} (A)`}
               side="home"
@@ -241,17 +266,17 @@ export function MatchEntry({
               bench={match.homeBench}
               onChange={(starters, bench) => setLineup(match.id, "home", starters, bench)}
             />
+          ) : (
+            <LineupReadout
+              label={home?.name ?? "Domači"}
+              roster={homeRoster}
+              starters={match.homeStarters}
+              bench={match.homeBench}
+            />
           )}
         </div>
         <div className="panel">
-          {playersLocked ? (
-            <LineupReadout
-              label={away?.name ?? "Gostje"}
-              roster={awayRoster}
-              starters={match.awayStarters}
-              bench={match.awayBench}
-            />
-          ) : (
+          {awayEditable ? (
             <LineupEditor
               label={`${away?.name ?? "Gostje"} (B)`}
               side="away"
@@ -260,14 +285,21 @@ export function MatchEntry({
               bench={match.awayBench}
               onChange={(starters, bench) => setLineup(match.id, "away", starters, bench)}
             />
+          ) : (
+            <LineupReadout
+              label={away?.name ?? "Gostje"}
+              roster={awayRoster}
+              starters={match.awayStarters}
+              bench={match.awayBench}
+            />
           )}
         </div>
       </div>
 
-      {match.rounds.map((round, ri) => {
+      {!hideScores && match.rounds.map((round, ri) => {
         const pair = pairingTemplate()[ri] ?? [];
         const roundTot = totals.rounds[ri];
-        const lockRoundPlayers = readOnly || (ri === 0 && playersLocked);
+        const lockRoundPlayers = pinsReadOnly || (Boolean(lineupTeamId) && !perms.lineup) || (ri === 0 && playersLocked);
         return (
         <div className="scorecard" key={ri} style={{ marginBottom: 16 }}>
           <h3>{ri + 1}. krog</h3>
@@ -316,7 +348,11 @@ export function MatchEntry({
                       <PinField
                         raw={game.homePins}
                         player={homeRoster.find((p) => p.id === game.homePlayerId)}
-                        readOnly={readOnly}
+                        readOnly={
+                          pinsReadOnly ||
+                          (Boolean(lineupTeamId) &&
+                            !canEnterPins(viewerTeam, game.homePins))
+                        }
                         onChange={(pins) => setPins(match.id, ri, gi, "home", pins)}
                       />
                     </td>
@@ -330,7 +366,11 @@ export function MatchEntry({
                       <PinField
                         raw={game.awayPins}
                         player={awayRoster.find((p) => p.id === game.awayPlayerId)}
-                        readOnly={readOnly}
+                        readOnly={
+                          pinsReadOnly ||
+                          (Boolean(lineupTeamId) &&
+                            !canEnterPins(viewerTeam, game.awayPins))
+                        }
                         onChange={(pins) => setPins(match.id, ri, gi, "away", pins)}
                       />
                     </td>
@@ -371,7 +411,7 @@ export function MatchEntry({
         );
       })}
 
-      <div className="scorecard match-summary">
+      {!hideScores && <div className="scorecard match-summary">
         <h3>Seštevek</h3>
         <table>
           <thead>
@@ -416,16 +456,29 @@ export function MatchEntry({
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
 
       <div className="match-actions">
-        <PdfButton label="Izvozi zapisnik PDF" onExport={() => exportMatchPdf(state, match.id)} />
-        {!readOnly && (
+        {!hideScores && (
+          <PdfButton label="Izvozi zapisnik PDF" onExport={() => exportMatchPdf(state, match.id)} />
+        )}
+        {(!readOnly || teamLineup) && (
           <>
-            <button className="primary" type="button" onClick={onBack}>
+            <button
+              className="primary"
+              type="button"
+              onClick={async () => {
+                if (teamLineup) await saveMatchLineupNow(match.id);
+                onBack();
+              }}
+            >
               Shrani
             </button>
-            <span className="muted">Rezultat se sproti zapiše; gumb te vrne na seznam.</span>
+            <span className="muted">
+              {teamLineup
+                ? "Sestava se sproti zapiše; gumb te vrne na razpored."
+                : "Rezultat se sproti zapiše; gumb te vrne na seznam."}
+            </span>
           </>
         )}
       </div>

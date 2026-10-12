@@ -4,6 +4,7 @@ import { Matches } from "./pages/Matches";
 import { Standings } from "./pages/Standings";
 import { PlayerStandings } from "./pages/PlayerStandings";
 import { TeamDetail } from "./pages/TeamDetail";
+import { TeamAccess } from "./pages/TeamAccess";
 import { Teams } from "./pages/Teams";
 import { Training } from "./pages/Training";
 import { Login } from "./pages/Login";
@@ -14,9 +15,10 @@ import { PdfButton } from "./pages/PdfButton";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
+import { canOpenTeamMatch, canTeam, teamPerms } from "./lib/access";
 import { useStore } from "./lib/store";
 
-type Page = "schedule" | "results" | "standings" | "players" | "teams" | "training";
+type Page = "schedule" | "results" | "standings" | "players" | "teams" | "training" | "access";
 
 export function App() {
   const { admin, teamId: loginTeamId, teamName } = useAuth();
@@ -29,6 +31,8 @@ export function App() {
     loadSeason,
   } = useStore();
   const canEdit = admin && !archived;
+  const loginTeam = state.teams.find((team) => team.id === loginTeamId);
+  const teamCaps = teamPerms(loginTeam);
   const shownSeasons = admin ? seasons : seasons.filter((s) => !s.training);
   const training = Boolean(state.training || seasons.find((s) => s.id === seasonId)?.training);
   const [page, setPage] = useState<Page>("schedule");
@@ -65,12 +69,14 @@ export function App() {
   };
 
   useEffect(() => {
-    if (!canEdit) {
+    if (canEdit) return;
+    if (page === "access") setPage("schedule");
+    if (page === "teams" && !(loginTeamId && (teamCaps.roster || teamCaps.season))) {
+      setPage("schedule");
       setDetailTeamId(null);
-      if (page === "teams") setPage("schedule");
-      if (!admin && page === "schedule") setMatchId(null);
     }
-  }, [admin, canEdit, page]);
+    if (!admin && !loginTeamId && page === "schedule") setMatchId(null);
+  }, [admin, canEdit, loginTeamId, page, teamCaps.roster, teamCaps.season]);
 
   useEffect(() => {
     if (admin || !training) return;
@@ -86,7 +92,7 @@ export function App() {
   }, [loginTeamId, admin, trainingOwnerId, state.teams]);
 
   useEffect(() => {
-    if (!prevLoginTeam.current && loginTeamId) go("training");
+    if (!prevLoginTeam.current && loginTeamId) go("schedule");
     prevLoginTeam.current = loginTeamId;
   }, [loginTeamId]);
 
@@ -121,6 +127,7 @@ export function App() {
             <AdminMenu
               canEdit={canEdit}
               onNewSeason={() => void startNewSeason()}
+              onAccess={() => go("access")}
               onTrainingSeason={() => {
                 go("training");
                 setTrainingSessionId(null);
@@ -156,7 +163,7 @@ export function App() {
             {archived && <span className="muted">Arhiv — samo branje.</span>}
             {loginTeamId && (
               <span className="season-note" style={{ margin: 0 }}>
-                Prijava ekipe{teamName ? `: ${teamName}` : ""}. Ligo vidiš, urejaš samo svoje treninge.
+                Prijava ekipe{teamName ? `: ${teamName}` : ""}. Dovoljenja nastavi admin.
               </span>
             )}
           </div>
@@ -179,7 +186,10 @@ export function App() {
               ["standings", "Lestvica"],
               ["players", "Igralci"],
               ...(showTrainingTab ? [["training", "Trening"] as [Page, string]] : []),
-              ...(canEdit ? [["teams", "Ekipe"] as [Page, string]] : []),
+              ...(canEdit || (loginTeamId && (teamCaps.roster || teamCaps.season))
+                ? [["teams", "Ekipe"] as [Page, string]]
+                : []),
+              ...(canEdit ? [["access", "Dovoljenja"] as [Page, string]] : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
@@ -202,7 +212,20 @@ export function App() {
           />
         )}
         {page === "schedule" && !matchId && (
-          <Matches mode="schedule" onOpen={canEdit ? setMatchId : undefined} />
+          <Matches
+            mode="schedule"
+            onOpen={canEdit || canOpenTeamMatch(loginTeam) ? setMatchId : undefined}
+            canOpen={
+              canEdit
+                ? undefined
+                : (match) =>
+                    Boolean(
+                      loginTeamId &&
+                        (match.homeTeamId === loginTeamId || match.awayTeamId === loginTeamId) &&
+                        canOpenTeamMatch(loginTeam),
+                    )
+            }
+          />
         )}
         {page === "results" && !matchId && (
           <>
@@ -214,7 +237,8 @@ export function App() {
           <MatchEntry
             matchId={matchId}
             onBack={() => setMatchId(null)}
-            readOnly={!canEdit}
+            readOnly={!canEdit && !loginTeamId}
+            lineupTeamId={canEdit ? null : loginTeamId}
           />
         )}
         {page === "standings" && (
@@ -229,9 +253,25 @@ export function App() {
             <PdfButton label="Izvozi PDF igralcev" onExport={() => exportPlayersPdf(state)} />
           </>
         )}
-        {canEdit && page === "teams" && !detailTeamId && <Teams onOpen={setDetailTeamId} />}
-        {canEdit && page === "teams" && detailTeamId && (
-          <TeamDetail teamId={detailTeamId} onBack={() => setDetailTeamId(null)} />
+        {page === "access" && canEdit && <TeamAccess />}
+        {(canEdit || teamCaps.season) && page === "teams" && !detailTeamId && (
+          <Teams onOpen={setDetailTeamId} />
+        )}
+        {(canEdit || teamCaps.season) && page === "teams" && detailTeamId && (
+          <TeamDetail
+            teamId={detailTeamId}
+            onBack={() => setDetailTeamId(null)}
+            canManage={canEdit}
+            canRoster={canEdit || canTeam(loginTeam, "roster")}
+          />
+        )}
+        {Boolean(loginTeamId) && teamCaps.roster && !teamCaps.season && !canEdit && page === "teams" && (
+          <TeamDetail
+            teamId={loginTeamId!}
+            onBack={() => go("schedule")}
+            canManage={false}
+            canRoster
+          />
         )}
           </>
         )}

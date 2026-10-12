@@ -3,7 +3,17 @@ import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { useStore } from "../lib/store";
 
-export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => void }) {
+export function TeamDetail({
+  teamId,
+  onBack,
+  canManage = true,
+  canRoster = true,
+}: {
+  teamId: string;
+  onBack: () => void;
+  canManage?: boolean;
+  canRoster?: boolean;
+}) {
   const { state, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
   const players = state.players.filter((p) => p.teamId === teamId);
@@ -22,6 +32,8 @@ export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => v
         ← Ekipe
       </button>
       <h2 style={{ margin: "12px 0" }}>{team.name}</h2>
+      {canManage && (
+      <>
       <form
         className="form-row"
         onSubmit={(e) => {
@@ -73,7 +85,7 @@ export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => v
       </div>
       <h3 style={{ marginTop: 24 }}>Prijava ekipe</h3>
       <p className="muted">
-        Geslo za vodjo ekipe, da si sami beležijo treninge. Javnost tega ne vidi.{" "}
+        Geslo za vodjo ekipe. Kaj sme v aplikaciji, nastaviš v Admin → Dovoljenja ekip.{" "}
         {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
       </p>
       <form
@@ -120,8 +132,15 @@ export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => v
           </button>
         )}
       </form>
+      </>
+      )}
       <h3 style={{ marginTop: 24 }}>Igralci ({players.length})</h3>
-      <p className="muted">Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list.</p>
+      <p className="muted">
+        {canRoster
+          ? "Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list."
+          : "Igralce vnaša admin ali vodja z dovoljenjem za vnos v ekipo."}
+      </p>
+      {canRoster && (
       <form
         className="form-row"
         onSubmit={(e) => {
@@ -145,29 +164,39 @@ export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => v
           Dodaj
         </button>
       </form>
+      )}
       <div className="list" style={{ marginTop: 16 }}>
         {players.map((p) => (
           <div key={p.id} className="form-row" style={{ justifyContent: "space-between" }}>
             <strong>{p.name}</strong>
-            <label className="muted">
-              <input
-                type="checkbox"
-                checked={p.gender === "F"}
-                onChange={(e) => updatePlayer({ ...p, gender: e.target.checked ? "F" : "M" })}
-              />{" "}
-              ženska
-            </label>
-            <label className="muted">
-              <input
-                type="checkbox"
-                checked={p.bzsMember}
-                onChange={(e) => updatePlayer({ ...p, bzsMember: e.target.checked })}
-              />{" "}
-              BZS
-            </label>
-            <button className="danger" type="button" onClick={() => removePlayer(p.id)}>
-              Odstrani
-            </button>
+            {canRoster ? (
+              <>
+                <label className="muted">
+                  <input
+                    type="checkbox"
+                    checked={p.gender === "F"}
+                    onChange={(e) => updatePlayer({ ...p, gender: e.target.checked ? "F" : "M" })}
+                  />{" "}
+                  ženska
+                </label>
+                <label className="muted">
+                  <input
+                    type="checkbox"
+                    checked={p.bzsMember}
+                    onChange={(e) => updatePlayer({ ...p, bzsMember: e.target.checked })}
+                  />{" "}
+                  BZS
+                </label>
+                <button className="danger" type="button" onClick={() => removePlayer(p.id)}>
+                  Odstrani
+                </button>
+              </>
+            ) : (
+              <span className="muted">
+                {p.gender === "F" ? "ženska" : "moški"}
+                {p.bzsMember ? " · BZS" : ""}
+              </span>
+            )}
           </div>
         ))}
       </div>

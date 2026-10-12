@@ -4,6 +4,8 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/passwords.php';
 require_once __DIR__ . '/sanitize.php';
 require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/lineup.php';
+require_once __DIR__ . '/access.php';
 
 function get_pdo()
 {
@@ -181,10 +183,10 @@ function get_current_season(PDO $pdo)
     return ['id' => $id, 'label' => $label, 'archived' => false, 'updatedAt' => gmdate('Y-m-d\TH:i:s.000\Z'), 'data' => $empty];
 }
 
-function save_season(PDO $pdo, $id, $data)
+function save_season(PDO $pdo, $id, $data, $opts = [])
 {
     $existing = get_season($pdo, $id);
-    $payload = preserve_secrets(as_state($data), $existing['data'] ?? null);
+    $payload = preserve_secrets(as_state($data), $existing['data'] ?? null, $opts);
     $stmt = q_run(
         $pdo,
         'UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL',
@@ -276,6 +278,186 @@ function delete_season(PDO $pdo, $id)
         }
     }
     return $nextId ? get_season($pdo, $nextId) : null;
+}
+
+function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench, $seasonId)
+{
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current || !empty($current['archived'])) {
+        return null;
+    }
+    $matches = $current['data']['matches'] ?? [];
+    $players = $current['data']['players'] ?? [];
+    $teamRow = null;
+    foreach ($current['data']['teams'] ?? [] as $item) {
+        if (($item['id'] ?? '') === $teamId) {
+            $teamRow = $item;
+            break;
+        }
+    }
+    if (empty(liga_team_perms($teamRow)['lineup'])) {
+        return null;
+    }
+    $found = false;
+    foreach ($matches as $i => $match) {
+        if (($match['id'] ?? '') !== $matchId) {
+            continue;
+        }
+        $own = liga_team_match_side($match, $teamId);
+        if ($own === null || $own !== $side) {
+            return null;
+        }
+        if (liga_lineup_locked($match['rounds'] ?? [])) {
+            return null;
+        }
+        $allowed = [];
+        foreach ($players as $player) {
+            if (($player['teamId'] ?? '') === $teamId) {
+                $allowed[$player['id']] = true;
+            }
+        }
+        [$cleanStarters, $cleanBench] = liga_sanitize_lineup($starters, $bench, $allowed);
+        $matches[$i] = liga_apply_lineup($match, $side, $cleanStarters, $cleanBench);
+        $found = true;
+        break;
+    }
+    if (!$found) {
+        return null;
+    }
+    $data = $current['data'];
+    $data['matches'] = $matches;
+    $ok = save_season($pdo, $current['id'], $data);
+    return $ok ? get_season($pdo, $current['id']) : null;
+}
+
+function save_match_game(PDO $pdo, $teamId, $patch, $seasonId)
+{
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current || !empty($current['archived'])) {
+        return null;
+    }
+    $teamRow = null;
+    foreach ($current['data']['teams'] ?? [] as $item) {
+        if (($item['id'] ?? '') === $teamId) {
+            $teamRow = $item;
+            break;
+        }
+    }
+    if (!$teamRow) {
+        return null;
+    }
+    $matches = $current['data']['matches'] ?? [];
+    $found = false;
+    foreach ($matches as $i => $match) {
+        if (($match['id'] ?? '') !== ($patch['matchId'] ?? '')) {
+            continue;
+        }
+        if (liga_team_match_side($match, $teamId) === null) {
+            return null;
+        }
+        $ri = (int) ($patch['roundIndex'] ?? -1);
+        $gi = (int) ($patch['gameIndex'] ?? -1);
+        $side = $patch['side'] ?? '';
+        $game = $match['rounds'][$ri]['games'][$gi] ?? null;
+        if (!$game || ($side !== 'home' && $side !== 'away')) {
+            return null;
+        }
+        if (array_key_exists('pins', $patch)) {
+            $key = $side === 'home' ? 'homePins' : 'awayPins';
+            $existing = $game[$key] ?? null;
+            if (!liga_can_enter_pins($teamRow, $existing)) {
+                return null;
+            }
+            $game[$key] = $patch['pins'];
+        }
+        if (array_key_exists('playerId', $patch)) {
+            if (empty(liga_team_perms($teamRow)['lineup'])) {
+                return null;
+            }
+            if (liga_team_match_side($match, $teamId) !== $side) {
+                return null;
+            }
+            if ($ri === 0 && liga_lineup_locked($match['rounds'] ?? [])) {
+                return null;
+            }
+            $pid = (string) ($patch['playerId'] ?? '');
+            $starters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
+            $bench = $side === 'home' ? ($match['homeBench'] ?? []) : ($match['awayBench'] ?? []);
+            $allowed = array_flip(array_filter(array_merge($starters, $bench)));
+            if ($pid !== '' && !isset($allowed[$pid])) {
+                return null;
+            }
+            if ($side === 'home') {
+                $game['homePlayerId'] = $pid;
+            } else {
+                $game['awayPlayerId'] = $pid;
+            }
+        }
+        $match['rounds'][$ri]['games'][$gi] = $game;
+        $filled = true;
+        foreach ($match['rounds'] as $round) {
+            foreach ($round['games'] ?? [] as $item) {
+                if (($item['homePins'] ?? null) === null || ($item['awayPins'] ?? null) === null) {
+                    $filled = false;
+                    break 2;
+                }
+            }
+        }
+        $match['status'] = $filled ? 'done' : 'scheduled';
+        $matches[$i] = $match;
+        $found = true;
+        break;
+    }
+    if (!$found) {
+        return null;
+    }
+    $data = $current['data'];
+    $data['matches'] = $matches;
+    $ok = save_season($pdo, $current['id'], $data);
+    return $ok ? get_season($pdo, $current['id']) : null;
+}
+
+function save_team_roster(PDO $pdo, $teamId, $roster, $seasonId)
+{
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current || !empty($current['archived'])) {
+        return null;
+    }
+    $teamRow = null;
+    foreach ($current['data']['teams'] ?? [] as $item) {
+        if (($item['id'] ?? '') === $teamId) {
+            $teamRow = $item;
+            break;
+        }
+    }
+    if (empty(liga_team_perms($teamRow)['roster'])) {
+        return null;
+    }
+    $cleaned = [];
+    foreach (is_array($roster) ? $roster : [] as $player) {
+        $name = trim((string) ($player['name'] ?? ''));
+        $id = (string) ($player['id'] ?? '');
+        if ($name === '' || $id === '') {
+            continue;
+        }
+        $cleaned[] = [
+            'id' => $id,
+            'teamId' => $teamId,
+            'name' => $name,
+            'gender' => (($player['gender'] ?? '') === 'F') ? 'F' : 'M',
+            'bzsMember' => !empty($player['bzsMember']),
+        ];
+    }
+    $others = [];
+    foreach ($current['data']['players'] ?? [] as $player) {
+        if (($player['teamId'] ?? '') !== $teamId) {
+            $others[] = $player;
+        }
+    }
+    $data = $current['data'];
+    $data['players'] = array_merge($others, $cleaned);
+    $ok = save_season($pdo, $current['id'], $data);
+    return $ok ? get_season($pdo, $current['id']) : null;
 }
 
 function save_team_trainings(PDO $pdo, $teamId, $sessions, $seasonId)

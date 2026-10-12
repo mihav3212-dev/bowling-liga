@@ -1,0 +1,75 @@
+import { emptyRounds } from "./pairings";
+import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
+import type { Match, Player } from "./types";
+
+export function teamMatchSide(
+  match: { homeTeamId: string; awayTeamId: string },
+  teamId: string | null | undefined,
+): "home" | "away" | null {
+  if (!teamId) return null;
+  if (match.homeTeamId === teamId) return "home";
+  if (match.awayTeamId === teamId) return "away";
+  return null;
+}
+
+export function rosterIdsForTeam(players: Player[], teamId: string): Set<string> {
+  return new Set(players.filter((p) => p.teamId === teamId).map((p) => p.id));
+}
+
+export function sanitizeLineup(
+  starters: string[],
+  bench: string[],
+  allowed: Set<string>,
+): { starters: string[]; bench: string[] } {
+  const used = new Set<string>();
+  const cleanStarters: string[] = [];
+  for (let i = 0; i < PLAYERS_ON_LANE; i++) {
+    const id = starters[i] ?? "";
+    if (id && allowed.has(id) && !used.has(id)) {
+      used.add(id);
+      cleanStarters.push(id);
+    } else {
+      cleanStarters.push("");
+    }
+  }
+  const cleanBench: string[] = [];
+  for (const id of bench) {
+    if (cleanBench.length >= MAX_BENCH) break;
+    if (id && allowed.has(id) && !used.has(id)) {
+      used.add(id);
+      cleanBench.push(id);
+    }
+  }
+  return { starters: cleanStarters, bench: cleanBench };
+}
+
+export function applyLineup(match: Match, side: "home" | "away", starters: string[], bench: string[]): Match {
+  const cleanStarters = starters.slice(0, PLAYERS_ON_LANE);
+  while (cleanStarters.length < PLAYERS_ON_LANE) cleanStarters.push("");
+  const cleanBench = bench.filter(Boolean).slice(0, MAX_BENCH);
+  const next: Match = {
+    ...match,
+    ...(side === "home"
+      ? { homeStarters: cleanStarters, homeBench: cleanBench }
+      : { awayStarters: cleanStarters, awayBench: cleanBench }),
+  };
+  const home = side === "home" ? cleanStarters : next.homeStarters;
+  const away = side === "away" ? cleanStarters : next.awayStarters;
+  const template = emptyRounds(home, away);
+  next.rounds = template.map((round, ri) => ({
+    games: round.games.map((game, gi) => ({
+      ...game,
+      homePins: match.rounds[ri]?.games[gi]?.homePins ?? null,
+      awayPins: match.rounds[ri]?.games[gi]?.awayPins ?? null,
+      homePlayerId:
+        side === "home"
+          ? game.homePlayerId
+          : match.rounds[ri]?.games[gi]?.homePlayerId || game.homePlayerId,
+      awayPlayerId:
+        side === "away"
+          ? game.awayPlayerId
+          : match.rounds[ri]?.games[gi]?.awayPlayerId || game.awayPlayerId,
+    })),
+  }));
+  return next;
+}

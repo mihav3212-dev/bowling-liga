@@ -1,5 +1,7 @@
 import mysql from "mysql2/promise";
 import { loadFileConfig } from "./config.mjs";
+import { canEnterPins, teamPerms } from "./access.mjs";
+import { applyLineup, lineupLocked, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
 import { hashPassword } from "./passwords.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
 import { setAdminPassword } from "./session.mjs";
@@ -186,9 +188,9 @@ export async function getCurrentSeason(pool) {
   return { id, label, archived: false, updatedAt: new Date().toISOString(), data: empty };
 }
 
-export async function saveSeason(pool, id, data) {
+export async function saveSeason(pool, id, data, opts = {}) {
   const existing = await getSeason(pool, id);
-  const payload = preserveSecrets(asState(data), existing?.data);
+  const payload = preserveSecrets(asState(data), existing?.data, opts);
   const result = await exec(
     pool,
     "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
@@ -268,6 +270,95 @@ export async function deleteSeason(pool, id) {
   await exec(pool, "DELETE FROM seasons WHERE id = ?", [id]);
   const nextId = listed.find((row) => row.id !== id)?.id;
   return getSeason(pool, nextId);
+}
+
+export async function saveMatchLineup(pool, teamId, matchId, side, starters, bench, seasonId) {
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current || current.archived) return null;
+  const matches = [...(current.data.matches ?? [])];
+  const index = matches.findIndex((match) => match.id === matchId);
+  if (index < 0) return null;
+  const match = matches[index];
+  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
+  if (!teamPerms(team).lineup) return null;
+  const own = teamMatchSide(match, teamId);
+  if (own == null || own !== side) return null;
+  if (lineupLocked(match.rounds)) return null;
+  const allowed = new Set(
+    (current.data.players ?? []).filter((player) => player.teamId === teamId).map((player) => player.id),
+  );
+  const clean = sanitizeLineup(starters ?? [], bench ?? [], allowed);
+  matches[index] = applyLineup(match, side, clean.starters, clean.bench);
+  const ok = await saveSeason(pool, current.id, { ...current.data, matches });
+  return ok ? getSeason(pool, current.id) : null;
+}
+
+export async function saveMatchGame(pool, teamId, patch, seasonId) {
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current || current.archived) return null;
+  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
+  if (!team) return null;
+  const matches = [...(current.data.matches ?? [])];
+  const index = matches.findIndex((match) => match.id === patch.matchId);
+  if (index < 0) return null;
+  const match = matches[index];
+  if (teamMatchSide(match, teamId) == null) return null;
+  const ri = Number(patch.roundIndex);
+  const gi = Number(patch.gameIndex);
+  const game = match.rounds?.[ri]?.games?.[gi];
+  if (!game || (patch.side !== "home" && patch.side !== "away")) return null;
+  const nextGame = { ...game };
+  if ("pins" in patch) {
+    const key = patch.side === "home" ? "homePins" : "awayPins";
+    if (!canEnterPins(team, game[key] ?? null)) return null;
+    nextGame[key] = patch.pins;
+  }
+  if ("playerId" in patch) {
+    if (!teamPerms(team).lineup) return null;
+    if (teamMatchSide(match, teamId) !== patch.side) return null;
+    if (ri === 0 && lineupLocked(match.rounds)) return null;
+    const pid = patch.playerId || "";
+    const starters = patch.side === "home" ? match.homeStarters : match.awayStarters;
+    const bench = patch.side === "home" ? match.homeBench : match.awayBench;
+    const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
+    if (pid && !allowed.has(pid)) return null;
+    if (patch.side === "home") nextGame.homePlayerId = pid;
+    else nextGame.awayPlayerId = pid;
+  }
+  const rounds = match.rounds.map((round, r) =>
+    r !== ri
+      ? round
+      : {
+          games: round.games.map((item, g) => (g !== gi ? item : nextGame)),
+        },
+  );
+  const filled = rounds.every((round) =>
+    round.games.every((item) => item.homePins != null && item.awayPins != null),
+  );
+  matches[index] = { ...match, rounds, status: filled ? "done" : "scheduled" };
+  const ok = await saveSeason(pool, current.id, { ...current.data, matches });
+  return ok ? getSeason(pool, current.id) : null;
+}
+
+export async function saveTeamRoster(pool, teamId, roster, seasonId) {
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current || current.archived) return null;
+  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
+  if (!teamPerms(team).roster) return null;
+  const incoming = Array.isArray(roster) ? roster : [];
+  const cleaned = incoming
+    .filter((player) => player && player.name)
+    .map((player) => ({
+      id: String(player.id || ""),
+      teamId,
+      name: String(player.name).trim(),
+      gender: player.gender === "F" ? "F" : "M",
+      bzsMember: Boolean(player.bzsMember),
+    }))
+    .filter((player) => player.id && player.name);
+  const others = (current.data.players ?? []).filter((player) => player.teamId !== teamId);
+  const ok = await saveSeason(pool, current.id, { ...current.data, players: [...others, ...cleaned] });
+  return ok ? getSeason(pool, current.id) : null;
 }
 
 export async function saveTeamTrainings(pool, teamId, sessions, seasonId) {

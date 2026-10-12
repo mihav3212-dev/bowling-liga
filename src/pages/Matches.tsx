@@ -12,9 +12,11 @@ import { ResultHighlights } from "./ResultHighlights";
 
 export function Matches({
   onOpen,
+  canOpen,
   mode,
 }: {
   onOpen?: (id: string) => void;
+  canOpen?: (match: Match) => boolean;
   mode: "schedule" | "results";
 }) {
   const { state } = useStore();
@@ -65,7 +67,7 @@ export function Matches({
         )}
       </>
     );
-    return onOpen ? (
+    return onOpen && (!canOpen || canOpen(match)) ? (
       <button className="row match-row" key={match.id} onClick={() => onOpen(match.id)}>
         {row}
       </button>

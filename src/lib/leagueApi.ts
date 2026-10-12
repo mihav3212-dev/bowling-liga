@@ -85,6 +85,56 @@ export async function renameLeague(id: string, label: string): Promise<LeaguePay
   return (await res.json()) as LeaguePayload;
 }
 
+export async function saveMatchGame(
+  id: string,
+  patch: {
+    matchId: string;
+    roundIndex: number;
+    gameIndex: number;
+    side: "home" | "away";
+    pins?: number | null;
+    playerId?: string;
+  },
+): Promise<boolean> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "saveGame", id, ...patch }),
+  });
+  return res.ok;
+}
+
+export async function saveTeamRoster(
+  id: string,
+  teamId: string,
+  players: { id: string; teamId: string; name: string; gender: "M" | "F"; bzsMember: boolean }[],
+): Promise<boolean> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "saveRoster", id, teamId, players }),
+  });
+  return res.ok;
+}
+
+export async function saveMatchLineup(
+  id: string,
+  matchId: string,
+  side: "home" | "away",
+  starters: string[],
+  bench: string[],
+): Promise<boolean> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "saveLineup", id, matchId, side, starters, bench }),
+  });
+  return res.ok;
+}
+
 export async function saveTeamTrainings(
   id: string,
   teamId: string,

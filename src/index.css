@@ -204,6 +204,19 @@ a {
   color: #fff;
 }
 
+.perm-table th {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: normal;
+  min-width: 6.5rem;
+  line-height: 1.3;
+}
+
+.perm-check {
+  display: flex;
+  justify-content: center;
+}
+
 .panel {
   background: transparent;
   border: 0;
