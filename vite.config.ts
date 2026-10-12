@@ -35,6 +35,11 @@ function adminApi(): Plugin {
             send(res, 200, { ok: true }, clearCookieHeader(isSecureRequest(req)));
             return;
           }
+          if (url === "/api/setup") {
+            const { handleSetup } = await import("./api/setup.js");
+            await handleSetup(req, res);
+            return;
+          }
           if (url === "/api/login" && req.method === "POST") {
             const { handleLogin } = await import("./api/login.js");
             await handleLogin(req, res);

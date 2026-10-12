@@ -10,3 +10,9 @@ CREATE TABLE IF NOT EXISTS seasons (
   PRIMARY KEY (id),
   KEY idx_seasons_archived_updated (archived_at, updated_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS settings (
+  name VARCHAR(64) NOT NULL,
+  value TEXT NOT NULL,
+  PRIMARY KEY (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

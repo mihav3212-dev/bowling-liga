@@ -9,6 +9,7 @@ import { Training } from "./pages/Training";
 import { Login } from "./pages/Login";
 import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
+import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
@@ -35,7 +36,15 @@ export function App() {
   const [detailTeamId, setDetailTeamId] = useState<string | null>(null);
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
   const [trainingOwnerId, setTrainingOwnerId] = useState<string | null>(null);
+  const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null);
   const prevLoginTeam = useRef<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/setup")
+      .then((res) => res.json())
+      .then((data: { needed?: boolean }) => setSetupNeeded(Boolean(data.needed)))
+      .catch(() => setSetupNeeded(false));
+  }, []);
 
   const go = (next: Page) => {
     setPage(next);
@@ -79,6 +88,23 @@ export function App() {
 
   const showTrainingTab = admin || Boolean(loginTeamId);
   const legacyTraining = training && admin;
+
+  if (setupNeeded === null) return null;
+  if (setupNeeded) {
+    return (
+      <div>
+        <header className="site-header">
+          <a href="https://bowlinglenart.si/" aria-label="Bowling Lenart">
+            <img className="logo" src="/logo-bowling-lenart.png" alt="Bowling Lenart" />
+          </a>
+          <div className="header-actions">
+            <ThemePicker />
+          </div>
+        </header>
+        <Setup onDone={() => window.location.reload()} />
+      </div>
+    );
+  }
 
   return (
     <div>

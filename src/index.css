@@ -920,6 +920,22 @@ select {
   justify-content: center;
 }
 
+.setup-form {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.setup-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.setup-form input {
+  min-height: 44px;
+}
+
 .form-row {
   display: flex;
   gap: 8px;

@@ -11,11 +11,11 @@ npm install
 npm run dev
 ```
 
-V `.env.local` (glej `.env.example`): `ADMIN_PASSWORD` in MySQL podatki.
-
 Testi: `npm test`.
 
-Brez MySQL so sezone v `localStorage` (samo ta brskalnik). Z bazo so skupne za vse.
+Ob prvem odprtju strani izpolni **Namestitev** (MySQL + admin geslo). Datoteke `.env` ne rabiš.
+
+Brez namestitve so sezone v `localStorage` (samo ta brskalnik). Z bazo so skupne za vse.
 
 ## Strežnik
 
@@ -27,7 +27,7 @@ npm start
 
 Nginx primer: `deploy/nginx.conf.example`. Systemd: `deploy/bowling-liga.service`.
 
-phpMyAdmin: ustvari bazo, uvozi `schema.sql` (ali pusti, da tabela nastane ob prvem zagonu). Nato v `.env` vpiši `MYSQL_*`.
+phpMyAdmin: ustvari prazno bazo. Potem v brskalniku izpolni namestitev.
 
 ## Admin
 

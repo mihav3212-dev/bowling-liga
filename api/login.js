@@ -32,13 +32,13 @@ export async function handleLogin(req, res) {
     const body = await readBody(req);
     const password = body.password;
     const secure = isSecureRequest(req);
+    const sql = getSql();
+    if (sql) await ensureSchema(sql);
     if (passwordOk(password)) {
       json(res, 200, { ok: true, admin: true }, cookieHeader(signToken({ a: 1 }), secure));
       return;
     }
-    const sql = getSql();
     if (sql) {
-      await ensureSchema(sql);
       const current = await getCurrentSeason(sql);
       const team = findTeam(current?.data?.teams, password);
       if (team) {

@@ -3,8 +3,14 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const COOKIE = "liga_admin";
 const DAY = 24 * 60 * 60 * 1000;
 
+let cachedAdmin = process.env.ADMIN_PASSWORD ?? "";
+
 export function adminPassword() {
-  return process.env.ADMIN_PASSWORD ?? "";
+  return cachedAdmin || process.env.ADMIN_PASSWORD || "";
+}
+
+export function setAdminPassword(value) {
+  if (typeof value === "string" && value.length) cachedAdmin = value;
 }
 
 function secret() {

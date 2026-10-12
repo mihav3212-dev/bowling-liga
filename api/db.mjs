@@ -1,10 +1,25 @@
 import mysql from "mysql2/promise";
+import { loadFileConfig } from "./config.mjs";
 import { hashPassword } from "./passwords.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
+import { setAdminPassword } from "./session.mjs";
 
 let cached;
 
 function mysqlConfig() {
+  const file = loadFileConfig()?.mysql;
+  if (file?.host && file?.user && file?.database) {
+    return {
+      host: String(file.host),
+      user: String(file.user),
+      password: String(file.password ?? ""),
+      database: String(file.database),
+      port: Number(file.port || 3306),
+      charset: "utf8mb4",
+      waitForConnections: true,
+      connectionLimit: 8,
+    };
+  }
   const url = process.env.DATABASE_URL || process.env.MYSQL_URL || "";
   if (url.startsWith("mysql://") || url.startsWith("mariadb://")) {
     return { uri: url, charset: "utf8mb4" };
@@ -32,6 +47,13 @@ export function getSql() {
   if (!config) return null;
   if (!cached) cached = mysql.createPool(config);
   return cached;
+}
+
+export function resetSql() {
+  if (!cached) return;
+  const pool = cached;
+  cached = null;
+  void pool.end().catch(() => undefined);
 }
 
 async function exec(pool, sql, params = []) {
@@ -80,7 +102,7 @@ function dump(data) {
   return JSON.stringify(data);
 }
 
-export async function ensureSchema(pool) {
+export async function ensureSchema(pool, seed) {
   await exec(
     pool,
     `CREATE TABLE IF NOT EXISTS seasons (
@@ -93,6 +115,33 @@ export async function ensureSchema(pool) {
       KEY idx_seasons_archived_updated (archived_at, updated_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   );
+  await exec(
+    pool,
+    `CREATE TABLE IF NOT EXISTS settings (
+      name VARCHAR(64) NOT NULL,
+      value TEXT NOT NULL,
+      PRIMARY KEY (name)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  );
+  await syncAdminPassword(pool, seed);
+}
+
+export async function syncAdminPassword(pool, seed) {
+  const rows = await exec(pool, "SELECT value FROM settings WHERE name = ? LIMIT 1", ["admin_password"]);
+  const fromDb = rows[0]?.value;
+  if (typeof fromDb === "string" && fromDb.trim()) {
+    setAdminPassword(fromDb.trim());
+    return fromDb.trim();
+  }
+  const fromEnv = String(seed || process.env.ADMIN_PASSWORD || "").trim();
+  if (fromEnv) {
+    await exec(pool, "INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE name = name", [
+      "admin_password",
+      fromEnv,
+    ]);
+    setAdminPassword(fromEnv);
+  }
+  return fromEnv;
 }
 
 export async function listSeasons(pool, { includeTraining = false } = {}) {

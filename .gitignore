@@ -5,4 +5,5 @@ dist
 .vercel
 .env*
 !.env.example
+data/config.json
 tsconfig.tsbuildinfo

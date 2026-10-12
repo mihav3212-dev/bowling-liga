@@ -46,16 +46,18 @@ Brez baze vsi rezultati ostanejo **samo v brskalniku** tistega računalnika.
 Da vsi vidijo iste sezone in rezultate:
 
 1. Na računalniku, kjer imaš že vneseno sezono: Admin → **Izvozi JSON**.
-2. V phpMyAdmin ustvari bazo (npr. `bowling_liga`) in uvozi `schema.sql`.
-3. Na strežniku v `.env` (glej `.env.example`): `ADMIN_PASSWORD` in `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
-4. `npm install`, `npm run build`, `npm start` (ali systemd).
-5. Na živi strani se prijavi in Admin → **Uvozi JSON kot sezono**.
+2. V phpMyAdmin ustvari prazno bazo (npr. `bowling_liga`). `schema.sql` ni obvezen.
+3. `npm install`, `npm run build`, `npm start` (ali systemd). Datoteke `.env` ne rabiš.
+4. Odpri stran — prvi obisk pokaže **Namestitev**: MySQL gostitelj/uporabnik/geslo/baza in geslo admina. Shrani.
+5. Prijavi se in Admin → **Uvozi JSON kot sezono**.
 
-Tabela `seasons` se ob zagonu tudi sama ustvari, če je še ni. **Brez koraka 1 se lokalni vnosi ob vklopu baze ne prenesejo sami.**
+Tabele `seasons` in `settings` nastanejo ob namestitvi. Povezava se shrani v `data/config.json` (ni v Gitu). Admin geslo je v tabeli `settings` (`admin_password`) — kasneje ga spremeniš v phpMyAdmin.
 
-Geslo admina je samo v `.env` na strežniku, nikoli v kodi ali v tem dokumentu.
+Če je treba namestitev ponoviti, na strežniku zbriši `data/config.json`.
 
-Lokalni zagon: `npm install` in `npm run dev`. V `.env.local` enaka imena spremenljivk.
+**Brez koraka 1 se lokalni vnosi ob vklopu baze ne prenesejo sami.**
+
+Lokalni zagon: `npm install` in `npm run dev`. Če ni namestitve, sezone ostanejo v brskalniku.
 
 ---
 

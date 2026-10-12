@@ -69,6 +69,11 @@ const server = createServer(async (req, res) => {
       await handleMe(req, res);
       return;
     }
+    if (url === "/api/setup") {
+      const { handleSetup } = await import("./api/setup.js");
+      await handleSetup(req, res);
+      return;
+    }
     if (url === "/api/league") {
       await handleLeague(req, res);
       return;
