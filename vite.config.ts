@@ -53,7 +53,13 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.ADMIN_PASSWORD) process.env.ADMIN_PASSWORD = env.ADMIN_PASSWORD;
   if (env.DATABASE_URL) process.env.DATABASE_URL = env.DATABASE_URL;
-  if (env.POSTGRES_URL) process.env.POSTGRES_URL = env.POSTGRES_URL;
+  if (env.MYSQL_URL) process.env.MYSQL_URL = env.MYSQL_URL;
+  if (env.MYSQL_HOST) process.env.MYSQL_HOST = env.MYSQL_HOST;
+  if (env.MYSQL_PORT) process.env.MYSQL_PORT = env.MYSQL_PORT;
+  if (env.MYSQL_USER) process.env.MYSQL_USER = env.MYSQL_USER;
+  if (env.MYSQL_PASSWORD) process.env.MYSQL_PASSWORD = env.MYSQL_PASSWORD;
+  if (env.MYSQL_DATABASE) process.env.MYSQL_DATABASE = env.MYSQL_DATABASE;
+  if (env.MYSQL_SOCKET) process.env.MYSQL_SOCKET = env.MYSQL_SOCKET;
   return {
     plugins: [react(), adminApi()],
   };

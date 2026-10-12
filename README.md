@@ -1,24 +1,33 @@
 # Bowling liga Lenart
 
-Vite + React. Sezona 2026/2027 (13 ekip) in testna 2025/2026 (12 ekip, 22 krogov).
+Vite + React + Node. Teče na lastnem strežniku (Node 20+ in MySQL/MariaDB). Ni vezano na Vercel.
 
 Predaja vzdrževalcu spletne strani: **`PREDAJA.md`**.
 
-Živo: https://bowling-lenart.vercel.app  
-Koda: https://github.com/mihav3212-dev/bowling-liga
-
-## Zagon
+## Lokalno
 
 ```bash
 npm install
 npm run dev
 ```
 
+V `.env.local` (glej `.env.example`): `ADMIN_PASSWORD` in MySQL podatki.
+
 Testi: `npm test`.
 
-V `.env.local` (glej `.env.example`): `ADMIN_PASSWORD`, po želji `DATABASE_URL`.
+Brez MySQL so sezone v `localStorage` (samo ta brskalnik). Z bazo so skupne za vse.
 
-Brez baze so sezone v `localStorage`. Z Neon/Vercel Postgres so skupne za vse obiskovalce.
+## Strežnik
+
+```bash
+npm install
+npm run build
+npm start
+```
+
+Nginx primer: `deploy/nginx.conf.example`. Systemd: `deploy/bowling-liga.service`.
+
+phpMyAdmin: ustvari bazo, uvozi `schema.sql` (ali pusti, da tabela nastane ob prvem zagonu). Nato v `.env` vpiši `MYSQL_*`.
 
 ## Admin
 

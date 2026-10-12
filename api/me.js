@@ -20,6 +20,3 @@ export async function handleMe(req, res) {
   res.end(JSON.stringify({ admin: session.admin, teamId: session.teamId, teamName }));
 }
 
-export default async function handler(req, res) {
-  await handleMe(req, res);
-}

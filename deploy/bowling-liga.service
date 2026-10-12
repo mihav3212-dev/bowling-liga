@@ -1,0 +1,15 @@
+[Unit]
+Description=Bowling liga
+After=network.target mysql.service mariadb.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/bowling-liga
+EnvironmentFile=/var/www/bowling-liga/.env
+ExecStart=/usr/bin/node server.mjs
+Restart=on-failure
+User=www-data
+Group=www-data
+
+[Install]
+WantedBy=multi-user.target

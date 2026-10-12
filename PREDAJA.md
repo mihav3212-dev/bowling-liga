@@ -1,15 +1,13 @@
 # Predaja: Bowling liga Lenart
 
-Aplikacija **ni WordPress vtičnik**. Teče ločeno. Na bowlinglenart.si je treba samo povezati zavihek **Liga**.
+Aplikacija **ni WordPress vtičnik**. Teče ločeno na lastnem strežniku (Node + MySQL). Na bowlinglenart.si je treba samo povezati zavihek **Liga**.
 
 | Kaj | Naslov |
 |-----|--------|
-| Živa aplikacija | https://bowling-lenart.vercel.app |
 | Ciljni naslov | https://liga.bowlinglenart.si |
-| Koda | https://github.com/mihav3212-dev/bowling-liga |
-| Vercel projekt | `bowling-lenart` (team mihav3212-3331) |
+| Koda | mapa `bowling-liga` (GitHub ali kopija) |
 
-Koda je mapa `bowling-liga` (brez `node_modules` in `.env.local`).
+Koda je mapa `bowling-liga` (brez `node_modules` in `.env`).
 
 ---
 
@@ -18,8 +16,6 @@ Koda je mapa `bowling-liga` (brez `node_modules` in `.env.local`).
 V meniju (Videz → Meniji) vnos **Liga** nastavi na:
 
 `https://liga.bowlinglenart.si`
-
-(do DNS-a začasno `https://bowling-lenart.vercel.app`)
 
 Če naj stari URL še deluje, dodaj 301:
 
@@ -35,29 +31,31 @@ Pri DNS za `bowlinglenart.si`:
 
 | Tip | Ime | Vrednost |
 |-----|-----|----------|
-| CNAME | liga | `cname.vercel-dns.com` |
+| A | liga | IP tvojega strežnika |
 
-Nato v Vercel → projekt bowling-lenart → Settings → Domains dodaj `liga.bowlinglenart.si`. Počakaj na SSL.
+SSL (Let's Encrypt) nastavi na tem strežniku, npr. certbot pred nginx.
 
 ---
 
-## 3. Skupni podatki (obvezno za klub)
+## 3. Strežnik in baza (obvezno za klub)
+
+Aplikacija potrebuje **Node.js 20+**. phpMyAdmin je samo za MySQL, ne požene React/Node kode. Primer nginx: `deploy/nginx.conf.example`, systemd: `deploy/bowling-liga.service`.
 
 Brez baze vsi rezultati ostanejo **samo v brskalniku** tistega računalnika.
 
-Da vsi vidijo iste sezone in rezultate (tudi vnos 2025/26 za nazaj):
+Da vsi vidijo iste sezone in rezultate:
 
-1. Na računalniku, kjer imaš že vneseno sezono: Admin → **Izvozi JSON** (shrani datoteko).
-2. Vercel → Storage → Create Database → Postgres (Neon).
-3. Environment Variables: `DATABASE_URL` (in `ADMIN_PASSWORD`, če še ni).
-4. Redeploy.
-5. Na živi strani se prijavi in Admin → **Uvozi JSON kot sezono**. Lanska sezona se doda poleg tekoče; potem lahko vnašaš rezultate od kjerkoli.
+1. Na računalniku, kjer imaš že vneseno sezono: Admin → **Izvozi JSON**.
+2. V phpMyAdmin ustvari bazo (npr. `bowling_liga`) in uvozi `schema.sql`.
+3. Na strežniku v `.env` (glej `.env.example`): `ADMIN_PASSWORD` in `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
+4. `npm install`, `npm run build`, `npm start` (ali systemd).
+5. Na živi strani se prijavi in Admin → **Uvozi JSON kot sezono**.
 
-Tabela `seasons` se ustvari ob prvem klicu. **Brez koraka 1 se lokalni vnosi ob vklopu baze ne prenesejo sami.**
+Tabela `seasons` se ob zagonu tudi sama ustvari, če je še ni. **Brez koraka 1 se lokalni vnosi ob vklopu baze ne prenesejo sami.**
 
-Geslo admina je samo v okoljskih spremenljivkah, nikoli v kodi ali v tem dokumentu.
+Geslo admina je samo v `.env` na strežniku, nikoli v kodi ali v tem dokumentu.
 
-Lokalni zagon: `npm install` in `npm run dev`. V `.env.local` enaka imena spremenljivk (glej `.env.example`).
+Lokalni zagon: `npm install` in `npm run dev`. V `.env.local` enaka imena spremenljivk.
 
 ---
 

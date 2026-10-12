@@ -93,6 +93,8 @@ export function readToken(cookieHeader) {
 }
 
 export function isSecureRequest(req) {
-  const proto = req.headers["x-forwarded-proto"];
-  return proto === "https";
+  const proto = String(req.headers["x-forwarded-proto"] ?? "")
+    .split(",")[0]
+    .trim();
+  return proto === "https" || Boolean(req.socket?.encrypted);
 }
