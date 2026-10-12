@@ -46,19 +46,16 @@ export function Training({
   canPickTeam,
   onOpen,
   onBack,
-  onOwnerTeam,
 }: {
   sessionId: string | null;
   ownerTeamId: string | null;
   canPickTeam: boolean;
   onOpen: (id: string) => void;
   onBack: () => void;
-  onOwnerTeam: (id: string) => void;
 }) {
   const {
     state,
     newTrainingSession,
-    newTrainingMatch,
     setTrainingDate,
     addTrainingPlayer,
     pickTrainingPlayer,
@@ -77,8 +74,6 @@ export function Training({
   const [gender, setGender] = useState<Gender>("M");
   const [bzs, setBzs] = useState(false);
   const [pickId, setPickId] = useState("");
-  const [awayId, setAwayId] = useState("");
-  const [awayName, setAwayName] = useState("");
   const [addTeamId, setAddTeamId] = useState(ownerTeamId ?? "");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveNote, setSaveNote] = useState("");
@@ -92,42 +87,19 @@ export function Training({
     [state.players, session?.scores],
   );
 
-  const canStart = Boolean(state.training || ownerTeamId);
+  const canStart = Boolean(state.training || ownerTeamId || canPickTeam);
   const startNew = () => {
     if (!canStart) return;
     onOpen(newTrainingSession(ownerTeamId ?? undefined));
-  };
-  const startMatch = () => {
-    if (!canStart) return;
-    const picked = awayId || undefined;
-    const typed = awayName.trim();
-    if (!picked && !typed) return;
-    onOpen(newTrainingMatch(ownerTeamId ?? undefined, { teamId: picked, name: typed }));
-    setAwayId("");
-    setAwayName("");
   };
 
   if (!session) {
     return (
       <section className="panel">
         <h2 className="round-title">Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
-        {canPickTeam && (
-          <label className="training-date">
-            Ekipa
-            <select value={ownerTeamId ?? ""} onChange={(e) => onOwnerTeam(e.target.value)}>
-              <option value="">Izberi ekipo…</option>
-              {state.teams.map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
         <p className="muted">
-          Posamezni trening: igralci iz poljubnih ekip in keglji. Število iger ni določeno — ob vpisu se
-          odpre naslednje polje. Trening kot tekma: izbereš ali vpišeš nasprotnika, potem sestavo in
-          zapisnik kot na ligi.
+          Novi trening: dodaj igralce iz poljubnih ekip in vpiši keglje. Število iger ni določeno — ob
+          vpisu se odpre naslednje polje.
         </p>
         <p className="muted">
           {remote
@@ -139,43 +111,6 @@ export function Training({
             Novi trening
           </button>
         </div>
-        <h3>Trening kot tekma</h3>
-        <form
-          className="form-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            startMatch();
-          }}
-        >
-          <select
-            value={awayId}
-            onChange={(e) => {
-              setAwayId(e.target.value);
-              if (e.target.value) setAwayName("");
-            }}
-            aria-label="Nasprotna ekipa"
-          >
-            <option value="">Izberi nasprotnika…</option>
-            {state.teams
-              .filter((team) => team.id !== ownerTeamId)
-              .map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-          </select>
-          <input
-            value={awayName}
-            onChange={(e) => {
-              setAwayName(e.target.value);
-              if (e.target.value) setAwayId("");
-            }}
-            placeholder="ali vpiši ime ekipe"
-          />
-          <button className="ghost" type="submit" disabled={!canStart || (!awayId && !awayName.trim())}>
-            Odpri tekmo
-          </button>
-        </form>
         {sessions.length === 0 ? (
           <p className="muted">Še ni shranjenih treningov.</p>
         ) : (

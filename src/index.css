@@ -731,11 +731,11 @@ select {
 }
 
 .live-now {
-  border: 1px solid var(--copper);
+  border: 1px solid #dc2626;
   border-radius: 8px;
   padding: 14px 16px 10px;
   margin-bottom: 22px;
-  background: var(--row-alt);
+  background: rgba(220, 38, 38, 0.12);
 }
 
 .live-now .live-badge {
@@ -744,7 +744,7 @@ select {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #fff;
-  background: var(--score);
+  background: #dc2626;
   padding: 3px 8px;
   border-radius: 4px;
   margin-bottom: 8px;

@@ -168,7 +168,6 @@ export function App() {
             canPickTeam={false}
             onOpen={setTrainingSessionId}
             onBack={() => setTrainingSessionId(null)}
-            onOwnerTeam={() => undefined}
           />
         ) : (
           <>
@@ -200,10 +199,6 @@ export function App() {
             canPickTeam={admin}
             onOpen={setTrainingSessionId}
             onBack={() => setTrainingSessionId(null)}
-            onOwnerTeam={(id) => {
-              setTrainingOwnerId(id || null);
-              setTrainingSessionId(null);
-            }}
           />
         )}
         {page === "schedule" && !matchId && (
