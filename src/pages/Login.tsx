@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth";
 
 export function Login() {
-  const { admin, ready, login } = useAuth();
+  const { admin, teamId, ready, login, logout } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -10,6 +10,14 @@ export function Login() {
   if (!ready) return null;
 
   if (admin) return null;
+
+  if (teamId) {
+    return (
+      <button className="ghost header-logout" type="button" onClick={() => void logout()}>
+        Odjava
+      </button>
+    );
+  }
 
   return (
     <form
@@ -33,7 +41,7 @@ export function Login() {
         placeholder="Geslo"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        aria-label="Admin geslo"
+        aria-label="Geslo za admin ali ekipo"
       />
       <button className="ghost" type="submit" disabled={busy || !password}>
         {busy ? "…" : "Prijava"}

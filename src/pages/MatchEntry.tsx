@@ -12,7 +12,7 @@ function playerName(roster: Player[], id: string): string {
   return player ? playerTag(player) : "—";
 }
 
-function PinField({
+export function PinField({
   raw,
   player,
   readOnly,
@@ -39,7 +39,7 @@ function PinField({
   );
 }
 
-function LineupReadout({
+export function LineupReadout({
   label,
   roster,
   starters,
@@ -71,7 +71,7 @@ function LineupReadout({
   );
 }
 
-function LineupEditor({
+export function LineupEditor({
   label,
   side,
   roster,

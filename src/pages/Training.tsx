@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 import { playerTag, parsePins } from "../lib/labels";
 import { scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
-import { formatTrainingDate, padGames, scoreTotal, TRAINING_GAMES } from "../lib/training";
+import { formatTrainingDate, gameColumnCount, getTeamSessions, padGames, playerCountLabel, scoreTotal, trainingMatchTitle } from "../lib/training";
 import type { Gender, Player } from "../lib/types";
+import { TrainingMatch } from "./TrainingMatch";
 
 function PinField({
   raw,
@@ -32,16 +33,23 @@ function PinField({
 
 export function Training({
   sessionId,
+  ownerTeamId,
+  canPickTeam,
   onOpen,
   onBack,
+  onOwnerTeam,
 }: {
   sessionId: string | null;
+  ownerTeamId: string | null;
+  canPickTeam: boolean;
   onOpen: (id: string) => void;
   onBack: () => void;
+  onOwnerTeam: (id: string) => void;
 }) {
   const {
     state,
     newTrainingSession,
+    newTrainingMatch,
     setTrainingDate,
     addTrainingPlayer,
     pickTrainingPlayer,
@@ -49,38 +57,105 @@ export function Training({
     removeTrainingScore,
     deleteTrainingSession,
   } = useStore();
-  const sessions = [...(state.trainingSessions ?? [])].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  const sessions = [...getTeamSessions(state, ownerTeamId ?? undefined)].sort(
+    (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+  );
+  const ownerTeam = state.teams.find((team) => team.id === ownerTeamId);
   const session = sessions.find((item) => item.id === sessionId) ?? null;
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("M");
   const [bzs, setBzs] = useState(false);
   const [pickId, setPickId] = useState("");
+  const [awayId, setAwayId] = useState("");
+  const [awayName, setAwayName] = useState("");
 
   const used = new Set(session?.scores.map((row) => row.playerId) ?? []);
   const pool = useMemo(
     () =>
       [...state.players]
-        .filter((p) => !used.has(p.id))
+        .filter((p) => !used.has(p.id) && (!ownerTeamId || p.teamId === ownerTeamId))
         .sort((a, b) => a.name.localeCompare(b.name, "sl")),
-    [state.players, session?.scores],
+    [state.players, session?.scores, ownerTeamId],
   );
 
+  const canStart = Boolean(state.training || ownerTeamId);
   const startNew = () => {
-    onOpen(newTrainingSession());
+    if (!canStart) return;
+    onOpen(newTrainingSession(ownerTeamId ?? undefined));
+  };
+  const startMatch = () => {
+    if (!canStart) return;
+    const picked = awayId || undefined;
+    const typed = awayName.trim();
+    if (!picked && !typed) return;
+    onOpen(newTrainingMatch(ownerTeamId ?? undefined, { teamId: picked, name: typed }));
+    setAwayId("");
+    setAwayName("");
   };
 
   if (!session) {
     return (
       <section className="panel">
-        <h2 className="round-title">Trening</h2>
+        <h2 className="round-title">Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
+        {canPickTeam && (
+          <label className="training-date">
+            Ekipa
+            <select value={ownerTeamId ?? ""} onChange={(e) => onOwnerTeam(e.target.value)}>
+              <option value="">Izberi ekipo…</option>
+              {state.teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <p className="muted">
-          Novi trening dobi današnji datum. Znotraj vpišeš ali izbereš igralce in pod njimi rezultate (3 igre).
+          Posamezni trening: igralci in rezultati (4 igre, po potrebi več polj). Trening kot tekma: izbereš
+          ali vpišeš nasprotnika, potem sestavo in zapisnik kot na ligi.
         </p>
         <div className="row-actions">
-          <button className="primary" type="button" onClick={startNew}>
+          <button className="primary" type="button" disabled={!canStart} onClick={startNew}>
             Novi trening
           </button>
         </div>
+        <h3>Trening kot tekma</h3>
+        <form
+          className="form-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            startMatch();
+          }}
+        >
+          <select
+            value={awayId}
+            onChange={(e) => {
+              setAwayId(e.target.value);
+              if (e.target.value) setAwayName("");
+            }}
+            aria-label="Nasprotna ekipa"
+          >
+            <option value="">Izberi nasprotnika…</option>
+            {state.teams
+              .filter((team) => team.id !== ownerTeamId)
+              .map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+          </select>
+          <input
+            value={awayName}
+            onChange={(e) => {
+              setAwayName(e.target.value);
+              if (e.target.value) setAwayId("");
+            }}
+            placeholder="ali vpiši ime ekipe"
+          />
+          <button className="ghost" type="submit" disabled={!canStart || (!awayId && !awayName.trim())}>
+            Odpri tekmo
+          </button>
+        </form>
         {sessions.length === 0 ? (
           <p className="muted">Še ni shranjenih treningov.</p>
         ) : (
@@ -89,13 +164,19 @@ export function Training({
               <div key={item.id} className="form-row training-row">
                 <button className="ghost" type="button" onClick={() => onOpen(item.id)}>
                   {formatTrainingDate(item.date)}
-                  {item.scores.length ? ` · ${item.scores.length} igralcev` : ""}
+                  {item.kind === "match"
+                    ? ` · tekma · ${trainingMatchTitle(item, state.teams)}`
+                    : item.scores.length
+                      ? ` · ${playerCountLabel(item.scores.length)}`
+                      : ""}
                 </button>
                 <button
                   className="danger"
                   type="button"
                   onClick={() => {
-                    if (window.confirm("Izbrišem ta trening?")) deleteTrainingSession(item.id);
+                    if (window.confirm("Izbrišem ta trening?")) {
+                      deleteTrainingSession(item.id, ownerTeamId ?? undefined);
+                    }
                   }}
                 >
                   Izbriši
@@ -108,13 +189,19 @@ export function Training({
     );
   }
 
+  if (session.kind === "match") {
+    return <TrainingMatch session={session} ownerTeamId={ownerTeamId} onBack={onBack} />;
+  }
+
+  const cols = gameColumnCount(session.scores);
+
   return (
     <section className="panel">
       <button className="ghost" type="button" onClick={onBack}>
         ← Vsi treningi
       </button>
       <h2 className="round-title" style={{ marginTop: 12 }}>
-        Trening
+        Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}
       </h2>
       <label className="training-date">
         Datum
@@ -122,7 +209,7 @@ export function Training({
           type="date"
           value={session.date}
           onChange={(e) => {
-            if (e.target.value) setTrainingDate(session.id, e.target.value);
+            if (e.target.value) setTrainingDate(session.id, e.target.value, ownerTeamId ?? undefined);
           }}
         />
       </label>
@@ -135,7 +222,7 @@ export function Training({
           onSubmit={(e) => {
             e.preventDefault();
             if (!pickId) return;
-            pickTrainingPlayer(session.id, pickId);
+            pickTrainingPlayer(session.id, pickId, ownerTeamId ?? undefined);
             setPickId("");
           }}
         >
@@ -157,7 +244,7 @@ export function Training({
         onSubmit={(e) => {
           e.preventDefault();
           if (!name.trim()) return;
-          addTrainingPlayer(session.id, name, gender, bzs);
+          addTrainingPlayer(session.id, name, gender, bzs, ownerTeamId ?? undefined);
           setName("");
           setGender("M");
           setBzs(false);
@@ -185,7 +272,7 @@ export function Training({
             <thead>
               <tr>
                 <th>Igralec</th>
-                {Array.from({ length: TRAINING_GAMES }, (_, i) => (
+                {Array.from({ length: cols }, (_, i) => (
                   <th key={i} className="num">
                     {i + 1}. igra
                   </th>
@@ -197,7 +284,7 @@ export function Training({
             <tbody>
               {session.scores.map((row) => {
                 const player = state.players.find((p) => p.id === row.playerId);
-                const games = padGames(row.games);
+                const games = padGames(row.games, cols);
                 const total = scoreTotal(row, player);
                 return (
                   <tr key={row.playerId}>
@@ -207,7 +294,9 @@ export function Training({
                         <PinField
                           raw={raw}
                           player={player}
-                          onChange={(pins) => setTrainingPins(session.id, row.playerId, i, pins)}
+                          onChange={(pins) =>
+                            setTrainingPins(session.id, row.playerId, i, pins, ownerTeamId ?? undefined)
+                          }
                         />
                       </td>
                     ))}
@@ -216,7 +305,7 @@ export function Training({
                       <button
                         className="danger"
                         type="button"
-                        onClick={() => removeTrainingScore(session.id, row.playerId)}
+                        onClick={() => removeTrainingScore(session.id, row.playerId, ownerTeamId ?? undefined)}
                       >
                         Odstrani
                       </button>

@@ -1,4 +1,5 @@
-import { tokenValid, readToken } from "./session.mjs";
+import { readSession, readToken } from "./session.mjs";
+import { sanitizeState } from "./sanitize.mjs";
 import {
   archiveCurrent,
   createSeason,
@@ -12,6 +13,8 @@ import {
   getSql,
   listSeasons,
   saveSeason,
+  saveTeamTrainings,
+  setTeamPassword,
 } from "./db.mjs";
 
 async function readBody(req) {
@@ -29,8 +32,16 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-function isAdmin(req) {
-  return tokenValid(readToken(req.headers.cookie));
+function viewerOf(req) {
+  return readSession(readToken(req.headers.cookie));
+}
+
+function presentSeason(season, viewer) {
+  if (!season) return season;
+  return {
+    ...season,
+    data: sanitizeState(season.data, viewer),
+  };
 }
 
 export async function handleLeague(req, res) {
@@ -45,10 +56,11 @@ export async function handleLeague(req, res) {
     const url = new URL(req.url || "/api/league", "http://localhost");
     const seasonId = url.searchParams.get("id");
 
+    const viewer = viewerOf(req);
+
     if (req.method === "GET") {
-      const admin = isAdmin(req);
       let current = seasonId ? await getSeason(sql, seasonId) : await getCurrentSeason(sql);
-      if (current?.training && !admin) {
+      if (current?.training && !viewer.admin) {
         current = await getCurrentSeason(sql);
       }
       if (!current) {
@@ -57,18 +69,17 @@ export async function handleLeague(req, res) {
       }
       json(res, 200, {
         storage: "db",
-        current,
-        seasons: await listSeasons(sql, { includeTraining: admin }),
+        current: presentSeason(current, viewer),
+        seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
       });
       return;
     }
 
-    if (!isAdmin(req)) {
-      json(res, 401, { ok: false });
-      return;
-    }
-
     if (req.method === "PUT") {
+      if (!viewer.admin) {
+        json(res, 401, { ok: false });
+        return;
+      }
       const body = await readBody(req);
       const id = body.id || (await getCurrentSeason(sql)).id;
       const ok = await saveSeason(sql, id, body.data);
@@ -78,11 +89,50 @@ export async function handleLeague(req, res) {
 
     if (req.method === "POST") {
       const body = await readBody(req);
+      if (body.action === "saveTraining") {
+        const teamId = viewer.admin ? body.teamId : viewer.teamId;
+        if (!teamId) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const current = await saveTeamTrainings(sql, teamId, body.sessions, body.id);
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
+      if (body.action === "setTeamPassword") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const current = await setTeamPassword(sql, body.teamId, body.password, body.id);
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (!viewer.admin) {
+        json(res, 401, { ok: false });
+        return;
+      }
       if (body.action === "archive") {
         const current = await archiveCurrent(sql, body.id);
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
@@ -91,7 +141,7 @@ export async function handleLeague(req, res) {
         const current = await reopenSeason(sql, body.id);
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
@@ -100,7 +150,7 @@ export async function handleLeague(req, res) {
         const current = await createSeason(sql, body.label || "Nova sezona", body.data);
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
@@ -113,7 +163,7 @@ export async function handleLeague(req, res) {
         }
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
@@ -126,7 +176,7 @@ export async function handleLeague(req, res) {
         }
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
@@ -135,7 +185,7 @@ export async function handleLeague(req, res) {
         const current = await deleteSeason(sql, body.id);
         json(res, 200, {
           storage: "db",
-          current,
+          current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;

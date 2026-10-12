@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MatchEntry } from "./pages/MatchEntry";
 import { Matches } from "./pages/Matches";
 import { Standings } from "./pages/Standings";
@@ -15,15 +15,14 @@ import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
 import { useStore } from "./lib/store";
 
-type Page = "schedule" | "results" | "standings" | "players" | "teams";
+type Page = "schedule" | "results" | "standings" | "players" | "teams" | "training";
 
 export function App() {
-  const { admin } = useAuth();
+  const { admin, teamId: loginTeamId, teamName } = useAuth();
   const {
     state,
     archived,
     newEmptySeason,
-    startNewTraining,
     seasons,
     seasonId,
     loadSeason,
@@ -33,13 +32,15 @@ export function App() {
   const training = Boolean(state.training || seasons.find((s) => s.id === seasonId)?.training);
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
-  const [teamId, setTeamId] = useState<string | null>(null);
+  const [detailTeamId, setDetailTeamId] = useState<string | null>(null);
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
+  const [trainingOwnerId, setTrainingOwnerId] = useState<string | null>(null);
+  const prevLoginTeam = useRef<string | null>(null);
 
   const go = (next: Page) => {
     setPage(next);
     setMatchId(null);
-    setTeamId(null);
+    setDetailTeamId(null);
   };
 
   const startNewSeason = async () => {
@@ -52,7 +53,7 @@ export function App() {
 
   useEffect(() => {
     if (!canEdit) {
-      setTeamId(null);
+      setDetailTeamId(null);
       if (page === "teams") setPage("schedule");
       if (!admin && page === "schedule") setMatchId(null);
     }
@@ -65,8 +66,19 @@ export function App() {
   }, [admin, training, seasons, seasonId, loadSeason]);
 
   useEffect(() => {
-    if (!training) setTrainingSessionId(null);
-  }, [training]);
+    if (loginTeamId) setTrainingOwnerId(loginTeamId);
+    else if (admin && !trainingOwnerId && state.teams.length === 1) {
+      setTrainingOwnerId(state.teams[0].id);
+    }
+  }, [loginTeamId, admin, trainingOwnerId, state.teams]);
+
+  useEffect(() => {
+    if (!prevLoginTeam.current && loginTeamId) go("training");
+    prevLoginTeam.current = loginTeamId;
+  }, [loginTeamId]);
+
+  const showTrainingTab = admin || Boolean(loginTeamId);
+  const legacyTraining = training && admin;
 
   return (
     <div>
@@ -79,9 +91,9 @@ export function App() {
             <AdminMenu
               canEdit={canEdit}
               onNewSeason={() => void startNewSeason()}
-              onTrainingSeason={async () => {
-                const id = await startNewTraining();
-                setTrainingSessionId(id);
+              onTrainingSeason={() => {
+                go("training");
+                setTrainingSessionId(null);
               }}
             />
           )}
@@ -112,18 +124,21 @@ export function App() {
               </select>
             </label>
             {archived && <span className="muted">Arhiv — samo branje.</span>}
-            {training && admin && (
+            {loginTeamId && (
               <span className="season-note" style={{ margin: 0 }}>
-                Trening — vidiš samo prijavljeni, obiskovalci tega ne vidijo.
+                Prijava ekipe{teamName ? `: ${teamName}` : ""}. Ligo vidiš, urejaš samo svoje treninge.
               </span>
             )}
           </div>
         )}
-        {training && admin ? (
+        {legacyTraining ? (
           <Training
             sessionId={trainingSessionId}
+            ownerTeamId={null}
+            canPickTeam={false}
             onOpen={setTrainingSessionId}
             onBack={() => setTrainingSessionId(null)}
+            onOwnerTeam={() => undefined}
           />
         ) : (
           <>
@@ -134,12 +149,13 @@ export function App() {
               ["results", "Rezultati"],
               ["standings", "Lestvica"],
               ["players", "Igralci"],
+              ...(showTrainingTab ? [["training", "Trening"] as [Page, string]] : []),
               ...(canEdit ? [["teams", "Ekipe"] as [Page, string]] : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
               key={id}
-              className={page === id && !matchId && !teamId ? "active" : ""}
+              className={page === id && !matchId && !detailTeamId ? "active" : ""}
               onClick={() => go(id)}
             >
               {label}
@@ -147,6 +163,19 @@ export function App() {
           ))}
         </nav>
 
+        {page === "training" && showTrainingTab && (
+          <Training
+            sessionId={trainingSessionId}
+            ownerTeamId={trainingOwnerId}
+            canPickTeam={admin}
+            onOpen={setTrainingSessionId}
+            onBack={() => setTrainingSessionId(null)}
+            onOwnerTeam={(id) => {
+              setTrainingOwnerId(id || null);
+              setTrainingSessionId(null);
+            }}
+          />
+        )}
         {page === "schedule" && !matchId && (
           <Matches mode="schedule" onOpen={canEdit ? setMatchId : undefined} />
         )}
@@ -175,9 +204,9 @@ export function App() {
             <PdfButton label="Izvozi PDF igralcev" onExport={() => exportPlayersPdf(state)} />
           </>
         )}
-        {canEdit && page === "teams" && !teamId && <Teams onOpen={setTeamId} />}
-        {canEdit && page === "teams" && teamId && (
-          <TeamDetail teamId={teamId} onBack={() => setTeamId(null)} />
+        {canEdit && page === "teams" && !detailTeamId && <Teams onOpen={setDetailTeamId} />}
+        {canEdit && page === "teams" && detailTeamId && (
+          <TeamDetail teamId={detailTeamId} onBack={() => setDetailTeamId(null)} />
         )}
           </>
         )}

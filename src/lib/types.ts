@@ -6,6 +6,9 @@ export type Team = {
   captain?: string;
   phone?: string;
   email?: string;
+  /** Samo v shrambi; klient dobi hasAccess. */
+  passwordHash?: string;
+  hasAccess?: boolean;
 };
 
 export type Player = {
@@ -50,11 +53,27 @@ export type TrainingScore = {
   games: (number | null)[];
 };
 
+export type TrainingKind = "solo" | "match";
+
+export type TrainingMatch = {
+  homeTeamId?: string;
+  awayTeamId?: string;
+  homeName?: string;
+  awayName?: string;
+  homeStarters: string[];
+  awayStarters: string[];
+  homeBench: string[];
+  awayBench: string[];
+  rounds: MatchRound[];
+};
+
 export type TrainingSession = {
   id: string;
   /** Koledarski datum YYYY-MM-DD, lokalni. */
   date: string;
+  kind?: TrainingKind;
   scores: TrainingScore[];
+  match?: TrainingMatch;
 };
 
 export type LeagueState = {
@@ -67,6 +86,8 @@ export type LeagueState = {
   matches: Match[];
   /** Seje treninga (samo ko je training: true). */
   trainingSessions?: TrainingSession[];
+  /** Treningi po ekipi v uradni sezoni. */
+  teamTrainings?: Record<string, TrainingSession[]>;
   /** Opomba po kolu (pavza, počitnice), npr. iz CSV stolpca opomba. */
   roundNotes?: Record<string, string>;
   /** Oznaka kola (datumi), npr. iz žreba s koledarjem. */

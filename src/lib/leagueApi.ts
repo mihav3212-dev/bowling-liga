@@ -1,4 +1,4 @@
-import type { LeagueState, SeasonInfo } from "./types";
+import type { LeagueState, SeasonInfo, TrainingSession } from "./types";
 
 export type LeaguePayload = {
   storage: "local" | "db";
@@ -82,6 +82,35 @@ export async function renameLeague(id: string, label: string): Promise<LeaguePay
     body: JSON.stringify({ action: "rename", id, label }),
   });
   if (!res.ok) throw new Error("rename");
+  return (await res.json()) as LeaguePayload;
+}
+
+export async function saveTeamTrainings(
+  id: string,
+  teamId: string,
+  sessions: TrainingSession[],
+): Promise<boolean> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "saveTraining", id, teamId, sessions }),
+  });
+  return res.ok;
+}
+
+export async function setTeamPassword(
+  id: string,
+  teamId: string,
+  password: string,
+): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "setTeamPassword", id, teamId, password }),
+  });
+  if (!res.ok) throw new Error("password");
   return (await res.json()) as LeaguePayload;
 }
 

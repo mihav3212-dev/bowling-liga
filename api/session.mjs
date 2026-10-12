@@ -11,22 +11,50 @@ function secret() {
   return adminPassword() || "missing-admin-password";
 }
 
-export function signToken() {
+function hmac(value) {
+  return createHmac("sha256", secret()).update(value).digest("hex");
+}
+
+function sameHex(a, b) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+export function signToken(payload = { a: 1 }) {
   const exp = String(Date.now() + 30 * DAY);
-  const sig = createHmac("sha256", secret()).update(exp).digest("hex");
-  return `${exp}.${sig}`;
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const sig = hmac(`${exp}.${body}`);
+  return `${exp}.${body}.${sig}`;
 }
 
 export function tokenValid(token) {
-  if (!token || !adminPassword()) return false;
-  const [exp, sig] = String(token).split(".");
-  if (!exp || !sig) return false;
-  if (Number(exp) < Date.now()) return false;
-  const expected = createHmac("sha256", secret()).update(exp).digest("hex");
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return timingSafeEqual(a, b);
+  return readSession(token).admin;
+}
+
+export function readSession(token) {
+  const empty = { admin: false, teamId: null };
+  if (!token || !adminPassword()) return empty;
+  const parts = String(token).split(".");
+  if (parts.length === 2) {
+    const [exp, sig] = parts;
+    if (!exp || !sig || Number(exp) < Date.now()) return empty;
+    if (!sameHex(sig, hmac(exp))) return empty;
+    return { admin: true, teamId: null };
+  }
+  if (parts.length !== 3) return empty;
+  const [exp, body, sig] = parts;
+  if (!exp || !body || !sig || Number(exp) < Date.now()) return empty;
+  if (!sameHex(sig, hmac(`${exp}.${body}`))) return empty;
+  try {
+    const data = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
+    if (data?.a) return { admin: true, teamId: null };
+    if (typeof data?.t === "string" && data.t) return { admin: false, teamId: data.t };
+  } catch {
+    return empty;
+  }
+  return empty;
 }
 
 export function passwordOk(password) {

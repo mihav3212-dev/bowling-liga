@@ -19,8 +19,7 @@ function adminApi(): Plugin {
           next();
           return;
         }
-        const { cookieHeader, clearCookieHeader, isSecureRequest, passwordOk, readToken, signToken, tokenValid } =
-          await import("./api/session.mjs");
+        const { clearCookieHeader, isSecureRequest } = await import("./api/session.mjs");
         try {
           if (url === "/api/league") {
             const { handleLeague } = await import("./api/league.js");
@@ -28,7 +27,8 @@ function adminApi(): Plugin {
             return;
           }
           if (url === "/api/me") {
-            send(res, 200, { admin: tokenValid(readToken(req.headers.cookie)) });
+            const { handleMe } = await import("./api/me.js");
+            await handleMe(req, res);
             return;
           }
           if (url === "/api/logout") {
@@ -36,14 +36,8 @@ function adminApi(): Plugin {
             return;
           }
           if (url === "/api/login" && req.method === "POST") {
-            const chunks: Buffer[] = [];
-            for await (const chunk of req) chunks.push(Buffer.from(chunk));
-            const body = JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}") as { password?: string };
-            if (!passwordOk(body.password ?? "")) {
-              send(res, 401, { ok: false });
-              return;
-            }
-            send(res, 200, { ok: true }, cookieHeader(signToken(), isSecureRequest(req)));
+            const { handleLogin } = await import("./api/login.js");
+            await handleLogin(req, res);
             return;
           }
           send(res, 404, { ok: false });

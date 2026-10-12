@@ -1,7 +1,9 @@
-import type { LeagueState, Player, TrainingScore, TrainingSession } from "./types";
+import { emptyRounds } from "./pairings";
+import type { LeagueState, Player, TrainingMatch, TrainingScore, TrainingSession } from "./types";
 import { scoredPins } from "./scoring";
 
-export const TRAINING_GAMES = 3;
+/** Osnovno število iger; če je zadnja izpolnjena, se zraven odpre še eno polje. */
+export const TRAINING_MIN_GAMES = 4;
 export const TRAINING_TEAM_ID = "train-pool";
 
 export function todayDate(): string {
@@ -23,6 +25,29 @@ export function formatTrainingDate(isoDate: string): string {
   });
 }
 
+export function emptyTrainingMatch(homeTeamId?: string, awayTeamId?: string, homeName?: string, awayName?: string): TrainingMatch {
+  const blanks = ["", "", "", ""];
+  return {
+    homeTeamId,
+    awayTeamId,
+    homeName,
+    awayName,
+    homeStarters: [...blanks],
+    awayStarters: [...blanks],
+    homeBench: [],
+    awayBench: [],
+    rounds: emptyRounds(blanks, blanks),
+  };
+}
+
+export function trainingMatchTitle(session: TrainingSession, teams: { id: string; name: string }[]): string {
+  const match = session.match;
+  if (!match) return "Tekma";
+  const home = teams.find((t) => t.id === match.homeTeamId)?.name || match.homeName || "Domači";
+  const away = teams.find((t) => t.id === match.awayTeamId)?.name || match.awayName || "Gostje";
+  return `${home} — ${away}`;
+}
+
 export function emptyTrainingState(): LeagueState {
   return {
     seasonTitle: "Trening",
@@ -34,33 +59,69 @@ export function emptyTrainingState(): LeagueState {
   };
 }
 
-export function padGames(games: (number | null)[] | undefined): (number | null)[] {
-  const next = [...(games ?? [])].slice(0, TRAINING_GAMES);
-  while (next.length < TRAINING_GAMES) next.push(null);
+export function playerCountLabel(n: number): string {
+  if (n === 1) return "1 igralec";
+  if (n === 2) return "2 igralca";
+  return `${n} igralci`;
+}
+
+export function gameColumnCount(scores: TrainingScore[]): number {
+  let last = -1;
+  for (const row of scores) {
+    (row.games ?? []).forEach((pins, i) => {
+      if (pins != null) last = Math.max(last, i);
+    });
+  }
+  return Math.max(TRAINING_MIN_GAMES, last + 2);
+}
+
+export function padGames(games: (number | null)[] | undefined, length = TRAINING_MIN_GAMES): (number | null)[] {
+  const next = [...(games ?? [])];
+  while (next.length < length) next.push(null);
   return next;
 }
 
 export function scoreTotal(score: TrainingScore, player?: Player): number | null {
-  const games = padGames(score.games);
+  const games = score.games ?? [];
   if (games.every((g) => g == null)) return null;
   let sum = 0;
   for (const raw of games) sum += scoredPins(raw, player) ?? 0;
   return sum;
 }
 
+export function getTeamSessions(state: LeagueState, teamId?: string | null): TrainingSession[] {
+  if (state.training || !teamId) return state.trainingSessions ?? [];
+  return state.teamTrainings?.[teamId] ?? [];
+}
+
+export function setTeamSessions(
+  state: LeagueState,
+  teamId: string | undefined | null,
+  sessions: TrainingSession[],
+): LeagueState {
+  if (state.training || !teamId) return { ...state, trainingSessions: sessions };
+  return { ...state, teamTrainings: { ...state.teamTrainings, [teamId]: sessions } };
+}
+
 export function parseTrainingSessions(value: unknown): TrainingSession[] | undefined {
   if (!Array.isArray(value)) return undefined;
-  return value
-    .map((row) => {
-      if (!row || typeof row !== "object") return null;
-      const item = row as TrainingSession;
-      if (!item.id || !item.date) return null;
-      const scores = Array.isArray(item.scores)
-        ? item.scores
-            .filter((s) => s && typeof s.playerId === "string")
-            .map((s) => ({ playerId: s.playerId, games: padGames(s.games) }))
-        : [];
-      return { id: String(item.id), date: String(item.date), scores };
-    })
-    .filter((row): row is TrainingSession => row != null);
+  const sessions: TrainingSession[] = [];
+  for (const row of value) {
+    if (!row || typeof row !== "object") continue;
+    const item = row as TrainingSession;
+    if (!item.id || !item.date) continue;
+    const scores = Array.isArray(item.scores)
+      ? item.scores
+          .filter((s) => s && typeof s.playerId === "string")
+          .map((s) => ({ playerId: s.playerId, games: padGames(s.games) }))
+      : [];
+    sessions.push({
+      id: String(item.id),
+      date: String(item.date),
+      kind: item.kind === "match" ? "match" : "solo",
+      scores,
+      match: item.match,
+    });
+  }
+  return sessions;
 }

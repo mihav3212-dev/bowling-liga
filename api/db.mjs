@@ -1,4 +1,6 @@
 import { neon } from "@neondatabase/serverless";
+import { hashPassword } from "./passwords.mjs";
+import { preserveSecrets } from "./sanitize.mjs";
 
 let cached;
 
@@ -21,6 +23,8 @@ function asState(data) {
     roundNotes: value?.roundNotes && typeof value.roundNotes === "object" ? value.roundNotes : undefined,
     roundLabels: value?.roundLabels && typeof value.roundLabels === "object" ? value.roundLabels : undefined,
     trainingSessions: Array.isArray(value?.trainingSessions) ? value.trainingSessions : undefined,
+    teamTrainings:
+      value?.teamTrainings && typeof value.teamTrainings === "object" ? value.teamTrainings : undefined,
   };
 }
 
@@ -93,7 +97,8 @@ export async function getCurrentSeason(sql) {
 }
 
 export async function saveSeason(sql, id, data) {
-  const payload = asState(data);
+  const existing = await getSeason(sql, id);
+  const payload = preserveSecrets(asState(data), existing?.data);
   const rows = await sql`
     UPDATE seasons
     SET data = ${JSON.stringify(payload)}::jsonb, updated_at = NOW()
@@ -141,7 +146,7 @@ export async function reopenSeason(sql, id) {
 export async function replaceSeason(sql, id, data, label) {
   const current = await getSeason(sql, id);
   if (!current) return null;
-  const payload = asState(data);
+  const payload = preserveSecrets(asState(data), current.data);
   const name = (label || payload.seasonTitle || current.label).trim();
   payload.seasonTitle = name;
   payload.training = Boolean(current.training);
@@ -183,6 +188,31 @@ export async function deleteSeason(sql, id) {
   await sql`DELETE FROM seasons WHERE id = ${id}`;
   const nextId = listed.find((row) => row.id !== id)?.id;
   return getSeason(sql, nextId);
+}
+
+export async function saveTeamTrainings(sql, teamId, sessions, seasonId) {
+  const current = seasonId ? await getSeason(sql, seasonId) : await getCurrentSeason(sql);
+  if (!current || current.archived) return null;
+  if (!(current.data.teams ?? []).some((team) => team.id === teamId)) return null;
+  const data = {
+    ...current.data,
+    teamTrainings: { ...(current.data.teamTrainings ?? {}), [teamId]: Array.isArray(sessions) ? sessions : [] },
+  };
+  const ok = await saveSeason(sql, current.id, data);
+  return ok ? getSeason(sql, current.id) : null;
+}
+
+export async function setTeamPassword(sql, teamId, password, seasonId) {
+  const current = seasonId ? await getSeason(sql, seasonId) : await getCurrentSeason(sql);
+  if (!current || current.archived) return null;
+  const trimmed = String(password ?? "").trim();
+  const hash = trimmed ? hashPassword(trimmed) : "";
+  if (!(current.data.teams ?? []).some((team) => team.id === teamId)) return null;
+  const teams = (current.data.teams ?? []).map((team) =>
+    team.id === teamId ? { ...team, passwordHash: hash } : team,
+  );
+  const ok = await saveSeason(sql, current.id, { ...current.data, teams });
+  return ok ? getSeason(sql, current.id) : null;
 }
 
 export async function createSeason(sql, label, data) {

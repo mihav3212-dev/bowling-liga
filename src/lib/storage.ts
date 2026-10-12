@@ -1,6 +1,6 @@
 import { uid } from "./ids";
 import { seasonIsComplete } from "./scoring";
-import type { LeagueState, SeasonInfo } from "./types";
+import type { LeagueState, SeasonInfo, Team } from "./types";
 
 const STATE_KEY = "bowling-liga-v2";
 const VAULT_KEY = "bowling-liga-seasons-v1";
@@ -183,6 +183,15 @@ export function closeVaultSeason(vault: SeasonVault): SeasonVault {
   };
   saveVault(next);
   return next;
+}
+
+export function currentVaultOfficialTeams(): Team[] {
+  const stored = readJson<SeasonVault>(VAULT_KEY);
+  if (!stored?.seasons?.length) return [];
+  const current =
+    stored.seasons.find((s) => s.id === stored.currentId && !s.data.training) ??
+    stored.seasons.find((s) => !s.data.training);
+  return current?.data.teams ?? [];
 }
 
 export function reopenVaultSeason(vault: SeasonVault, id: string): SeasonVault {

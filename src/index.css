@@ -693,7 +693,8 @@ select {
   font-size: 14px;
 }
 
-.header-login .ghost {
+.header-login .ghost,
+.header-logout {
   color: var(--header-fg);
   border-color: var(--header-line);
   background: transparent;

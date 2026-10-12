@@ -26,6 +26,8 @@ import {
   replaceLeague,
   reopenLeague,
   saveLeague,
+  saveTeamTrainings,
+  setTeamPassword,
   type LeaguePayload,
 } from "./leagueApi";
 import {
@@ -45,8 +47,17 @@ import {
 import { useAuth } from "./auth";
 import { uid } from "./ids";
 import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
-import { emptyTrainingState, padGames, todayDate, TRAINING_TEAM_ID } from "./training";
-import type { Gender, LeagueState, Match, Player, SeasonInfo, Team } from "./types";
+import { hashPassword } from "./passwords";
+import {
+  emptyTrainingMatch,
+  emptyTrainingState,
+  getTeamSessions,
+  padGames,
+  setTeamSessions,
+  todayDate,
+  TRAINING_TEAM_ID,
+} from "./training";
+import type { Gender, LeagueState, Match, Player, SeasonInfo, Team, TrainingMatch } from "./types";
 
 type Store = {
   state: LeagueState;
@@ -89,13 +100,51 @@ type Store = {
   newEmptySeason: (title: string) => Promise<void>;
   openTrainingSeason: () => Promise<void>;
   startNewTraining: () => Promise<string>;
-  newTrainingSession: () => string;
-  setTrainingDate: (sessionId: string, date: string) => void;
-  addTrainingPlayer: (sessionId: string, name: string, gender: Gender, bzsMember: boolean) => void;
-  pickTrainingPlayer: (sessionId: string, playerId: string) => void;
-  setTrainingPins: (sessionId: string, playerId: string, gameIndex: number, pins: number | null) => void;
-  removeTrainingScore: (sessionId: string, playerId: string) => void;
-  deleteTrainingSession: (sessionId: string) => void;
+  newTrainingSession: (teamId?: string) => string;
+  newTrainingMatch: (teamId: string | undefined, away: { teamId?: string; name?: string }) => string;
+  setTrainingMatchLineup: (
+    sessionId: string,
+    side: "home" | "away",
+    starters: string[],
+    bench: string[],
+    teamId?: string,
+  ) => void;
+  setTrainingMatchPins: (
+    sessionId: string,
+    roundIndex: number,
+    gameIndex: number,
+    side: "home" | "away",
+    pins: number | null,
+    teamId?: string,
+  ) => void;
+  setTrainingMatchPlayer: (
+    sessionId: string,
+    roundIndex: number,
+    gameIndex: number,
+    side: "home" | "away",
+    playerId: string,
+    teamId?: string,
+  ) => void;
+  setTrainingDate: (sessionId: string, date: string, teamId?: string) => void;
+  addTrainingPlayer: (
+    sessionId: string,
+    name: string,
+    gender: Gender,
+    bzsMember: boolean,
+    teamId?: string,
+    playerTeamId?: string,
+  ) => void;
+  pickTrainingPlayer: (sessionId: string, playerId: string, teamId?: string) => void;
+  setTrainingPins: (
+    sessionId: string,
+    playerId: string,
+    gameIndex: number,
+    pins: number | null,
+    teamId?: string,
+  ) => void;
+  removeTrainingScore: (sessionId: string, playerId: string, teamId?: string) => void;
+  deleteTrainingSession: (sessionId: string, teamId?: string) => void;
+  setTeamAccess: (teamId: string, password: string) => Promise<void>;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
   replaceSeason: (id: string, next: LeagueState, label?: string) => Promise<void>;
@@ -109,6 +158,21 @@ type Store = {
 };
 
 const Ctx = createContext<Store | null>(null);
+
+function asMatch(id: string, match: TrainingMatch): Match {
+  return {
+    id,
+    round: 1,
+    homeTeamId: match.homeTeamId ?? "",
+    awayTeamId: match.awayTeamId ?? "",
+    homeStarters: match.homeStarters,
+    awayStarters: match.awayStarters,
+    homeBench: match.homeBench,
+    awayBench: match.awayBench,
+    rounds: match.rounds,
+    status: "scheduled",
+  };
+}
 
 function applyLineup(match: Match, side: "home" | "away", starters: string[], bench: string[]): Match {
   const cleanStarters = starters.slice(0, PLAYERS_ON_LANE);
@@ -142,7 +206,9 @@ function applyLineup(match: Match, side: "home" | "away", starters: string[], be
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const { admin, ready } = useAuth();
+  const { admin, ready, teamId: viewerTeamId } = useAuth();
+  const viewerTeamRef = useRef<string | null>(viewerTeamId);
+  viewerTeamRef.current = viewerTeamId;
   const vaultRef = useRef<SeasonVault | null>(null);
   if (!vaultRef.current) vaultRef.current = loadVault(createSeed());
   const opening = vaultRef.current.seasons.find((s) => s.id === vaultRef.current!.currentId)
@@ -176,9 +242,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const persist = (next: LeagueState): LeagueState => {
     if (remoteRef.current && !archivedRef.current && seasonIdRef.current) {
       const id = seasonIdRef.current;
+      const team = viewerTeamRef.current;
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        void saveLeague(id, next);
+        if (team) {
+          void saveTeamTrainings(id, team, next.teamTrainings?.[team] ?? []);
+        } else {
+          void saveLeague(id, next);
+        }
       }, 600);
     } else if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
       vaultRef.current = writeCurrent(vaultRef.current, next);
@@ -237,7 +308,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [ready, admin]);
+  }, [ready, admin, viewerTeamId]);
 
   const api = useMemo<Store>(
     () => ({
@@ -410,94 +481,228 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await openSeason("Trening", merge(emptyTrainingState()));
         return id;
       },
-      newTrainingSession: () => {
+      newTrainingSession: (teamId) => {
         const id = uid("tr");
-        update((s) => ({
-          ...s,
-          training: true,
-          teams: s.teams.length ? s.teams : [{ id: TRAINING_TEAM_ID, name: "Trening" }],
-          trainingSessions: [{ id, date: todayDate(), scores: [] }, ...(s.trainingSessions ?? [])],
-        }));
+        update((s) =>
+          setTeamSessions(s, teamId, [
+            { id, date: todayDate(), kind: "solo", scores: [] },
+            ...getTeamSessions(s, teamId),
+          ]),
+        );
         return id;
       },
-      setTrainingDate: (sessionId, date) =>
-        update((s) => ({
-          ...s,
-          trainingSessions: (s.trainingSessions ?? []).map((session) =>
-            session.id === sessionId ? { ...session, date } : session,
+      newTrainingMatch: (teamId, away) => {
+        const id = uid("tr");
+        update((s) => {
+          const homeId = teamId || s.teams[0]?.id;
+          const awayId = away.teamId || uid("tp");
+          const homeName = s.teams.find((t) => t.id === homeId)?.name;
+          const awayName = away.teamId ? s.teams.find((t) => t.id === away.teamId)?.name : away.name?.trim();
+          const session = {
+            id,
+            date: todayDate(),
+            kind: "match" as const,
+            scores: [],
+            match: emptyTrainingMatch(homeId, awayId, homeName, awayName),
+          };
+          return setTeamSessions(s, teamId, [session, ...getTeamSessions(s, teamId)]);
+        });
+        return id;
+      },
+      setTrainingMatchLineup: (sessionId, side, starters, bench, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) => {
+              if (session.id !== sessionId || !session.match) return session;
+              const next = applyLineup(asMatch(session.id, session.match), side, starters, bench);
+              return {
+                ...session,
+                match: {
+                  ...session.match,
+                  homeStarters: next.homeStarters,
+                  awayStarters: next.awayStarters,
+                  homeBench: next.homeBench,
+                  awayBench: next.awayBench,
+                  rounds: next.rounds,
+                },
+              };
+            }),
           ),
-        })),
-      addTrainingPlayer: (sessionId, name, gender, bzsMember) =>
+        ),
+      setTrainingMatchPins: (sessionId, roundIndex, gameIndex, side, pins, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) => {
+              if (session.id !== sessionId || !session.match) return session;
+              return {
+                ...session,
+                match: {
+                  ...session.match,
+                  rounds: session.match.rounds.map((round, ri) => {
+                    if (ri !== roundIndex) return round;
+                    return {
+                      games: round.games.map((g, gi) => {
+                        if (gi !== gameIndex) return g;
+                        return side === "home" ? { ...g, homePins: pins } : { ...g, awayPins: pins };
+                      }),
+                    };
+                  }),
+                },
+              };
+            }),
+          ),
+        ),
+      setTrainingMatchPlayer: (sessionId, roundIndex, gameIndex, side, playerId, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) => {
+              if (session.id !== sessionId || !session.match) return session;
+              const match = session.match;
+              const allowed = nominatedIds(
+                side === "home" ? match.homeStarters : match.awayStarters,
+                side === "home" ? match.homeBench : match.awayBench,
+              );
+              if (playerId && !allowed.includes(playerId)) return session;
+              return {
+                ...session,
+                match: {
+                  ...match,
+                  rounds: match.rounds.map((round, ri) => {
+                    if (ri !== roundIndex) return round;
+                    return {
+                      games: round.games.map((g, gi) => {
+                        if (gi !== gameIndex) return g;
+                        return side === "home"
+                          ? { ...g, homePlayerId: playerId }
+                          : { ...g, awayPlayerId: playerId };
+                      }),
+                    };
+                  }),
+                },
+              };
+            }),
+          ),
+        ),
+      setTrainingDate: (sessionId, date, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) => (session.id === sessionId ? { ...session, date } : session)),
+          ),
+        ),
+      addTrainingPlayer: (sessionId, name, gender, bzsMember, teamId, playerTeamId) =>
         update((s) => {
           const trimmed = name.trim();
           if (!trimmed) return s;
-          const sessions = s.trainingSessions ?? [];
+          const sessions = getTeamSessions(s, teamId);
           const session = sessions.find((item) => item.id === sessionId);
           if (!session) return s;
-          const existing = s.players.find((p) => p.name.toLowerCase() === trimmed.toLowerCase());
+          const rosterId = playerTeamId || teamId;
+          const existing = s.players.find(
+            (p) => p.name.toLowerCase() === trimmed.toLowerCase() && (!rosterId || p.teamId === rosterId),
+          );
           const player = existing ?? {
             id: uid("p"),
-            teamId: s.teams[0]?.id || TRAINING_TEAM_ID,
+            teamId: rosterId || s.teams[0]?.id || TRAINING_TEAM_ID,
             name: trimmed,
             gender,
             bzsMember,
           };
+          if (session.kind === "match") {
+            if (existing) return s;
+            return { ...s, players: [...s.players, player] };
+          }
           if (session.scores.some((row) => row.playerId === player.id)) return s;
-          return {
-            ...s,
-            players: existing ? s.players : [...s.players, player],
-            trainingSessions: sessions.map((item) =>
+          return setTeamSessions(
+            {
+              ...s,
+              players: existing ? s.players : [...s.players, player],
+            },
+            teamId,
+            sessions.map((item) =>
               item.id === sessionId
                 ? { ...item, scores: [...item.scores, { playerId: player.id, games: padGames([]) }] }
                 : item,
             ),
-          };
+          );
         }),
-      pickTrainingPlayer: (sessionId, playerId) =>
+      pickTrainingPlayer: (sessionId, playerId, teamId) =>
         update((s) => {
-          const sessions = s.trainingSessions ?? [];
+          const sessions = getTeamSessions(s, teamId);
           const session = sessions.find((item) => item.id === sessionId);
           if (!session || !playerId || session.scores.some((row) => row.playerId === playerId)) return s;
           if (!s.players.some((p) => p.id === playerId)) return s;
-          return {
-            ...s,
-            trainingSessions: sessions.map((item) =>
+          return setTeamSessions(
+            s,
+            teamId,
+            sessions.map((item) =>
               item.id === sessionId
                 ? { ...item, scores: [...item.scores, { playerId, games: padGames([]) }] }
                 : item,
             ),
-          };
+          );
         }),
-      setTrainingPins: (sessionId, playerId, gameIndex, pins) =>
-        update((s) => ({
-          ...s,
-          trainingSessions: (s.trainingSessions ?? []).map((session) => {
-            if (session.id !== sessionId) return session;
-            return {
-              ...session,
-              scores: session.scores.map((row) => {
-                if (row.playerId !== playerId) return row;
-                const games = padGames(row.games);
-                games[gameIndex] = pins;
-                return { ...row, games };
-              }),
-            };
-          }),
-        })),
-      removeTrainingScore: (sessionId, playerId) =>
-        update((s) => ({
-          ...s,
-          trainingSessions: (s.trainingSessions ?? []).map((session) =>
-            session.id === sessionId
-              ? { ...session, scores: session.scores.filter((row) => row.playerId !== playerId) }
-              : session,
+      setTrainingPins: (sessionId, playerId, gameIndex, pins, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) => {
+              if (session.id !== sessionId) return session;
+              return {
+                ...session,
+                scores: session.scores.map((row) => {
+                  if (row.playerId !== playerId) return row;
+                  const games = padGames(row.games, gameIndex + 1);
+                  games[gameIndex] = pins;
+                  return { ...row, games };
+                }),
+              };
+            }),
           ),
-        })),
-      deleteTrainingSession: (sessionId) =>
+        ),
+      removeTrainingScore: (sessionId, playerId, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).map((session) =>
+              session.id === sessionId
+                ? { ...session, scores: session.scores.filter((row) => row.playerId !== playerId) }
+                : session,
+            ),
+          ),
+        ),
+      deleteTrainingSession: (sessionId, teamId) =>
+        update((s) =>
+          setTeamSessions(
+            s,
+            teamId,
+            getTeamSessions(s, teamId).filter((session) => session.id !== sessionId),
+          ),
+        ),
+      setTeamAccess: async (id, password) => {
+        const season = seasonIdRef.current;
+        if (remoteRef.current && season) {
+          applyRemote(await setTeamPassword(season, id, password));
+          return;
+        }
+        const trimmed = password.trim();
+        const hash = trimmed ? await hashPassword(trimmed) : undefined;
         update((s) => ({
           ...s,
-          trainingSessions: (s.trainingSessions ?? []).filter((session) => session.id !== sessionId),
-        })),
+          teams: s.teams.map((team) =>
+            team.id === id ? { ...team, passwordHash: hash, hasAccess: Boolean(hash) } : team,
+          ),
+        }));
+      },
       importState: (next) =>
         update(() => ({
           seasonKey: next.seasonKey,
@@ -508,6 +713,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
           trainingSessions: next.trainingSessions,
+          teamTrainings: next.teamTrainings,
         })),
       importSeason: async (next) => {
         const title = next.seasonTitle?.trim() || "Uvožena sezona";
@@ -521,6 +727,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
           trainingSessions: next.trainingSessions,
+          teamTrainings: next.teamTrainings,
         });
       },
       replaceSeason: async (id, next, label) => {
@@ -536,6 +743,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
           trainingSessions: next.trainingSessions,
+          teamTrainings: next.teamTrainings,
         };
         if (remoteRef.current) {
           applyRemote(await replaceLeague(id, data, title));

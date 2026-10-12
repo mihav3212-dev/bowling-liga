@@ -4,13 +4,15 @@ import type { Gender } from "../lib/types";
 import { useStore } from "../lib/store";
 
 export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => void }) {
-  const { state, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer } = useStore();
+  const { state, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
   const players = state.players.filter((p) => p.teamId === teamId);
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("M");
   const [bzs, setBzs] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [access, setAccess] = useState("");
+  const [accessBusy, setAccessBusy] = useState(false);
 
   if (!team) return <p>Ekipa ne obstaja.</p>;
 
@@ -69,6 +71,55 @@ export function TeamDetail({ teamId, onBack }: { teamId: string; onBack: () => v
           {exporting ? "Pripravljam…" : "Izvozi prijavni list"}
         </button>
       </div>
+      <h3 style={{ marginTop: 24 }}>Prijava ekipe</h3>
+      <p className="muted">
+        Geslo za vodjo ekipe, da si sami beležijo treninge. Javnost tega ne vidi.{" "}
+        {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
+      </p>
+      <form
+        className="form-row"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setAccessBusy(true);
+          try {
+            await setTeamAccess(team.id, access);
+            setAccess("");
+          } catch {
+            window.alert("Gesla ni bilo mogoče shraniti.");
+          } finally {
+            setAccessBusy(false);
+          }
+        }}
+      >
+        <input
+          type="password"
+          value={access}
+          onChange={(e) => setAccess(e.target.value)}
+          placeholder={team.hasAccess ? "Novo geslo ekipe" : "Geslo ekipe"}
+          autoComplete="new-password"
+        />
+        <button className="primary" type="submit" disabled={accessBusy || !access.trim()}>
+          {accessBusy ? "…" : "Nastavi geslo"}
+        </button>
+        {team.hasAccess && (
+          <button
+            className="danger"
+            type="button"
+            disabled={accessBusy}
+            onClick={async () => {
+              if (!window.confirm("Odstranim prijavo te ekipe?")) return;
+              setAccessBusy(true);
+              try {
+                await setTeamAccess(team.id, "");
+              } finally {
+                setAccessBusy(false);
+              }
+            }}
+          >
+            Odstrani prijavo
+          </button>
+        )}
+      </form>
       <h3 style={{ marginTop: 24 }}>Igralci ({players.length})</h3>
       <p className="muted">Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list.</p>
       <form
