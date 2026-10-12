@@ -12,7 +12,7 @@ import {
   scoreTotal,
   trainingMatchTitle,
 } from "../lib/training";
-import type { Gender, Player } from "../lib/types";
+import type { Player } from "../lib/types";
 import { TrainingMatch } from "./TrainingMatch";
 
 function PinField({
@@ -57,7 +57,6 @@ export function Training({
     state,
     newTrainingSession,
     setTrainingDate,
-    addTrainingPlayer,
     pickTrainingPlayer,
     setTrainingPins,
     removeTrainingScore,
@@ -70,11 +69,8 @@ export function Training({
   );
   const ownerTeam = state.teams.find((team) => team.id === ownerTeamId);
   const session = sessions.find((item) => item.id === sessionId) ?? null;
-  const [name, setName] = useState("");
-  const [gender, setGender] = useState<Gender>("M");
-  const [bzs, setBzs] = useState(false);
   const [pickId, setPickId] = useState("");
-  const [addTeamId, setAddTeamId] = useState(ownerTeamId ?? "");
+  const [playerQuery, setPlayerQuery] = useState("");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveNote, setSaveNote] = useState("");
 
@@ -86,6 +82,14 @@ export function Training({
         .sort((a, b) => a.name.localeCompare(b.name, "sl")),
     [state.players, session?.scores],
   );
+  const q = playerQuery.trim().toLowerCase();
+  const visiblePool = useMemo(() => {
+    if (!q) return pool;
+    return pool.filter((p) => {
+      const team = state.teams.find((t) => t.id === p.teamId)?.name ?? "";
+      return `${p.name} ${team}`.toLowerCase().includes(q);
+    });
+  }, [pool, q, state.teams]);
 
   const canStart = Boolean(state.training || ownerTeamId || canPickTeam);
   const startNew = () => {
@@ -98,8 +102,8 @@ export function Training({
       <section className="panel">
         <h2 className="round-title">Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
         <p className="muted">
-          Novi trening: dodaj igralce iz poljubnih ekip in vpiši keglje. Število iger ni določeno — ob
-          vpisu se odpre naslednje polje.
+          Novi trening: izberi igralce iz baze in vpiši keglje. Število iger ni določeno — ob vpisu se
+          odpre naslednje polje.
         </p>
         <p className="muted">
           {remote
@@ -176,7 +180,13 @@ export function Training({
       </p>
 
       <h3>Igralci</h3>
-      {pool.length > 0 && (
+      {pool.length === 0 ? (
+        <p className="muted">
+          {state.players.length === 0
+            ? "V bazi še ni igralcev — dodaj jih pri ekipah."
+            : "Vsi igralci iz baze so že na tem treningu."}
+        </p>
+      ) : (
         <form
           className="form-row"
           onSubmit={(e) => {
@@ -186,10 +196,16 @@ export function Training({
             setPickId("");
           }}
         >
-          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Obstoječi igralec">
+          <input
+            value={playerQuery}
+            onChange={(e) => setPlayerQuery(e.target.value)}
+            placeholder="Išči po imenu ali ekipi"
+            aria-label="Išči igralca"
+          />
+          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Igralec iz baze">
             <option value="">Izberi igralca…</option>
             {state.teams.map((team) => {
-              const members = pool.filter((p) => p.teamId === team.id);
+              const members = visiblePool.filter((p) => p.teamId === team.id);
               if (members.length === 0) return null;
               return (
                 <optgroup key={team.id} label={team.name}>
@@ -201,54 +217,23 @@ export function Training({
                 </optgroup>
               );
             })}
+            {visiblePool.some((p) => !state.teams.some((t) => t.id === p.teamId)) && (
+              <optgroup label="Brez ekipe">
+                {visiblePool
+                  .filter((p) => !state.teams.some((t) => t.id === p.teamId))
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {playerTag(p)}
+                    </option>
+                  ))}
+              </optgroup>
+            )}
           </select>
           <button className="ghost" type="submit" disabled={!pickId}>
-            Dodaj izbranega
+            Dodaj
           </button>
         </form>
       )}
-      <form
-        className="form-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          addTrainingPlayer(
-            session.id,
-            name,
-            gender,
-            bzs,
-            ownerTeamId ?? undefined,
-            addTeamId || ownerTeamId || undefined,
-          );
-          setName("");
-          setGender("M");
-          setBzs(false);
-        }}
-      >
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ime igralca" />
-        <select
-          value={addTeamId}
-          onChange={(e) => setAddTeamId(e.target.value)}
-          aria-label="Ekipa igralca"
-        >
-          <option value="">Ekipa…</option>
-          {state.teams.map((team) => (
-            <option key={team.id} value={team.id}>
-              {team.name}
-            </option>
-          ))}
-        </select>
-        <select value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
-          <option value="M">Moški</option>
-          <option value="F">Ženska (+8)</option>
-        </select>
-        <label className="muted">
-          <input type="checkbox" checked={bzs} onChange={(e) => setBzs(e.target.checked)} /> član BZS (−8)
-        </label>
-        <button className="primary" type="submit">
-          Vnesi igralca
-        </button>
-      </form>
 
       <h3 style={{ marginTop: 28 }}>Rezultati</h3>
       {session.scores.length === 0 ? (
