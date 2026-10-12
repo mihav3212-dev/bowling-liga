@@ -1,6 +1,6 @@
 # Predaja: Bowling liga Lenart
 
-Aplikacija **ni WordPress vtičnik**. Teče ločeno na lastnem strežniku (Node + MySQL). Na bowlinglenart.si je treba samo povezati zavihek **Liga**.
+Aplikacija **ni WordPress vtičnik**. Teče v `public_html` (HTML + PHP + MySQL). Na bowlinglenart.si je treba samo povezati zavihek **Liga**.
 
 | Kaj | Naslov |
 |-----|--------|
@@ -27,37 +27,25 @@ Datotek aplikacije **ne** kopiraš v WordPress. PHP strani `/liga/` ni treba spr
 
 ## 2. DNS — poddomena
 
-Pri DNS za `bowlinglenart.si`:
-
-| Tip | Ime | Vrednost |
-|-----|-----|----------|
-| A | liga | IP tvojega strežnika |
-
-SSL (Let's Encrypt) nastavi na tem strežniku, npr. certbot pred nginx.
+Pri DNS za `bowlinglenart.si` usmeri `liga` na isti hosting kot spletno stran (A ali CNAME po navodilih ponudnika). SSL naj uredi DirectAdmin/cPanel.
 
 ---
 
-## 3. Strežnik in baza (obvezno za klub)
+## 3. public_html in baza
 
-Aplikacija potrebuje **Node.js 20+**. phpMyAdmin je samo za MySQL, ne požene React/Node kode. Primer nginx: `deploy/nginx.conf.example`, systemd: `deploy/bowling-liga.service`.
+Node na strežniku **ni** potreben.
 
-Brez baze vsi rezultati ostanejo **samo v brskalniku** tistega računalnika.
+1. Na računalniku: `git clone`, `npm install`, `npm run build`.
+2. Vsebino mape **`dist/`** naloži v **`public_html`** (vključno z `index.html`, `assets/`, `api/`, `.htaccess`).
+3. V phpMyAdmin ustvari prazno bazo (npr. `bowling_liga`).
+4. Odpri domeno → obrazec **Namestitev** (MySQL gostitelj/uporabnik/geslo/baza + admin geslo).
+5. Če imaš staro sezono: Admin → **Izvozi JSON** (lokalno), na hostingu **Uvozi JSON kot sezono**.
 
-Da vsi vidijo iste sezone in rezultate:
+Tabele nastanejo ob namestitvi. Povezava je v `data/config.json`. Admin geslo je v `settings` (`admin_password`). Ponovna namestitev: zbriši `data/config.json`.
 
-1. Na računalniku, kjer imaš že vneseno sezono: Admin → **Izvozi JSON**.
-2. V phpMyAdmin ustvari prazno bazo (npr. `bowling_liga`). `schema.sql` ni obvezen.
-3. `npm install`, `npm run build`, `npm start` (ali systemd). Datoteke `.env` ne rabiš.
-4. Odpri stran — prvi obisk pokaže **Namestitev**: MySQL gostitelj/uporabnik/geslo/baza in geslo admina. Shrani.
-5. Prijavi se in Admin → **Uvozi JSON kot sezono**.
+Če se namestitev ne pokaže, preveri da je `.htaccess` naložen in da Apache dovoljuje Rewrite.
 
-Tabele `seasons` in `settings` nastanejo ob namestitvi. Povezava se shrani v `data/config.json` (ni v Gitu). Admin geslo je v tabeli `settings` (`admin_password`) — kasneje ga spremeniš v phpMyAdmin.
-
-Če je treba namestitev ponoviti, na strežniku zbriši `data/config.json`.
-
-**Brez koraka 1 se lokalni vnosi ob vklopu baze ne prenesejo sami.**
-
-Lokalni zagon: `npm install` in `npm run dev`. Če ni namestitve, sezone ostanejo v brskalniku.
+Lokalni zagon: `npm install` in `npm run dev`.
 
 ---
 

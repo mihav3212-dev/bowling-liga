@@ -1,0 +1,4 @@
+<FilesMatch "^(config|db|session|passwords|sanitize)\.php$">
+  Require all denied
+  Deny from all
+</FilesMatch>

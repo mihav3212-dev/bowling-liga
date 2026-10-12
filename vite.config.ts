@@ -1,3 +1,4 @@
+import { cpSync, mkdirSync } from "node:fs";
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -54,6 +55,17 @@ function adminApi(): Plugin {
   };
 }
 
+function copyPhpApi(): Plugin {
+  return {
+    name: "copy-php-api",
+    closeBundle() {
+      mkdirSync("dist/api", { recursive: true });
+      cpSync("php", "dist/api", { recursive: true });
+      mkdirSync("dist/data", { recursive: true });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.ADMIN_PASSWORD) process.env.ADMIN_PASSWORD = env.ADMIN_PASSWORD;
@@ -66,6 +78,6 @@ export default defineConfig(({ mode }) => {
   if (env.MYSQL_DATABASE) process.env.MYSQL_DATABASE = env.MYSQL_DATABASE;
   if (env.MYSQL_SOCKET) process.env.MYSQL_SOCKET = env.MYSQL_SOCKET;
   return {
-    plugins: [react(), adminApi()],
+    plugins: [react(), adminApi(), copyPhpApi()],
   };
 });
