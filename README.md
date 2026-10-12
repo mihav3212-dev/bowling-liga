@@ -25,3 +25,7 @@ npm run build
 Vsebino mape **`dist/`** naloži v **`public_html`** (index.html, assets, api, .htaccess — ne mape dist kot podmape).
 
 V phpMyAdmin ustvari prazno bazo. Odpri domeno → **Namestitev** (MySQL podatki + admin geslo).
+
+Vse sezone so v **eni MySQL bazi** (tabela `seasons`, JSON v `data`). Brez baze gre samo v brskalnik.
+
+Gesla ekip in dovoljenja: admin → Ekipe / Dovoljenja ekip. Glej **PREDAJA.md**.

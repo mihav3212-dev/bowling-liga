@@ -43,6 +43,12 @@ Node na strežniku **ni** potreben.
 
 Tabele nastanejo ob namestitvi. Povezava je v `data/config.json`. Admin geslo je v `settings` (`admin_password`). Ponovna namestitev: zbriši `data/config.json`.
 
+**Shramba:** ena MySQL baza, dve tabeli. `seasons` — vsaka sezona je ena vrstica, v `data` je JSON (ekipe, igralci, razpored, rezultati, treningi, gesla ekip, dovoljenja). `settings` — admin geslo. Ni ločenih tabel za tekme.
+
+Brez MySQL se shrani samo v **ta brskalnik**. Vercel brez baze je samo ogled, ne skupna liga.
+
+`.htaccess` je v `dist/` skrit (Finder: Cmd+Shift+.). Mora iti na hosting, sicer SPA in `/api` ne delujeta.
+
 Če se namestitev ne pokaže, preveri da je `.htaccess` naložen in da Apache dovoljuje Rewrite.
 
 Lokalni zagon: `npm install` in `npm run dev`.
@@ -51,13 +57,13 @@ Lokalni zagon: `npm install` in `npm run dev`.
 
 ## 4. Kaj vidi obiskovalec
 
-Zgoraj: logotip, prijava admina, sonce/luna (svetla/temna tema).
+Zgoraj: logotip, **eno polje za geslo** (admin ali ekipa), sonce/luna (svetla/temna tema).
 
 **Sezona** — izbira tekoče in arhiviranih sezon.
 
 Zavihki:
 
-- **Razpored** — kola, dnevi, ure, ekipe (brez točk).
+- **Razpored** — kola, dnevi, ure, ekipe (brez točk). Zgoraj je poudarek **V živo** / **Naslednja**.
 - **Rezultati** — kola v spustnem meniju; tekme (TOČKE, velike točke, keglji) in najboljši rezultati tistega tedna. Klik na tekmo odpre zapisnik (samo ogled).
 - **Lestvica** — ekipe: Iger, Z, P, R, velike točke, male točke, povprečja, TOČKE.
 - **Igralci** — posamezna lestvica.
@@ -66,16 +72,46 @@ PDF izvoz (rezultati, lestvica, igralci) je na zavihkih po izpisu.
 
 ---
 
-## 5. Admin — dnevno delo
+## 5. Ekipe — prijava in dovoljenja
 
-Prijava zgoraj desno. Meni **Admin**.
+Isto polje zgoraj desno: admin geslo ali geslo ekipe.
+
+### Geslo ekipe
+
+1. Admin → **Ekipe** → izbrana ekipa → **Prijava ekipe**.
+2. **Nastavi geslo**. Geslo se shrani zgoščeno; admin ga ne vidi nazaj.
+3. Če ekipa pozabi geslo: admin vpiše **novo** (starega ni treba). **Odstrani prijavo** jim vzame dostop.
+
+### Dovoljenja
+
+Samo v **Admin → Dovoljenja ekip** (ni zavihka). Za vsako ekipo:
+
+| Dovoljenje | Kaj sme ekipa |
+|------------|----------------|
+| Vnos igralcev v ekipo | Svoj seznam članov **do začetka 2. kola**. Potem samo admin. |
+| Vnos igralcev na tekmo | Sestava A1–A6 ali B1–B6 na **svojih** tekmah (privzeto vklopljeno). Rezultatov ne vnaša. |
+| Vnos rezultatov | Prvi vpis kegljev na svojih tekmah. |
+| Popravljanje rezultatov | Sprememba že vpisanih kegljev. |
+| Urejanje sezone | Žreb, vse ekipe — **pusti izklopljeno**. |
+
+Brez kljukice ekipa vidi javni razpored, rezultate in lestvico. **Trening** (zavihek) imajo, če imajo geslo.
+
+Žreb 2. dela in izvoz vseh prijavnih listov sta samo za admina (razen če ekipi daš urejanje sezone).
+
+---
+
+## 6. Admin — dnevno delo
+
+Prijava zgoraj desno. Meni **Admin** (dovoljenja ekip, sezone, JSON, razpored).
 
 ### Vnos tekme
 
 1. Razpored ali Rezultati → klik na tekmo.
-2. Sestava A1–A4 (rezerva A5–A6) in B1–B4 (B5–B6).
+2. Sestava A1–A4 (rezerva A5–A6) in B1–B4 (B5–B6). Ko so v 1. krogu keglji, je sestava zaklenjena.
 3. Keglji po dvobojih. Rumeni kvadratki T so male točke dvoboja.
 4. Na dnu je seštevek kegljev, povprečja, velikih točk in rezultata. **Shrani** te vrne na seznam (podatki se sicer shranjujejo sproti).
+
+Ekipa z dovoljenjem za sestavo na razporedu odpre **samo svojo** tekmo in vpiše A1–A6 ali B1–B6, brez kegljev.
 
 ### Točkovanje (kot uradni zapisnik)
 
@@ -115,11 +151,21 @@ Pavza: opomba pri zadnjem kolu pred premorom, ali vrstica samo `kolo;opomba`. Im
 
 - **Izvozi JSON** — varnostna kopija cele sezone.
 - **Uvozi JSON kot sezono** — doda sezono poleg obstoječih (po vklopu baze pride v skupno shrambo). Ni vnos posamezne tekme.
-- Redno shrani JSON, dokler ni vklopljena skupna baza.
+- Redno shrani JSON, dokler ni vklopljena skupna baza. Ko je MySQL vklopljen, je to dovolj za skupno ligo; JSON je še vedno varnostna kopija.
 
 ---
 
-## 6. Kaj vzdrževalec ne rabi
+## 7. Pred prvim kolo (checklist)
+
+1. Hosting: `dist/` v `public_html`, MySQL, namestitev, admin geslo.
+2. WordPress meni **Liga** → `https://liga.bowlinglenart.si`.
+3. Ekipe: gesla + dovoljenja (sestava vklopljena, urejanje sezone izklopljeno).
+4. Preizkus: prijava ene ekipe → razpored → sestava; admin reset gesla; telefon (razpored, igralci).
+5. Izvoz JSON.
+
+---
+
+## 8. Kaj vzdrževalec ne rabi
 
 - Kopirati mape v `wp-content`.
 - Spreminjati točkovanja v kodi (`src/lib/scoring.ts`), razen če se spremenijo klubska pravila.
