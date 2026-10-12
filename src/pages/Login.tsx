@@ -2,20 +2,14 @@ import { useState } from "react";
 import { useAuth } from "../lib/auth";
 
 export function Login() {
-  const { admin, ready, login, logout } = useAuth();
+  const { admin, ready, login } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
 
   if (!ready) return null;
 
-  if (admin) {
-    return (
-      <button className="ghost header-logout" type="button" onClick={() => void logout()}>
-        Odjava
-      </button>
-    );
-  }
+  if (admin) return null;
 
   return (
     <form

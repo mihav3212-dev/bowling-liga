@@ -25,10 +25,7 @@ export function App() {
     openTrainingSeason,
     seasons,
     seasonId,
-    seasonLabel,
     loadSeason,
-    renameSeason,
-    deleteSeason,
   } = useStore();
   const canEdit = admin && !archived;
   const shownSeasons = admin ? seasons : seasons.filter((s) => !s.training);
@@ -49,42 +46,6 @@ export function App() {
     const name = title.trim() || "Nova sezona";
     await newEmptySeason(name);
     go("teams");
-  };
-
-  const renameCurrentSeason = async () => {
-    if (!seasonId) return;
-    const typed = window.prompt("Novo ime sezone", seasonLabel);
-    if (typed == null) return;
-    const name = typed.trim();
-    if (!name || name === seasonLabel) return;
-    const dup = seasons.find((s) => s.id !== seasonId && s.label.trim().toLowerCase() === name.toLowerCase());
-    if (dup && !window.confirm(`Sezona „${dup.label}“ že obstaja. Vseeno preimenujem?`)) return;
-    try {
-      await renameSeason(seasonId, name);
-    } catch {
-      window.alert("Sezone ni bilo mogoče preimenovati.");
-    }
-  };
-
-  const deleteCurrentSeason = async () => {
-    if (!seasonId) return;
-    if (seasons.length <= 1) {
-      window.alert("Zadnje sezone ni mogoče izbrisati.");
-      return;
-    }
-    if (
-      !window.confirm(
-        `Izbrišem sezono „${seasonLabel}“? Ekipe, razpored in rezultati te sezone bodo izgubljeni.`,
-      )
-    ) {
-      return;
-    }
-    try {
-      await deleteSeason(seasonId);
-      go("schedule");
-    } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Sezone ni bilo mogoče izbrisati.");
-    }
   };
 
   useEffect(() => {
@@ -145,22 +106,6 @@ export function App() {
               </select>
             </label>
             {archived && <span className="muted">Arhiv — samo branje.</span>}
-            {admin && (
-              <span className="season-bar-actions">
-                <button className="ghost" type="button" onClick={() => void renameCurrentSeason()}>
-                  Preimenuj
-                </button>
-                <button
-                  className="ghost"
-                  type="button"
-                  disabled={seasons.length <= 1}
-                  title={seasons.length <= 1 ? "Zadnje sezone ni mogoče izbrisati." : "Trajno odstrani izbrano sezono."}
-                  onClick={() => void deleteCurrentSeason()}
-                >
-                  Izbriši
-                </button>
-              </span>
-            )}
             {training && admin && (
               <span className="season-note" style={{ margin: 0 }}>
                 Trening — vidiš samo prijavljeni, obiskovalci tega ne vidijo.

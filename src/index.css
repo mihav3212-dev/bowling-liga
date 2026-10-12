@@ -176,18 +176,6 @@ a {
   min-width: 12rem;
 }
 
-.season-bar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.season-bar-actions button {
-  padding: 6px 12px;
-  min-height: 36px;
-  font-size: 13px;
-}
-
 .liga-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -655,8 +643,14 @@ select {
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
-.admin-menu-logout {
-  display: none;
+.admin-menu-back {
+  font-size: 13px;
+}
+
+.admin-menu-current {
+  margin: 0 0 4px;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .admin-menu-panel label {
@@ -699,8 +693,7 @@ select {
   font-size: 14px;
 }
 
-.header-login .ghost,
-.header-logout {
+.header-login .ghost {
   color: var(--header-fg);
   border-color: var(--header-line);
   background: transparent;
@@ -961,14 +954,6 @@ select {
     align-items: flex-end;
     justify-content: flex-start;
     gap: 8px;
-  }
-
-  .header-logout {
-    display: none;
-  }
-
-  .admin-menu-logout {
-    display: block;
   }
 
   .header-login input {
