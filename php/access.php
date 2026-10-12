@@ -35,3 +35,47 @@ function liga_can_enter_pins($team, $existing)
     }
     return !empty($perms['results']) || !empty($perms['resultsEdit']);
 }
+
+function liga_roster_window_open($matches, $now = null)
+{
+    if ($now === null) {
+        $now = (int) (microtime(true) * 1000);
+    }
+    $later = [];
+    foreach (is_array($matches) ? $matches : [] as $match) {
+        if ((int) ($match['round'] ?? 0) >= 2) {
+            $later[] = $match;
+        }
+    }
+    if (count($later) === 0) {
+        return true;
+    }
+    $earliest = null;
+    foreach ($later as $match) {
+        $iso = $match['startsAt'] ?? null;
+        if (!$iso) {
+            continue;
+        }
+        $start = strtotime((string) $iso);
+        if ($start === false) {
+            continue;
+        }
+        $ms = $start * 1000;
+        if ($earliest === null || $ms < $earliest) {
+            $earliest = $ms;
+        }
+    }
+    if ($earliest !== null) {
+        return $now < $earliest;
+    }
+    foreach ($later as $match) {
+        foreach ($match['rounds'] ?? [] as $round) {
+            foreach ($round['games'] ?? [] as $game) {
+                if (($game['homePins'] ?? null) !== null || ($game['awayPins'] ?? null) !== null) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}

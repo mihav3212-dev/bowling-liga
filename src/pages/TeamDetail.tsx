@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
+import { teamRosterWindowOpen } from "../lib/access";
 import { useStore } from "../lib/store";
 
 export function TeamDetail({
@@ -25,6 +26,8 @@ export function TeamDetail({
   const [accessBusy, setAccessBusy] = useState(false);
 
   if (!team) return <p>Ekipa ne obstaja.</p>;
+  const rosterOpen = teamRosterWindowOpen(state.matches);
+  const editRoster = canRoster && (canManage || rosterOpen);
 
   return (
     <section className="panel">
@@ -136,11 +139,15 @@ export function TeamDetail({
       )}
       <h3 style={{ marginTop: 24 }}>Igralci ({players.length})</h3>
       <p className="muted">
-        {canRoster
-          ? "Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list."
-          : "Igralce vnaša admin ali vodja z dovoljenjem za vnos v ekipo."}
+        {editRoster
+          ? canManage
+            ? "Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list."
+            : "Člane lahko vnašate do začetka 2. kola. Pred tekmo izbereš 4 + do 2 menjavi."
+          : canRoster && !rosterOpen
+            ? "Od 2. kola naprej člane spreminja samo admin."
+            : "Igralce vnaša admin ali vodja z dovoljenjem za vnos v ekipo."}
       </p>
-      {canRoster && (
+      {editRoster && (
       <form
         className="form-row"
         onSubmit={(e) => {
@@ -169,7 +176,7 @@ export function TeamDetail({
         {players.map((p) => (
           <div key={p.id} className="form-row" style={{ justifyContent: "space-between" }}>
             <strong>{p.name}</strong>
-            {canRoster ? (
+            {editRoster ? (
               <>
                 <label className="muted">
                   <input

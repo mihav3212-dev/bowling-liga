@@ -48,7 +48,7 @@ import {
   writeCurrent,
   type SeasonVault,
 } from "./storage";
-import { canEnterPins, canTeam, defaultTeamPerms, teamPerms } from "./access";
+import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpen } from "./access";
 import { applyLineup, rosterIdsForTeam, sanitizeLineup, teamMatchSide } from "./lineup";
 import { useAuth } from "./auth";
 import { uid } from "./ids";
@@ -250,6 +250,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const viewerMayRoster = () => {
+    const viewer = viewerTeamRef.current;
+    if (!viewer) return true;
+    return (
+      canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster") &&
+      teamRosterWindowOpen(stateRef.current.matches)
+    );
+  };
+
   const flushRoster = (s: LeagueState) => {
     const team = viewerTeamRef.current;
     if (!remoteRef.current || !team || !seasonIdRef.current) return;
@@ -342,7 +351,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         })),
       addPlayer: (teamId, name, gender, bzsMember) => {
         const viewer = viewerTeamRef.current;
-        if (viewer && (viewer !== teamId || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+        if (viewer && (viewer !== teamId || !viewerMayRoster())) {
           return;
         }
         update((s) => {
@@ -356,7 +365,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       updatePlayer: (player) => {
         const viewer = viewerTeamRef.current;
-        if (viewer && (player.teamId !== viewer || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+        if (viewer && (player.teamId !== viewer || !viewerMayRoster())) {
           return;
         }
         update((s) => {
@@ -368,7 +377,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removePlayer: (id) => {
         const viewer = viewerTeamRef.current;
         const player = stateRef.current.players.find((p) => p.id === id);
-        if (viewer && (player?.teamId !== viewer || !canTeam(stateRef.current.teams.find((t) => t.id === viewer), "roster"))) {
+        if (viewer && (player?.teamId !== viewer || !viewerMayRoster())) {
           return;
         }
         update((s) => {

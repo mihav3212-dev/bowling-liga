@@ -1,6 +1,6 @@
 import mysql from "mysql2/promise";
 import { loadFileConfig } from "./config.mjs";
-import { canEnterPins, teamPerms } from "./access.mjs";
+import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
 import { applyLineup, lineupLocked, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
 import { hashPassword } from "./passwords.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
@@ -344,7 +344,7 @@ export async function saveTeamRoster(pool, teamId, roster, seasonId) {
   const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
   if (!current || current.archived) return null;
   const team = (current.data.teams ?? []).find((item) => item.id === teamId);
-  if (!teamPerms(team).roster) return null;
+  if (!teamPerms(team).roster || !teamRosterWindowOpen(current.data.matches)) return null;
   const incoming = Array.isArray(roster) ? roster : [];
   const cleaned = incoming
     .filter((player) => player && player.name)

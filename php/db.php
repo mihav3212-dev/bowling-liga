@@ -430,7 +430,7 @@ function save_team_roster(PDO $pdo, $teamId, $roster, $seasonId)
             break;
         }
     }
-    if (empty(liga_team_perms($teamRow)['roster'])) {
+    if (empty(liga_team_perms($teamRow)['roster']) || !liga_roster_window_open($current['data']['matches'] ?? [])) {
         return null;
     }
     $cleaned = [];
