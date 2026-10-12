@@ -1,4 +1,4 @@
-import { cpSync, mkdirSync } from "node:fs";
+import { cpSync, copyFileSync, mkdirSync } from "node:fs";
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -62,6 +62,8 @@ function copyPhpApi(): Plugin {
       mkdirSync("dist/api", { recursive: true });
       cpSync("php", "dist/api", { recursive: true });
       mkdirSync("dist/data", { recursive: true });
+      copyFileSync("public/.htaccess", "dist/.htaccess");
+      console.log("Skopirano v dist: .htaccess in api/ (skrite datoteke: ls -la dist)");
     },
   };
 }
