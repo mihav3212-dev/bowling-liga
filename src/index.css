@@ -176,6 +176,18 @@ a {
   min-width: 12rem;
 }
 
+.season-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.season-bar-actions button {
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: 13px;
+}
+
 .liga-tabs {
   display: flex;
   flex-wrap: wrap;

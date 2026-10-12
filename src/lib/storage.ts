@@ -94,7 +94,60 @@ export function vaultInfos(vault: SeasonVault): SeasonInfo[] {
     id: s.id,
     label: s.label,
     archived: s.archived,
+    training: Boolean(s.data.training),
   }));
+}
+
+export function seasonNameKey(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+export function findSeasonByName(
+  seasons: SeasonInfo[],
+  name: string,
+  preferId?: string | null,
+): SeasonInfo | undefined {
+  const key = seasonNameKey(name);
+  const matches = seasons.filter((s) => seasonNameKey(s.label) === key);
+  return matches.find((s) => s.id === preferId) ?? matches[0];
+}
+
+export function replaceVaultSeason(
+  vault: SeasonVault,
+  id: string,
+  label: string,
+  data: LeagueState,
+): SeasonVault {
+  const next: SeasonVault = {
+    currentId: id,
+    seasons: vault.seasons.map((s) =>
+      s.id === id ? { ...s, label, archived: false, data } : s,
+    ),
+  };
+  saveVault(next);
+  return next;
+}
+
+export function renameVaultSeason(vault: SeasonVault, id: string, label: string): SeasonVault {
+  const next: SeasonVault = {
+    ...vault,
+    seasons: vault.seasons.map((s) =>
+      s.id === id ? { ...s, label, data: { ...s.data, seasonTitle: label } } : s,
+    ),
+  };
+  saveVault(next);
+  return next;
+}
+
+export function deleteVaultSeason(vault: SeasonVault, id: string): SeasonVault {
+  const seasons = vault.seasons.filter((s) => s.id !== id);
+  if (seasons.length === 0) {
+    throw new Error("Zadnje sezone ni mogoče izbrisati.");
+  }
+  const currentId = vault.currentId === id ? seasons[0].id : vault.currentId;
+  const next: SeasonVault = { currentId, seasons };
+  saveVault(next);
+  return next;
 }
 
 export function writeCurrent(vault: SeasonVault, data: LeagueState): SeasonVault {
@@ -114,6 +167,13 @@ export function addVaultSeason(vault: SeasonVault, label: string, data: LeagueSt
   };
   saveVault(next);
   return next;
+}
+
+export function publicSeasonId(seasons: SeasonInfo[], fallback?: string | null): string | null {
+  const live = seasons.find((s) => !s.training && !s.archived);
+  if (live) return live.id;
+  const any = seasons.find((s) => !s.training);
+  return any?.id ?? fallback ?? null;
 }
 
 export function closeVaultSeason(vault: SeasonVault): SeasonVault {

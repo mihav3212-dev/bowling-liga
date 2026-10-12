@@ -3,20 +3,26 @@ import { useAuth } from "../lib/auth";
 import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
 import { useStore } from "../lib/store";
+import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
 
 export function AdminMenu({
   canEdit,
   onNewSeason,
+  onTrainingSeason,
 }: {
   canEdit: boolean;
   onNewSeason: () => void;
+  onTrainingSeason: () => void;
 }) {
   const {
     state,
     remote,
     archived,
+    seasons,
+    seasonId,
     importSeason,
+    replaceSeason,
     importFixtures,
     appendOfficialSchedule,
     closeSeason,
@@ -70,8 +76,26 @@ export function AdminMenu({
             </button>
           </>
         )}
-        <button className="primary" type="button" onClick={onNewSeason}>
+        <button
+          className="primary"
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            onNewSeason();
+          }}
+        >
           Nova sezona
+        </button>
+        <button
+          className="ghost"
+          type="button"
+          title="Testna sezona za vajo vnosa. Vidiš jo samo prijavljeni."
+          onClick={() => {
+            setOpen(false);
+            onTrainingSeason();
+          }}
+        >
+          Trening / test
         </button>
         {canEdit && (
           <button
@@ -136,16 +160,14 @@ export function AdminMenu({
             Uvozi razpored (CSV)
           </button>
         )}
-        {canEdit && (
-          <button
-            className="ghost"
-            type="button"
-            title="Naloži prej izvožen JSON kot novo sezono (obstoječe ostanejo)."
-            onClick={() => fileRef.current?.click()}
-          >
-            Uvozi JSON kot sezono
-          </button>
-        )}
+        <button
+          className="ghost"
+          type="button"
+          title="Naloži prej izvožen JSON. Če sezona z istim imenom že obstaja, vpraša za prepis ali novo ime."
+          onClick={() => fileRef.current?.click()}
+        >
+          Uvozi JSON kot sezono
+        </button>
         <input
           ref={fileRef}
           type="file"
@@ -160,7 +182,25 @@ export function AdminMenu({
               if (!Array.isArray(next.teams) || !Array.isArray(next.players)) {
                 throw new Error("invalid");
               }
-              await importSeason(next);
+              const imported = next.seasonTitle?.trim() || "Uvožena sezona";
+              let title = imported;
+              for (;;) {
+                const dup = findSeasonByName(seasons, title, seasonId);
+                if (!dup) {
+                  await importSeason({ ...next, seasonTitle: title });
+                  break;
+                }
+                const overwrite = window.confirm(
+                  `Sezona „${dup.label}“ že obstaja.\n\nV redu — prepiši obstoječo sezono.\nPrekliči — shrani uvoz pod drugim imenom.`,
+                );
+                if (overwrite) {
+                  await replaceSeason(dup.id, { ...next, seasonTitle: dup.label });
+                  break;
+                }
+                const typed = window.prompt("Novo ime za uvoženo sezono:", `${title} (2)`);
+                if (typed == null) break;
+                title = typed.trim() || `${title} (2)`;
+              }
             } catch {
               window.alert("Datoteka ni veljaven izvoz lige.");
             }

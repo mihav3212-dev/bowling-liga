@@ -2,6 +2,9 @@ import { tokenValid, readToken } from "./session.mjs";
 import {
   archiveCurrent,
   createSeason,
+  deleteSeason,
+  renameSeason,
+  replaceSeason,
   reopenSeason,
   ensureSchema,
   getCurrentSeason,
@@ -43,7 +46,11 @@ export async function handleLeague(req, res) {
     const seasonId = url.searchParams.get("id");
 
     if (req.method === "GET") {
-      const current = seasonId ? await getSeason(sql, seasonId) : await getCurrentSeason(sql);
+      const admin = isAdmin(req);
+      let current = seasonId ? await getSeason(sql, seasonId) : await getCurrentSeason(sql);
+      if (current?.training && !admin) {
+        current = await getCurrentSeason(sql);
+      }
       if (!current) {
         json(res, 404, { ok: false });
         return;
@@ -51,7 +58,7 @@ export async function handleLeague(req, res) {
       json(res, 200, {
         storage: "db",
         current,
-        seasons: await listSeasons(sql),
+        seasons: await listSeasons(sql, { includeTraining: admin }),
       });
       return;
     }
@@ -72,11 +79,11 @@ export async function handleLeague(req, res) {
     if (req.method === "POST") {
       const body = await readBody(req);
       if (body.action === "archive") {
-        const current = await archiveCurrent(sql);
+        const current = await archiveCurrent(sql, body.id);
         json(res, 200, {
           storage: "db",
           current,
-          seasons: await listSeasons(sql),
+          seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
       }
@@ -85,7 +92,7 @@ export async function handleLeague(req, res) {
         json(res, 200, {
           storage: "db",
           current,
-          seasons: await listSeasons(sql),
+          seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
       }
@@ -94,7 +101,42 @@ export async function handleLeague(req, res) {
         json(res, 200, {
           storage: "db",
           current,
-          seasons: await listSeasons(sql),
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (body.action === "replace") {
+        const current = await replaceSeason(sql, body.id, body.data, body.label);
+        if (!current) {
+          json(res, 404, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current,
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (body.action === "rename") {
+        const current = await renameSeason(sql, body.id, body.label);
+        if (!current) {
+          json(res, 404, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current,
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (body.action === "delete") {
+        const current = await deleteSeason(sql, body.id);
+        json(res, 200, {
+          storage: "db",
+          current,
+          seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
       }

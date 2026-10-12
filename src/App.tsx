@@ -11,14 +11,28 @@ import { AdminMenu } from "./pages/AdminMenu";
 import { PdfButton } from "./pages/PdfButton";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
+import { publicSeasonId } from "./lib/storage";
 import { useStore } from "./lib/store";
 
 type Page = "schedule" | "results" | "standings" | "players" | "teams";
 
 export function App() {
   const { admin } = useAuth();
-  const { state, archived, newEmptySeason, seasons, seasonId, loadSeason } = useStore();
+  const {
+    state,
+    archived,
+    newEmptySeason,
+    openTrainingSeason,
+    seasons,
+    seasonId,
+    seasonLabel,
+    loadSeason,
+    renameSeason,
+    deleteSeason,
+  } = useStore();
   const canEdit = admin && !archived;
+  const shownSeasons = admin ? seasons : seasons.filter((s) => !s.training);
+  const training = Boolean(state.training || seasons.find((s) => s.id === seasonId)?.training);
   const [page, setPage] = useState<Page>("schedule");
   const [matchId, setMatchId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -37,6 +51,42 @@ export function App() {
     go("teams");
   };
 
+  const renameCurrentSeason = async () => {
+    if (!seasonId) return;
+    const typed = window.prompt("Novo ime sezone", seasonLabel);
+    if (typed == null) return;
+    const name = typed.trim();
+    if (!name || name === seasonLabel) return;
+    const dup = seasons.find((s) => s.id !== seasonId && s.label.trim().toLowerCase() === name.toLowerCase());
+    if (dup && !window.confirm(`Sezona „${dup.label}“ že obstaja. Vseeno preimenujem?`)) return;
+    try {
+      await renameSeason(seasonId, name);
+    } catch {
+      window.alert("Sezone ni bilo mogoče preimenovati.");
+    }
+  };
+
+  const deleteCurrentSeason = async () => {
+    if (!seasonId) return;
+    if (seasons.length <= 1) {
+      window.alert("Zadnje sezone ni mogoče izbrisati.");
+      return;
+    }
+    if (
+      !window.confirm(
+        `Izbrišem sezono „${seasonLabel}“? Ekipe, razpored in rezultati te sezone bodo izgubljeni.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteSeason(seasonId);
+      go("schedule");
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Sezone ni bilo mogoče izbrisati.");
+    }
+  };
+
   useEffect(() => {
     if (!canEdit) {
       setTeamId(null);
@@ -45,6 +95,12 @@ export function App() {
     }
   }, [admin, canEdit, page]);
 
+  useEffect(() => {
+    if (admin || !training) return;
+    const id = publicSeasonId(seasons, seasonId);
+    if (id && id !== seasonId) void loadSeason(id);
+  }, [admin, training, seasons, seasonId, loadSeason]);
+
   return (
     <div>
       <header className="site-header">
@@ -52,7 +108,16 @@ export function App() {
           <img className="logo" src="/logo-bowling-lenart.png" alt="Bowling Lenart" />
         </a>
         <div className="header-actions">
-          {admin && <AdminMenu canEdit={canEdit} onNewSeason={() => void startNewSeason()} />}
+          {admin && (
+            <AdminMenu
+              canEdit={canEdit}
+              onNewSeason={() => void startNewSeason()}
+              onTrainingSeason={async () => {
+                await openTrainingSeason();
+                go("teams");
+              }}
+            />
+          )}
           <Login />
           <ThemePicker />
         </div>
@@ -60,25 +125,47 @@ export function App() {
 
       <div className={page === "players" ? "app-shell is-wide" : "app-shell"}>
         <h1 className="page-title">Bowling liga Lenart.</h1>
-        {seasons.length > 0 && (
+        {shownSeasons.length > 0 && (
           <div className="season-bar">
             <label>
               Sezona
               <select
-                value={seasonId ?? ""}
+                value={shownSeasons.some((s) => s.id === seasonId) ? (seasonId ?? "") : ""}
                 onChange={(e) => {
                   if (e.target.value) void loadSeason(e.target.value);
                 }}
               >
-                {seasons.map((season) => (
+                {shownSeasons.map((season) => (
                   <option key={season.id} value={season.id}>
                     {season.label}
+                    {season.training ? " (trening)" : ""}
                     {season.archived ? " (arhiv)" : ""}
                   </option>
                 ))}
               </select>
             </label>
             {archived && <span className="muted">Arhiv — samo branje.</span>}
+            {admin && (
+              <span className="season-bar-actions">
+                <button className="ghost" type="button" onClick={() => void renameCurrentSeason()}>
+                  Preimenuj
+                </button>
+                <button
+                  className="ghost"
+                  type="button"
+                  disabled={seasons.length <= 1}
+                  title={seasons.length <= 1 ? "Zadnje sezone ni mogoče izbrisati." : "Trajno odstrani izbrano sezono."}
+                  onClick={() => void deleteCurrentSeason()}
+                >
+                  Izbriši
+                </button>
+              </span>
+            )}
+            {training && admin && (
+              <span className="season-note" style={{ margin: 0 }}>
+                Trening — vidiš samo prijavljeni, obiskovalci tega ne vidijo.
+              </span>
+            )}
           </div>
         )}
         <nav className="liga-tabs">

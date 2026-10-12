@@ -14,6 +14,7 @@ function asState(data) {
   return {
     seasonKey: value?.seasonKey,
     seasonTitle: value?.seasonTitle,
+    training: Boolean(value?.training),
     teams: Array.isArray(value?.teams) ? value.teams : [],
     players: Array.isArray(value?.players) ? value.players : [],
     matches: Array.isArray(value?.matches) ? value.matches : [],
@@ -23,12 +24,14 @@ function asState(data) {
 }
 
 function asSeason(row) {
+  const data = asState(row.data);
   return {
     id: row.id,
     label: row.label,
     archived: Boolean(row.archived_at),
+    training: Boolean(data.training),
     updatedAt: row.updated_at,
-    data: asState(row.data),
+    data,
   };
 }
 
@@ -44,18 +47,24 @@ export async function ensureSchema(sql) {
   `;
 }
 
-export async function listSeasons(sql) {
+export async function listSeasons(sql, { includeTraining = false } = {}) {
   const rows = await sql`
-    SELECT id, label, archived_at, updated_at
+    SELECT id, label, archived_at, updated_at, data
     FROM seasons
     ORDER BY archived_at NULLS FIRST, updated_at DESC
   `;
-  return rows.map((row) => ({
-    id: row.id,
-    label: row.label,
-    archived: Boolean(row.archived_at),
-    updatedAt: row.updated_at,
-  }));
+  return rows
+    .map((row) => {
+      const training = Boolean(asState(row.data).training);
+      return {
+        id: row.id,
+        label: row.label,
+        archived: Boolean(row.archived_at),
+        training,
+        updatedAt: row.updated_at,
+      };
+    })
+    .filter((row) => includeTraining || !row.training);
 }
 
 export async function getSeason(sql, id) {
@@ -67,6 +76,7 @@ export async function getCurrentSeason(sql) {
   const rows = await sql`
     SELECT * FROM seasons
     WHERE archived_at IS NULL
+      AND COALESCE((data->>'training')::boolean, false) = false
     ORDER BY updated_at DESC
     LIMIT 1
   `;
@@ -92,10 +102,14 @@ export async function saveSeason(sql, id, data) {
   return rows.length > 0;
 }
 
-export async function archiveCurrent(sql) {
-  const current = await getCurrentSeason(sql);
-  await sql`UPDATE seasons SET archived_at = NOW(), updated_at = NOW() WHERE id = ${current.id}`;
-  return getSeason(sql, current.id);
+export async function archiveCurrent(sql, id) {
+  let targetId = id;
+  if (!targetId) {
+    const current = await getCurrentSeason(sql);
+    targetId = current.id;
+  }
+  await sql`UPDATE seasons SET archived_at = NOW(), updated_at = NOW() WHERE id = ${targetId}`;
+  return getSeason(sql, targetId);
 }
 
 export async function reopenSeason(sql, id) {
@@ -121,6 +135,53 @@ export async function reopenSeason(sql, id) {
     WHERE id = ${targetId}
   `;
   return getSeason(sql, targetId);
+}
+
+export async function replaceSeason(sql, id, data, label) {
+  const current = await getSeason(sql, id);
+  if (!current) return null;
+  const payload = asState(data);
+  const name = (label || payload.seasonTitle || current.label).trim();
+  payload.seasonTitle = name;
+  payload.training = Boolean(current.training);
+  await sql`
+    UPDATE seasons
+    SET label = ${name},
+        data = ${JSON.stringify(payload)}::jsonb,
+        archived_at = NULL,
+        updated_at = NOW()
+    WHERE id = ${id}
+  `;
+  return getSeason(sql, id);
+}
+
+export async function renameSeason(sql, id, label) {
+  const current = await getSeason(sql, id);
+  if (!current) return null;
+  const name = String(label || "").trim();
+  if (!name) return current;
+  const payload = asState({ ...current.data, seasonTitle: name });
+  await sql`
+    UPDATE seasons
+    SET label = ${name},
+        data = ${JSON.stringify(payload)}::jsonb,
+        updated_at = NOW()
+    WHERE id = ${id}
+  `;
+  return getSeason(sql, id);
+}
+
+export async function deleteSeason(sql, id) {
+  const listed = await sql`
+    SELECT id FROM seasons
+    ORDER BY archived_at NULLS FIRST, updated_at DESC
+  `;
+  if (listed.length <= 1) {
+    throw new Error("Zadnje sezone ni mogoče izbrisati.");
+  }
+  await sql`DELETE FROM seasons WHERE id = ${id}`;
+  const nextId = listed.find((row) => row.id !== id)?.id;
+  return getSeason(sql, nextId);
 }
 
 export async function createSeason(sql, label, data) {

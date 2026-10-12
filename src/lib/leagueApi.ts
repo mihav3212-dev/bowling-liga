@@ -6,6 +6,7 @@ export type LeaguePayload = {
     id: string;
     label: string;
     archived: boolean;
+    training?: boolean;
     updatedAt?: string;
     data: LeagueState;
   };
@@ -29,12 +30,12 @@ export async function saveLeague(id: string, data: LeagueState): Promise<boolean
   return res.ok;
 }
 
-export async function archiveLeague(): Promise<LeaguePayload> {
+export async function archiveLeague(id?: string): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "archive" }),
+    body: JSON.stringify({ action: "archive", id }),
   });
   if (!res.ok) throw new Error("archive");
   return (await res.json()) as LeaguePayload;
@@ -59,5 +60,38 @@ export async function createLeague(label: string, data?: LeagueState): Promise<L
     body: JSON.stringify({ action: "create", label, data }),
   });
   if (!res.ok) throw new Error("create");
+  return (await res.json()) as LeaguePayload;
+}
+
+export async function replaceLeague(id: string, data: LeagueState, label?: string): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "replace", id, data, label }),
+  });
+  if (!res.ok) throw new Error("replace");
+  return (await res.json()) as LeaguePayload;
+}
+
+export async function renameLeague(id: string, label: string): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "rename", id, label }),
+  });
+  if (!res.ok) throw new Error("rename");
+  return (await res.json()) as LeaguePayload;
+}
+
+export async function deleteLeague(id: string): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete", id }),
+  });
+  if (!res.ok) throw new Error("delete");
   return (await res.json()) as LeaguePayload;
 }

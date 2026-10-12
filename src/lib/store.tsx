@@ -17,11 +17,24 @@ import {
   buildSeasonMatches,
   type FixtureRow,
 } from "./schedule";
-import { archiveLeague, createLeague, fetchLeague, reopenLeague, saveLeague, type LeaguePayload } from "./leagueApi";
+import {
+  archiveLeague,
+  createLeague,
+  deleteLeague,
+  fetchLeague,
+  renameLeague,
+  replaceLeague,
+  reopenLeague,
+  saveLeague,
+  type LeaguePayload,
+} from "./leagueApi";
 import {
   addVaultSeason,
   closeVaultSeason,
+  deleteVaultSeason,
   loadVault,
+  renameVaultSeason,
+  replaceVaultSeason,
   reopenVaultSeason,
   saveState,
   saveVault,
@@ -29,6 +42,7 @@ import {
   writeCurrent,
   type SeasonVault,
 } from "./storage";
+import { useAuth } from "./auth";
 import { uid } from "./ids";
 import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import type { Gender, LeagueState, Match, Player, SeasonInfo, Team } from "./types";
@@ -72,8 +86,12 @@ type Store = {
   resetDemo: () => void;
   loadSeason2025: () => Promise<void>;
   newEmptySeason: (title: string) => Promise<void>;
+  openTrainingSeason: () => Promise<void>;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
+  replaceSeason: (id: string, next: LeagueState, label?: string) => Promise<void>;
+  renameSeason: (id: string, label: string) => Promise<void>;
+  deleteSeason: (id: string) => Promise<void>;
   importFixtures: (rows: FixtureRow[]) => void;
   appendOfficialSchedule: () => void;
   loadSeason: (id: string) => Promise<void>;
@@ -115,6 +133,7 @@ function applyLineup(match: Match, side: "home" | "away", starters: string[], be
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  const { admin, ready } = useAuth();
   const vaultRef = useRef<SeasonVault | null>(null);
   if (!vaultRef.current) vaultRef.current = loadVault(createSeed());
   const opening = vaultRef.current.seasons.find((s) => s.id === vaultRef.current!.currentId)
@@ -194,6 +213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    if (!ready) return;
     let cancelled = false;
     fetchLeague()
       .then((payload) => {
@@ -208,7 +228,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [ready, admin]);
 
   const api = useMemo<Store>(
     () => ({
@@ -337,6 +357,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: [],
         });
       },
+      openTrainingSeason: async () => {
+        const existing = seasons.find((s) => s.training);
+        if (existing) {
+          if (remoteRef.current) {
+            applyRemote(await fetchLeague(existing.id));
+            return;
+          }
+          if (vaultRef.current) applyVault(vaultRef.current, existing.id);
+          return;
+        }
+        await openSeason("Trening", {
+          seasonTitle: "Trening",
+          training: true,
+          teams: [],
+          players: [],
+          matches: [],
+        });
+      },
       importState: (next) =>
         update(() => ({
           seasonKey: next.seasonKey,
@@ -352,12 +390,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await openSeason(title, {
           seasonKey: next.seasonKey,
           seasonTitle: title,
+          training: next.training,
           teams: next.teams ?? [],
           players: next.players ?? [],
           matches: next.matches ?? [],
           roundNotes: next.roundNotes,
           roundLabels: next.roundLabels,
         });
+      },
+      replaceSeason: async (id, next, label) => {
+        const existing = seasons.find((s) => s.id === id);
+        const title = (label || next.seasonTitle || existing?.label || "Uvožena sezona").trim();
+        const data: LeagueState = {
+          seasonKey: next.seasonKey,
+          seasonTitle: title,
+          training: Boolean(existing?.training),
+          teams: next.teams ?? [],
+          players: next.players ?? [],
+          matches: next.matches ?? [],
+          roundNotes: next.roundNotes,
+          roundLabels: next.roundLabels,
+        };
+        if (remoteRef.current) {
+          applyRemote(await replaceLeague(id, data, title));
+          return;
+        }
+        if (vaultRef.current) applyVault(replaceVaultSeason(vaultRef.current, id, title, data), id);
+      },
+      renameSeason: async (id, label) => {
+        const name = label.trim();
+        if (!name) return;
+        if (remoteRef.current) {
+          applyRemote(await renameLeague(id, name));
+          return;
+        }
+        if (vaultRef.current) applyVault(renameVaultSeason(vaultRef.current, id, name), vaultRef.current.currentId);
+      },
+      deleteSeason: async (id) => {
+        if (remoteRef.current) {
+          applyRemote(await deleteLeague(id));
+          return;
+        }
+        if (!vaultRef.current) return;
+        const next = deleteVaultSeason(vaultRef.current, id);
+        applyVault(next, next.currentId);
       },
       importFixtures: (rows) => update((s) => appendFixtureRows(s, rows)),
       appendOfficialSchedule: () => update((s) => appendOfficialRemaining(s)),
@@ -371,7 +447,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       closeSeason: async () => {
         if (remoteRef.current) {
-          applyRemote(await archiveLeague());
+          applyRemote(await archiveLeague(seasonIdRef.current ?? undefined));
           return;
         }
         if (!vaultRef.current) return;

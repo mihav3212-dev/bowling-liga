@@ -48,6 +48,8 @@ export type Match = {
 export type LeagueState = {
   seasonKey?: "2026-27" | "2025-26";
   seasonTitle?: string;
+  /** Vidna samo prijavljenim; za vajo vnosa, ne za javnost. */
+  training?: boolean;
   teams: Team[];
   players: Player[];
   matches: Match[];
@@ -61,6 +63,7 @@ export type SeasonInfo = {
   id: string;
   label: string;
   archived: boolean;
+  training?: boolean;
   updatedAt?: string;
 };
 
