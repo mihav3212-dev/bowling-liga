@@ -199,3 +199,7 @@ export async function handleLeague(req, res) {
     json(res, 500, { ok: false, error: String(error?.message || error) });
   }
 }
+
+export default async function handler(req, res) {
+  await handleLeague(req, res);
+}

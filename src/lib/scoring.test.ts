@@ -4,7 +4,7 @@ import { ROUNDS_2025, SEASON_TEAM_NAMES_2025 } from "./fixtures2025";
 import { createSeed, createSeed2025 } from "./seed";
 import { pairingTemplate } from "./pairings";
 import { roundRobinPairings } from "./schedule";
-import { adjustedPins, bonusPoints, matchTotals, scoreDuel } from "./scoring";
+import { adjustedPins, bonusPoints, lineupLocked, matchTotals, scoreDuel } from "./scoring";
 import { computePlayerStandings, topGames } from "./standings";
 import type { LeagueState, Match, Player } from "./types";
 
@@ -17,6 +17,15 @@ function player(over: Partial<Player> & { id: string }): Player {
     ...over,
   };
 }
+
+describe("zaklep sestave", () => {
+  it("zaklene po prvem vnosu kegljev v 1. krogu", () => {
+    const empty = [{ games: [{ homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: null, awayPins: null }] }];
+    const scored = [{ games: [{ homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: 180, awayPins: null }] }];
+    expect(lineupLocked(empty)).toBe(false);
+    expect(lineupLocked(scored)).toBe(true);
+  });
+});
 
 describe("pribitki in odbitki", () => {
   it("ženske +8, član BZS −8", () => {

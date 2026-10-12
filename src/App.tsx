@@ -40,6 +40,10 @@ export function App() {
   const prevLoginTeam = useRef<string | null>(null);
 
   useEffect(() => {
+    if (sessionStorage.getItem("liga-skip-setup")) {
+      setSetupNeeded(false);
+      return;
+    }
     fetch("/api/setup")
       .then((res) => res.json())
       .then((data: { needed?: boolean }) => setSetupNeeded(Boolean(data.needed)))
@@ -101,7 +105,7 @@ export function App() {
             <ThemePicker />
           </div>
         </header>
-        <Setup onDone={() => window.location.reload()} />
+        <Setup onDone={() => window.location.reload()} onSkip={() => setSetupNeeded(false)} />
       </div>
     );
   }

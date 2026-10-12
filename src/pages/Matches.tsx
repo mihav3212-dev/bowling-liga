@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import { exportRoundPdfs } from "../lib/exportPdf";
 import { inferSeasonKey, officialRoundMeta, seasonCatalog } from "../lib/fixtures";
 import { formatMatchWhen } from "../lib/labels";
+import { matchesInPlay, nextSlotMatches } from "../lib/live";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
+import type { Match } from "../lib/types";
 import { PdfButton } from "./PdfButton";
 import { ResultHighlights } from "./ResultHighlights";
 
@@ -15,6 +18,11 @@ export function Matches({
   mode: "schedule" | "results";
 }) {
   const { state } = useStore();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(tick);
+  }, []);
   const seasonKey = inferSeasonKey(state);
   const catalog = seasonCatalog(seasonKey);
   const byRound = new Map<number, typeof state.matches>();
@@ -25,6 +33,48 @@ export function Matches({
     byRound.set(match.round, list);
   }
   const rounds = [...byRound.keys()].sort((a, b) => (mode === "results" ? b - a : a - b));
+  const open = state.matches.filter((match) => !matchTotals(match, state.players).complete);
+  const live = matchesInPlay(open, now);
+  const upcoming = live.length ? [] : nextSlotMatches(open, now);
+  const spotlight = live.length ? live : upcoming;
+
+  function matchRow(match: Match) {
+    const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
+    const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
+    const totals = matchTotals(match, state.players);
+    const row = (
+      <>
+        {mode === "schedule" && (
+          <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
+        )}
+        <span className="match-names">
+          {home} – {away}
+        </span>
+        {mode === "results" && totals.complete && (
+          <span className="match-scores mono">
+            <span className="score-tocke">
+              {totals.homeMatch}:{totals.awayMatch}
+            </span>
+            <span className="score-velike">
+              {totals.homeBig}:{totals.awayBig}
+            </span>
+            <span>
+              {totals.homePins}:{totals.awayPins}
+            </span>
+          </span>
+        )}
+      </>
+    );
+    return onOpen ? (
+      <button className="row match-row" key={match.id} onClick={() => onOpen(match.id)}>
+        {row}
+      </button>
+    ) : (
+      <div className="row match-row" key={match.id}>
+        {row}
+      </div>
+    );
+  }
 
   return (
     <section>
@@ -32,6 +82,16 @@ export function Matches({
         <p className="muted" style={{ marginBottom: 20 }}>
           {catalog.intro}
         </p>
+      )}
+      {mode === "schedule" && spotlight.length > 0 && (
+        <div className="live-now">
+          <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
+          <h3 className="round-title">
+            {spotlight[0].round}. kolo
+            {spotlight[0].startsAt ? ` · ${formatMatchWhen(spotlight[0].startsAt)}` : ""}
+          </h3>
+          <div className="list">{spotlight.map((match) => matchRow(match))}</div>
+        </div>
       )}
       {mode === "results" && rounds.length > 0 && (
         <p className="muted" style={{ marginBottom: 20 }}>
@@ -67,43 +127,7 @@ export function Matches({
                   </span>
                 </div>
               )}
-              {fixtures.map((match) => {
-                const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
-                const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
-                const totals = matchTotals(match, state.players);
-                const row = (
-                  <>
-                    {mode === "schedule" && (
-                      <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
-                    )}
-                    <span className="match-names">
-                      {home} – {away}
-                    </span>
-                    {mode === "results" && totals.complete && (
-                      <span className="match-scores mono">
-                        <span className="score-tocke">
-                          {totals.homeMatch}:{totals.awayMatch}
-                        </span>
-                        <span className="score-velike">
-                          {totals.homeBig}:{totals.awayBig}
-                        </span>
-                        <span>
-                          {totals.homePins}:{totals.awayPins}
-                        </span>
-                      </span>
-                    )}
-                  </>
-                );
-                return onOpen ? (
-                  <button className="row match-row" key={match.id} onClick={() => onOpen(match.id)}>
-                    {row}
-                  </button>
-                ) : (
-                  <div className="row match-row" key={match.id}>
-                    {row}
-                  </div>
-                );
-              })}
+              {fixtures.map((match) => matchRow(match))}
             </div>
             {mode === "results" && (
               <>

@@ -1,4 +1,4 @@
-import type { DuelResult, GameScore, Match, MatchTotals, Player } from "./types";
+import type { DuelResult, GameScore, Match, MatchRound, MatchTotals, Player } from "./types";
 
 export const WOMEN_HANDICAP = 8;
 export const BZS_PENALTY = 8;
@@ -165,6 +165,13 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     complete,
     rounds,
   };
+}
+
+/** Ko so v 1. krogu vneseni keglji, sestave ni več mogoče spreminjati. */
+export function lineupLocked(rounds: MatchRound[] | undefined): boolean {
+  return Boolean(
+    rounds?.[0]?.games.some((game) => game.homePins != null || game.awayPins != null),
+  );
 }
 
 export function seasonIsComplete(state: { matches: Match[]; players: Player[] }): boolean {

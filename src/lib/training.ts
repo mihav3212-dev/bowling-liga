@@ -2,8 +2,6 @@ import { emptyRounds } from "./pairings";
 import type { LeagueState, Player, TrainingMatch, TrainingScore, TrainingSession } from "./types";
 import { scoredPins } from "./scoring";
 
-/** Osnovno število iger; če je zadnja izpolnjena, se zraven odpre še eno polje. */
-export const TRAINING_MIN_GAMES = 4;
 export const TRAINING_TEAM_ID = "train-pool";
 
 export function todayDate(): string {
@@ -72,13 +70,35 @@ export function gameColumnCount(scores: TrainingScore[]): number {
       if (pins != null) last = Math.max(last, i);
     });
   }
-  return Math.max(TRAINING_MIN_GAMES, last + 2);
+  return last + 2;
 }
 
-export function padGames(games: (number | null)[] | undefined, length = TRAINING_MIN_GAMES): (number | null)[] {
+export function padGames(games: (number | null)[] | undefined, length: number): (number | null)[] {
   const next = [...(games ?? [])];
   while (next.length < length) next.push(null);
   return next;
+}
+
+export function compactGames(games: (number | null)[] | undefined): (number | null)[] {
+  const next = [...(games ?? [])];
+  while (next.length && next[next.length - 1] == null) next.pop();
+  return next;
+}
+
+export function compactSession(session: TrainingSession): TrainingSession {
+  if (session.kind === "match") return session;
+  return {
+    ...session,
+    scores: session.scores.map((row) => ({ ...row, games: compactGames(row.games) })),
+  };
+}
+
+export function compactTrainings(state: LeagueState): LeagueState {
+  const trainingSessions = state.trainingSessions?.map(compactSession);
+  const teamTrainings = state.teamTrainings
+    ? Object.fromEntries(Object.entries(state.teamTrainings).map(([id, list]) => [id, list.map(compactSession)]))
+    : state.teamTrainings;
+  return { ...state, trainingSessions, teamTrainings };
 }
 
 export function scoreTotal(score: TrainingScore, player?: Player): number | null {
@@ -87,6 +107,17 @@ export function scoreTotal(score: TrainingScore, player?: Player): number | null
   let sum = 0;
   for (const raw of games) sum += scoredPins(raw, player) ?? 0;
   return sum;
+}
+
+export function gamesPlayed(score: TrainingScore): number {
+  return (score.games ?? []).filter((pins) => pins != null).length;
+}
+
+export function scoreAverage(score: TrainingScore, player?: Player): number | null {
+  const played = gamesPlayed(score);
+  const total = scoreTotal(score, player);
+  if (!played || total == null) return null;
+  return total / played;
 }
 
 export function getTeamSessions(state: LeagueState, teamId?: string | null): TrainingSession[] {
@@ -113,7 +144,12 @@ export function parseTrainingSessions(value: unknown): TrainingSession[] | undef
     const scores = Array.isArray(item.scores)
       ? item.scores
           .filter((s) => s && typeof s.playerId === "string")
-          .map((s) => ({ playerId: s.playerId, games: padGames(s.games) }))
+          .map((s) => ({
+            playerId: s.playerId,
+            games: Array.isArray(s.games)
+              ? s.games.map((pins) => (typeof pins === "number" ? pins : null))
+              : [],
+          }))
       : [];
     sessions.push({
       id: String(item.id),

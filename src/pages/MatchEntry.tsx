@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
-import { matchTotals, scoreGame, scoredPins } from "../lib/scoring";
+import { lineupLocked, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
 import type { Player } from "../lib/types";
@@ -182,6 +182,7 @@ export function MatchEntry({
   }
   const homeAvg = homeGames ? totals.homePins / homeGames : null;
   const awayAvg = awayGames ? totals.awayPins / awayGames : null;
+  const playersLocked = readOnly || lineupLocked(match.rounds);
 
   return (
     <section>
@@ -216,9 +217,15 @@ export function MatchEntry({
         </div>
       </div>
 
+      {playersLocked && !readOnly && (
+        <p className="muted" style={{ margin: "12px 0 0" }}>
+          Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
+          keglje v 1. krogu.
+        </p>
+      )}
       <div className="grid-2" style={{ margin: "16px 0" }}>
         <div className="panel">
-          {readOnly ? (
+          {playersLocked ? (
             <LineupReadout
               label={home?.name ?? "Domači"}
               roster={homeRoster}
@@ -237,7 +244,7 @@ export function MatchEntry({
           )}
         </div>
         <div className="panel">
-          {readOnly ? (
+          {playersLocked ? (
             <LineupReadout
               label={away?.name ?? "Gostje"}
               roster={awayRoster}
@@ -260,6 +267,7 @@ export function MatchEntry({
       {match.rounds.map((round, ri) => {
         const pair = pairingTemplate()[ri] ?? [];
         const roundTot = totals.rounds[ri];
+        const lockRoundPlayers = readOnly || (ri === 0 && playersLocked);
         return (
         <div className="scorecard" key={ri} style={{ marginBottom: 16 }}>
           <h3>{ri + 1}. krog</h3>
@@ -287,7 +295,7 @@ export function MatchEntry({
                     <td data-label="Domači">
                       <span className="player-pick">
                         <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
-                        {readOnly ? (
+                        {lockRoundPlayers ? (
                           playerName(homeRoster, game.homePlayerId)
                         ) : (
                           <select
@@ -329,7 +337,7 @@ export function MatchEntry({
                     <td data-label="Gostje">
                       <span className="player-pick">
                         <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
-                        {readOnly ? (
+                        {lockRoundPlayers ? (
                           playerName(awayRoster, game.awayPlayerId)
                         ) : (
                           <select

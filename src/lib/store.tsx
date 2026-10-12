@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { emptyRounds, nominatedIds } from "./pairings";
+import { lineupLocked } from "./scoring";
 import { createSeed, createSeed2025 } from "./seed";
 import {
   appendFixtureRows,
@@ -49,6 +50,8 @@ import { uid } from "./ids";
 import { MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import { hashPassword } from "./passwords";
 import {
+  compactGames,
+  compactTrainings,
   emptyTrainingMatch,
   emptyTrainingState,
   getTeamSessions,
@@ -144,6 +147,7 @@ type Store = {
   ) => void;
   removeTrainingScore: (sessionId: string, playerId: string, teamId?: string) => void;
   deleteTrainingSession: (sessionId: string, teamId?: string) => void;
+  saveTrainingNow: () => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
@@ -240,22 +244,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const persist = (next: LeagueState): LeagueState => {
+    const packed = compactTrainings(next);
     if (remoteRef.current && !archivedRef.current && seasonIdRef.current) {
       const id = seasonIdRef.current;
       const team = viewerTeamRef.current;
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         if (team) {
-          void saveTeamTrainings(id, team, next.teamTrainings?.[team] ?? []);
+          void saveTeamTrainings(id, team, packed.teamTrainings?.[team] ?? []);
         } else {
-          void saveLeague(id, next);
+          void saveLeague(id, packed);
         }
       }, 600);
     } else if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
-      vaultRef.current = writeCurrent(vaultRef.current, next);
+      vaultRef.current = writeCurrent(vaultRef.current, packed);
       setSeasons(vaultInfos(vaultRef.current));
     }
-    return next;
+    return packed;
   };
 
   const update = (recipe: (s: LeagueState) => LeagueState) => {
@@ -376,7 +381,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setLineup: (matchId, side, starters, bench) =>
         update((s) => ({
           ...s,
-          matches: s.matches.map((m) => (m.id === matchId ? applyLineup(m, side, starters, bench) : m)),
+          matches: s.matches.map((m) =>
+            m.id === matchId && !lineupLocked(m.rounds) ? applyLineup(m, side, starters, bench) : m,
+          ),
         })),
       setPins: (matchId, roundIndex, gameIndex, side, pins) =>
         update((s) => ({
@@ -408,6 +415,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               side === "home" ? m.homeBench : m.awayBench,
             );
             if (playerId && !allowed.includes(playerId)) return m;
+            if (roundIndex === 0 && lineupLocked(m.rounds)) return m;
             return {
               ...m,
               rounds: m.rounds.map((round, ri) => {
@@ -516,6 +524,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             teamId,
             getTeamSessions(s, teamId).map((session) => {
               if (session.id !== sessionId || !session.match) return session;
+              if (lineupLocked(session.match.rounds)) return session;
               const next = applyLineup(asMatch(session.id, session.match), side, starters, bench);
               return {
                 ...session,
@@ -569,6 +578,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 side === "home" ? match.homeBench : match.awayBench,
               );
               if (playerId && !allowed.includes(playerId)) return session;
+              if (roundIndex === 0 && lineupLocked(match.rounds)) return session;
               return {
                 ...session,
                 match: {
@@ -628,7 +638,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             teamId,
             sessions.map((item) =>
               item.id === sessionId
-                ? { ...item, scores: [...item.scores, { playerId: player.id, games: padGames([]) }] }
+                ? { ...item, scores: [...item.scores, { playerId: player.id, games: [] }] }
                 : item,
             ),
           );
@@ -644,7 +654,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             teamId,
             sessions.map((item) =>
               item.id === sessionId
-                ? { ...item, scores: [...item.scores, { playerId, games: padGames([]) }] }
+                ? { ...item, scores: [...item.scores, { playerId, games: [] }] }
                 : item,
             ),
           );
@@ -662,7 +672,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                   if (row.playerId !== playerId) return row;
                   const games = padGames(row.games, gameIndex + 1);
                   games[gameIndex] = pins;
-                  return { ...row, games };
+                  return { ...row, games: compactGames(games) };
                 }),
               };
             }),
@@ -688,6 +698,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getTeamSessions(s, teamId).filter((session) => session.id !== sessionId),
           ),
         ),
+      saveTrainingNow: async () => {
+        const packed = compactTrainings(state);
+        update(() => packed);
+        if (remoteRef.current && seasonIdRef.current) {
+          try {
+            const team = viewerTeamRef.current;
+            if (team) {
+              return await saveTeamTrainings(seasonIdRef.current, team, packed.teamTrainings?.[team] ?? []);
+            }
+            return await saveLeague(seasonIdRef.current, packed);
+          } catch {
+            return false;
+          }
+        }
+        return true;
+      },
       setTeamAccess: async (id, password) => {
         const season = seasonIdRef.current;
         if (remoteRef.current && season) {

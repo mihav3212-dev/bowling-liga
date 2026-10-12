@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function Setup({ onDone }: { onDone: () => void }) {
+export function Setup({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
   const [host, setHost] = useState("localhost");
   const [port, setPort] = useState("3306");
   const [user, setUser] = useState("");
@@ -93,6 +93,20 @@ export function Setup({ onDone }: { onDone: () => void }) {
           </button>
           {error && <p className="login-error">{error}</p>}
         </form>
+        {onSkip && (
+          <p className="muted" style={{ marginTop: 16 }}>
+            <button
+              className="ghost"
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem("liga-skip-setup", "1");
+                onSkip();
+              }}
+            >
+              Nadaljuj brez baze
+            </button>
+          </p>
+        )}
       </section>
     </div>
   );

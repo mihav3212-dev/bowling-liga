@@ -14,6 +14,7 @@ export function PlayerStandings() {
         <p className="muted">
           Keglji na tekmo, skupaj, odigrane igre in povprečje. Razvrstitev po povprečju.
         </p>
+        <p className="muted players-scroll-hint">Podrsaj vodoravno za kola.</p>
       </div>
       <div className="table-scroll players-scroll">
         <table className="standings players">
