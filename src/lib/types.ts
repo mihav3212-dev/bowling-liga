@@ -17,6 +17,10 @@ export type Team = {
   /** Samo v shrambi; klient dobi hasAccess. */
   passwordHash?: string;
   hasAccess?: boolean;
+  /** Samo v shrambi; admin dobi hasInvite. */
+  inviteHash?: string;
+  inviteExpires?: string;
+  hasInvite?: boolean;
   perms?: Partial<TeamPerms>;
 };
 

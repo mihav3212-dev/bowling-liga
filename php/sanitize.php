@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/invite.php';
+
 function sanitize_state($data, $viewer)
 {
     $admin = !empty($viewer['admin']);
@@ -7,9 +9,13 @@ function sanitize_state($data, $viewer)
     $teams = [];
     foreach ($data['teams'] ?? [] as $team) {
         $hash = $team['passwordHash'] ?? null;
-        unset($team['passwordHash']);
+        $inviteHash = $team['inviteHash'] ?? null;
+        unset($team['passwordHash'], $team['inviteHash']);
         if ($admin) {
             $team['hasAccess'] = (bool) $hash;
+            $team['hasInvite'] = invite_still_open(['inviteHash' => $inviteHash, 'inviteExpires' => $team['inviteExpires'] ?? null]);
+        } else {
+            unset($team['inviteExpires'], $team['hasInvite'], $team['hasAccess']);
         }
         $teams[] = $team;
     }
@@ -34,7 +40,7 @@ function preserve_secrets($payload, $existing, $opts = [])
     $lockPerms = !empty($opts['lockPerms']);
     $payload['teams'] = array_map(function ($team) use ($prevTeams, $lockPerms) {
         $incoming = $team['passwordHash'] ?? null;
-        unset($team['passwordHash'], $team['hasAccess']);
+        unset($team['passwordHash'], $team['hasAccess'], $team['hasInvite'], $team['inviteHash'], $team['inviteExpires']);
         $prev = null;
         foreach ($prevTeams as $item) {
             if (($item['id'] ?? null) === ($team['id'] ?? null)) {
@@ -44,6 +50,12 @@ function preserve_secrets($payload, $existing, $opts = [])
         }
         if ($lockPerms) {
             $team['perms'] = $prev['perms'] ?? ($team['perms'] ?? null);
+        }
+        if (!empty($prev['inviteHash'])) {
+            $team['inviteHash'] = $prev['inviteHash'];
+        }
+        if (!empty($prev['inviteExpires'])) {
+            $team['inviteExpires'] = $prev['inviteExpires'];
         }
         if ($incoming === '') {
             return $team;

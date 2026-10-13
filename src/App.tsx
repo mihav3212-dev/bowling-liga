@@ -7,6 +7,7 @@ import { TeamDetail } from "./pages/TeamDetail";
 import { TeamAccess } from "./pages/TeamAccess";
 import { Teams } from "./pages/Teams";
 import { Training } from "./pages/Training";
+import { ClaimInvite } from "./pages/ClaimInvite";
 import { Login } from "./pages/Login";
 import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
@@ -40,6 +41,7 @@ export function App() {
   const [detailTeamId, setDetailTeamId] = useState<string | null>(null);
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null);
+  const [inviteToken, setInviteToken] = useState(() => new URLSearchParams(window.location.search).get("invite"));
   const prevLoginTeam = useRef<string | null>(null);
 
   useEffect(() => {
@@ -129,6 +131,19 @@ export function App() {
 
       <div className={page === "players" ? "app-shell is-wide" : "app-shell"}>
         <h1 className="page-title">Bowling liga Lenart.</h1>
+        {inviteToken ? (
+          <ClaimInvite
+            token={inviteToken}
+            onDone={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("invite");
+              const qs = url.searchParams.toString();
+              window.history.replaceState({}, "", `${url.pathname}${qs ? `?${qs}` : ""}`);
+              setInviteToken(null);
+            }}
+          />
+        ) : (
+        <>
         {shownSeasons.length > 0 && (
           <div className="season-bar">
             <label>
@@ -251,6 +266,8 @@ export function App() {
           />
         )}
           </>
+        )}
+        </>
         )}
       </div>
     </div>

@@ -79,8 +79,9 @@ Isto polje zgoraj desno: admin geslo ali geslo ekipe.
 ### Geslo ekipe
 
 1. Admin → **Ekipe** → izbrana ekipa → **Prijava ekipe**.
-2. **Nastavi geslo**. Geslo se shrani zgoščeno; admin ga ne vidi nazaj.
-3. Če ekipa pozabi geslo: admin vpiše **novo** (starega ni treba). **Odstrani prijavo** jim vzame dostop.
+2. **Ustvari povezavo za geslo** in jo pošlji vodji (SMS, e-pošta). Povezava velja 14 dni; nova prejšnjo razveljavi.
+3. Ekipa odpre povezavo, si sama nastavi geslo in se z njim prijavi zgoraj desno.
+4. Če je treba, lahko geslo še vedno vpišeš sam. Če ekipa pozabi geslo: nova povezava ali novo geslo. **Odstrani prijavo** jim vzame dostop. Gesla admin ne vidi nazaj.
 
 ### Dovoljenja
 

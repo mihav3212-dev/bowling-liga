@@ -190,6 +190,15 @@ if ($route === 'league') {
         if ($method === 'POST') {
             $body = read_json_body();
             $action = $body['action'] ?? '';
+            if ($action === 'previewInvite') {
+                $result = preview_team_invite($pdo, $body['token'] ?? '', $body['id'] ?? null);
+                json_out(!empty($result['ok']) ? 200 : 400, $result);
+            }
+            if ($action === 'claimInvite') {
+                $result = claim_team_invite($pdo, $body['token'] ?? '', $body['password'] ?? '', $body['id'] ?? null);
+                $code = !empty($result['ok']) ? 200 : (($result['error'] ?? '') === 'conflict' ? 409 : 400);
+                json_out($code, $result);
+            }
             if ($action === 'saveGame') {
                 $teamId = $viewer['teamId'] ?? null;
                 if (!$teamId) {
@@ -273,6 +282,23 @@ if ($route === 'league') {
                 json_out(200, [
                     'storage' => 'db',
                     'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, true),
+                ]);
+            }
+            if ($action === 'createInvite') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $created = create_team_invite($pdo, $body['teamId'] ?? '', $body['id'] ?? null);
+                if (!$created) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'ok' => true,
+                    'token' => $created['token'],
+                    'expiresAt' => $created['expiresAt'],
+                    'storage' => 'db',
+                    'current' => present_season($created['current'], $viewer),
                     'seasons' => list_seasons($pdo, true),
                 ]);
             }

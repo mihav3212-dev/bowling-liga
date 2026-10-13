@@ -164,6 +164,42 @@ export async function setTeamPassword(
   return (await res.json()) as LeaguePayload;
 }
 
+export type InvitePreview = { ok: boolean; teamName?: string; expiresAt?: string; error?: string };
+
+export async function createTeamInvite(
+  id: string,
+  teamId: string,
+): Promise<LeaguePayload & { token: string; expiresAt: string }> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "createInvite", id, teamId }),
+  });
+  if (!res.ok) throw new Error("invite");
+  return (await res.json()) as LeaguePayload & { token: string; expiresAt: string };
+}
+
+export async function previewTeamInvite(token: string): Promise<InvitePreview> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "previewInvite", token }),
+  });
+  return (await res.json()) as InvitePreview;
+}
+
+export async function claimTeamInvite(token: string, password: string): Promise<InvitePreview> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "claimInvite", token, password }),
+  });
+  return (await res.json()) as InvitePreview;
+}
+
 export async function deleteLeague(id: string): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",

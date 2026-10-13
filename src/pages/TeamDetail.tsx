@@ -3,6 +3,7 @@ import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
 import { useStore } from "../lib/store";
+import { formatInviteUntil, inviteStillOpen } from "../lib/invite";
 import { Training } from "./Training";
 
 export function TeamDetail({
@@ -20,7 +21,8 @@ export function TeamDetail({
   canRoster?: boolean;
   showTraining?: boolean;
 }) {
-  const { state, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess } = useStore();
+  const { state, remote, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess, createTeamInvite } =
+    useStore();
   const team = state.teams.find((t) => t.id === teamId);
   const players = state.players.filter((p) => p.teamId === teamId);
   const [name, setName] = useState("");
@@ -29,10 +31,16 @@ export function TeamDetail({
   const [exporting, setExporting] = useState(false);
   const [access, setAccess] = useState("");
   const [accessBusy, setAccessBusy] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState("");
+  const [inviteUntil, setInviteUntil] = useState("");
+  const [inviteNote, setInviteNote] = useState("");
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     setTrainingSessionId(null);
+    setInviteUrl("");
+    setInviteUntil("");
+    setInviteNote("");
   }, [teamId]);
 
   if (!team) return <p>Ekipa ne obstaja.</p>;
@@ -99,9 +107,57 @@ export function TeamDetail({
       </div>
       <h3 style={{ marginTop: 24 }}>Prijava ekipe</h3>
       <p className="muted">
-        Geslo za vodjo ekipe. Kaj sme v aplikaciji, nastaviš v Admin → Dovoljenja ekip.{" "}
-        {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
+        Pošlji ekipi povezavo, da si geslo nastavijo sami. Kaj smejo v aplikaciji, nastaviš v Admin →
+        Dovoljenja ekip. {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
       </p>
+      <div className="row-actions" style={{ marginBottom: 12 }}>
+        <button
+          className="primary"
+          type="button"
+          disabled={accessBusy}
+          onClick={async () => {
+            setAccessBusy(true);
+            setInviteNote("");
+            try {
+              const created = await createTeamInvite(team.id);
+              setInviteUrl(created.url);
+              setInviteUntil(created.expiresAt);
+              try {
+                await navigator.clipboard.writeText(created.url);
+                setInviteNote("Povezava je v odložišču.");
+              } catch {
+                setInviteNote("Kopiraj povezavo in jo pošlji ekipi.");
+              }
+            } catch {
+              window.alert("Povezave ni bilo mogoče ustvariti.");
+            } finally {
+              setAccessBusy(false);
+            }
+          }}
+        >
+          {accessBusy ? "…" : inviteStillOpen(team) || inviteUrl ? "Nova povezava" : "Ustvari povezavo za geslo"}
+        </button>
+      </div>
+      {(inviteUrl || inviteStillOpen(team)) && (
+        <p className="muted">
+          {inviteUrl ? (
+            <>
+              Povezava velja do {formatInviteUntil(inviteUntil || team.inviteExpires)}. Nova povezava prejšnjo
+              razveljavi.
+            </>
+          ) : (
+            <>Aktivna povezava do {formatInviteUntil(team.inviteExpires)}. Nova jo razveljavi.</>
+          )}
+          {!remote ? " Brez baze deluje samo v tem brskalniku." : ""}
+        </p>
+      )}
+      {inviteUrl && (
+        <p className="form-row">
+          <input readOnly value={inviteUrl} aria-label="Povezava za geslo" onFocus={(e) => e.target.select()} />
+        </p>
+      )}
+      {inviteNote && <p className="muted">{inviteNote}</p>}
+      <p className="muted">Ali vpiši geslo sam:</p>
       <form
         className="form-row"
         onSubmit={async (e) => {

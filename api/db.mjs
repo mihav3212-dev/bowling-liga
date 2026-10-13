@@ -3,6 +3,7 @@ import { loadFileConfig } from "./config.mjs";
 import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
 import { applyLineup, lineupLocked, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
 import { hashPassword } from "./passwords.mjs";
+import { findInviteTeam, hashInviteToken, inviteExpiryIso, inviteStillOpen, newInviteToken } from "./invite.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
 import { setAdminPassword } from "./session.mjs";
 
@@ -379,11 +380,59 @@ export async function setTeamPassword(pool, teamId, password, seasonId) {
   const trimmed = String(password ?? "").trim();
   const hash = trimmed ? hashPassword(trimmed) : "";
   if (!(current.data.teams ?? []).some((team) => team.id === teamId)) return null;
-  const teams = (current.data.teams ?? []).map((team) =>
-    team.id === teamId ? { ...team, passwordHash: hash } : team,
-  );
+  const teams = (current.data.teams ?? []).map((team) => {
+    if (team.id !== teamId) return team;
+    const next = { ...team, passwordHash: hash };
+    delete next.inviteHash;
+    delete next.inviteExpires;
+    return next;
+  });
   const ok = await saveSeason(pool, current.id, { ...current.data, teams });
   return ok ? getSeason(pool, current.id) : null;
+}
+
+export async function createTeamInvite(pool, teamId, seasonId) {
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current || current.archived) return null;
+  if (!(current.data.teams ?? []).some((team) => team.id === teamId)) return null;
+  const token = newInviteToken();
+  const expiresAt = inviteExpiryIso();
+  const teams = (current.data.teams ?? []).map((team) =>
+    team.id === teamId ? { ...team, inviteHash: hashInviteToken(token), inviteExpires: expiresAt } : team,
+  );
+  const ok = await saveSeason(pool, current.id, { ...current.data, teams });
+  if (!ok) return null;
+  const saved = await getSeason(pool, current.id);
+  return saved ? { token, expiresAt, current: saved } : null;
+}
+
+export async function previewTeamInvite(pool, token, seasonId) {
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current) return { ok: false, error: "invalid" };
+  const team = findInviteTeam(current.data.teams, token);
+  if (!team) return { ok: false, error: "invalid" };
+  if (!inviteStillOpen(team)) return { ok: false, error: "expired" };
+  return { ok: true, teamName: team.name ?? "", expiresAt: team.inviteExpires };
+}
+
+export async function claimTeamInvite(pool, token, password, seasonId) {
+  const trimmed = String(password ?? "").trim();
+  if (trimmed.length < 4) return { ok: false, error: "short" };
+  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!current || current.archived) return { ok: false, error: "invalid" };
+  const team = findInviteTeam(current.data.teams, token);
+  if (!team) return { ok: false, error: "invalid" };
+  if (!inviteStillOpen(team)) return { ok: false, error: "expired" };
+  const teams = (current.data.teams ?? []).map((item) => {
+    if (item.id !== team.id) return item;
+    const next = { ...item, passwordHash: hashPassword(trimmed) };
+    delete next.inviteHash;
+    delete next.inviteExpires;
+    return next;
+  });
+  const ok = await saveSeason(pool, current.id, { ...current.data, teams });
+  if (!ok) return { ok: false, error: "conflict" };
+  return { ok: true, teamName: team.name ?? "" };
 }
 
 export async function createSeason(pool, label, data) {

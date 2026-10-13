@@ -18,6 +18,9 @@ import {
   saveTeamRoster,
   saveTeamTrainings,
   setTeamPassword,
+  createTeamInvite,
+  previewTeamInvite,
+  claimTeamInvite,
 } from "./db.mjs";
 import { teamPerms } from "./access.mjs";
 
@@ -97,6 +100,16 @@ export async function handleLeague(req, res) {
 
     if (req.method === "POST") {
       const body = await readBody(req);
+      if (body.action === "previewInvite") {
+        const result = await previewTeamInvite(sql, body.token, body.id);
+        json(res, result.ok ? 200 : 400, result);
+        return;
+      }
+      if (body.action === "claimInvite") {
+        const result = await claimTeamInvite(sql, body.token, body.password, body.id);
+        json(res, result.ok ? 200 : result.error === "conflict" ? 409 : 400, result);
+        return;
+      }
       if (body.action === "saveGame") {
         const teamId = viewer.teamId;
         if (!teamId) {
@@ -195,6 +208,26 @@ export async function handleLeague(req, res) {
         json(res, 200, {
           storage: "db",
           current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (body.action === "createInvite") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const created = await createTeamInvite(sql, body.teamId, body.id);
+        if (!created) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          ok: true,
+          token: created.token,
+          expiresAt: created.expiresAt,
+          storage: "db",
+          current: presentSeason(created.current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;

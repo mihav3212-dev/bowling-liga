@@ -498,6 +498,7 @@ function set_team_password(PDO $pdo, $teamId, $password, $seasonId)
         if (($team['id'] ?? null) === $teamId) {
             $found = true;
             $team['passwordHash'] = $hash;
+            unset($team['inviteHash'], $team['inviteExpires']);
         }
         $teams[] = $team;
     }
@@ -508,6 +509,87 @@ function set_team_password(PDO $pdo, $teamId, $password, $seasonId)
     $data['teams'] = $teams;
     $ok = save_season($pdo, $current['id'], $data);
     return $ok ? get_season($pdo, $current['id']) : null;
+}
+
+function create_team_invite(PDO $pdo, $teamId, $seasonId)
+{
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current || !empty($current['archived'])) {
+        return null;
+    }
+    $found = false;
+    $token = new_invite_token();
+    $expiresAt = invite_expiry_iso();
+    $teams = [];
+    foreach ($current['data']['teams'] ?? [] as $team) {
+        if (($team['id'] ?? null) === $teamId) {
+            $found = true;
+            $team['inviteHash'] = hash_invite_token($token);
+            $team['inviteExpires'] = $expiresAt;
+        }
+        $teams[] = $team;
+    }
+    if (!$found) {
+        return null;
+    }
+    $data = $current['data'];
+    $data['teams'] = $teams;
+    $ok = save_season($pdo, $current['id'], $data);
+    if (!$ok) {
+        return null;
+    }
+    $saved = get_season($pdo, $current['id']);
+    return $saved ? ['token' => $token, 'expiresAt' => $expiresAt, 'current' => $saved] : null;
+}
+
+function preview_team_invite(PDO $pdo, $token, $seasonId)
+{
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current) {
+        return ['ok' => false, 'error' => 'invalid'];
+    }
+    $team = find_invite_team($current['data']['teams'] ?? [], $token);
+    if (!$team) {
+        return ['ok' => false, 'error' => 'invalid'];
+    }
+    if (!invite_still_open($team)) {
+        return ['ok' => false, 'error' => 'expired'];
+    }
+    return ['ok' => true, 'teamName' => $team['name'] ?? '', 'expiresAt' => $team['inviteExpires'] ?? null];
+}
+
+function claim_team_invite(PDO $pdo, $token, $password, $seasonId)
+{
+    $trimmed = trim((string) $password);
+    if (strlen($trimmed) < 4) {
+        return ['ok' => false, 'error' => 'short'];
+    }
+    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$current || !empty($current['archived'])) {
+        return ['ok' => false, 'error' => 'invalid'];
+    }
+    $team = find_invite_team($current['data']['teams'] ?? [], $token);
+    if (!$team) {
+        return ['ok' => false, 'error' => 'invalid'];
+    }
+    if (!invite_still_open($team)) {
+        return ['ok' => false, 'error' => 'expired'];
+    }
+    $teams = [];
+    foreach ($current['data']['teams'] ?? [] as $item) {
+        if (($item['id'] ?? null) === ($team['id'] ?? null)) {
+            $item['passwordHash'] = hash_password_liga($trimmed);
+            unset($item['inviteHash'], $item['inviteExpires']);
+        }
+        $teams[] = $item;
+    }
+    $data = $current['data'];
+    $data['teams'] = $teams;
+    $ok = save_season($pdo, $current['id'], $data);
+    if (!$ok) {
+        return ['ok' => false, 'error' => 'conflict'];
+    }
+    return ['ok' => true, 'teamName' => $team['name'] ?? ''];
 }
 
 function create_season(PDO $pdo, $label, $data)

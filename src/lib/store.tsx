@@ -32,8 +32,10 @@ import {
   saveTeamRoster,
   saveTeamTrainings,
   setTeamPassword,
+  createTeamInvite as createTeamInviteRemote,
   type LeaguePayload,
 } from "./leagueApi";
+import { hashInviteToken, inviteExpiryIso, inviteLink, newInviteToken } from "./invite";
 import {
   addVaultSeason,
   closeVaultSeason,
@@ -154,6 +156,7 @@ type Store = {
   saveTrainingNow: () => Promise<boolean>;
   saveMatchLineupNow: (matchId: string) => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
+  createTeamInvite: (teamId: string) => Promise<{ url: string; expiresAt: string }>;
   setTeamPerms: (teamId: string, perms: Partial<TeamPerms>) => void;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
@@ -825,9 +828,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         update((s) => ({
           ...s,
           teams: s.teams.map((team) =>
-            team.id === id ? { ...team, passwordHash: hash, hasAccess: Boolean(hash) } : team,
+            team.id === id
+              ? {
+                  ...team,
+                  passwordHash: hash,
+                  hasAccess: Boolean(hash),
+                  inviteHash: undefined,
+                  inviteExpires: undefined,
+                  hasInvite: false,
+                }
+              : team,
           ),
         }));
+      },
+      createTeamInvite: async (id) => {
+        const season = seasonIdRef.current;
+        if (remoteRef.current && season) {
+          const payload = await createTeamInviteRemote(season, id);
+          applyRemote(payload);
+          return { url: inviteLink(payload.token), expiresAt: payload.expiresAt };
+        }
+        const token = newInviteToken();
+        const expiresAt = inviteExpiryIso();
+        const inviteHash = await hashInviteToken(token);
+        update((s) => ({
+          ...s,
+          teams: s.teams.map((team) =>
+            team.id === id ? { ...team, inviteHash, inviteExpires: expiresAt, hasInvite: true } : team,
+          ),
+        }));
+        return { url: inviteLink(token), expiresAt };
       },
       importState: (next) =>
         update(() => ({
