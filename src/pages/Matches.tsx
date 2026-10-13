@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { exportRoundPdfs } from "../lib/exportPdf";
 import { inferSeasonKey, officialRoundMeta, seasonCatalog } from "../lib/fixtures";
 import { formatMatchWhen } from "../lib/labels";
-import { matchesInPlay, nextSlotMatches } from "../lib/live";
+import { matchesInPlay } from "../lib/live";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
@@ -37,8 +37,6 @@ export function Matches({
   const rounds = [...byRound.keys()].sort((a, b) => (mode === "results" ? b - a : a - b));
   const open = state.matches.filter((match) => !matchTotals(match, state.players).complete);
   const live = matchesInPlay(open, now);
-  const upcoming = live.length ? [] : nextSlotMatches(open, now);
-  const spotlight = live.length ? live : upcoming;
 
   function matchRow(match: Match) {
     const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
@@ -85,15 +83,15 @@ export function Matches({
           {catalog.intro}
         </p>
       )}
-      {mode === "schedule" && spotlight.length > 0 && (
+      {mode === "schedule" && live.length > 0 && (
         <div className="live-now">
-          <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
+          <span className="live-badge">V živo</span>
           <h3 className="round-title">
-            {spotlight[0].round}. kolo
-            {spotlight[0].startsAt ? ` · ${formatMatchWhen(spotlight[0].startsAt)}` : ""}
+            {live[0].round}. kolo
+            {live[0].startsAt ? ` · ${formatMatchWhen(live[0].startsAt)}` : ""}
           </h3>
           <div className="list">
-            {spotlight.map((match) => {
+            {live.map((match) => {
               const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
               const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
               return (
