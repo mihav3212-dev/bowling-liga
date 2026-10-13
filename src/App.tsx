@@ -39,7 +39,6 @@ export function App() {
   const [matchId, setMatchId] = useState<string | null>(null);
   const [detailTeamId, setDetailTeamId] = useState<string | null>(null);
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
-  const [trainingOwnerId, setTrainingOwnerId] = useState<string | null>(null);
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null);
   const prevLoginTeam = useRef<string | null>(null);
 
@@ -69,14 +68,15 @@ export function App() {
   };
 
   useEffect(() => {
+    if (page === "training") setPage("teams");
     if (canEdit) return;
     if (page === "access") setPage("schedule");
-    if (page === "teams" && !(loginTeamId && (teamCaps.roster || teamCaps.season))) {
+    if (page === "teams" && !loginTeamId) {
       setPage("schedule");
       setDetailTeamId(null);
     }
     if (!admin && !loginTeamId && page === "schedule") setMatchId(null);
-  }, [admin, canEdit, loginTeamId, page, teamCaps.roster, teamCaps.season]);
+  }, [admin, canEdit, loginTeamId, page]);
 
   useEffect(() => {
     if (admin || !training) return;
@@ -85,18 +85,10 @@ export function App() {
   }, [admin, training, seasons, seasonId, loadSeason]);
 
   useEffect(() => {
-    if (loginTeamId) setTrainingOwnerId(loginTeamId);
-    else if (admin && !trainingOwnerId && state.teams.length === 1) {
-      setTrainingOwnerId(state.teams[0].id);
-    }
-  }, [loginTeamId, admin, trainingOwnerId, state.teams]);
-
-  useEffect(() => {
     if (!prevLoginTeam.current && loginTeamId) go("schedule");
     prevLoginTeam.current = loginTeamId;
   }, [loginTeamId]);
 
-  const showTrainingTab = admin || Boolean(loginTeamId);
   const legacyTraining = training && admin;
 
   if (setupNeeded === null) return null;
@@ -181,10 +173,7 @@ export function App() {
               ["results", "Rezultati"],
               ["standings", "Lestvica"],
               ["players", "Igralci"],
-              ...(showTrainingTab ? [["training", "Trening"] as [Page, string]] : []),
-              ...(canEdit || (loginTeamId && (teamCaps.roster || teamCaps.season))
-                ? [["teams", "Ekipe"] as [Page, string]]
-                : []),
+              ...(canEdit || Boolean(loginTeamId) ? [["teams", "Ekipe"] as [Page, string]] : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
@@ -197,15 +186,6 @@ export function App() {
           ))}
         </nav>
 
-        {page === "training" && showTrainingTab && (
-          <Training
-            sessionId={trainingSessionId}
-            ownerTeamId={trainingOwnerId}
-            canPickTeam={admin}
-            onOpen={setTrainingSessionId}
-            onBack={() => setTrainingSessionId(null)}
-          />
-        )}
         {page === "schedule" && !matchId && (
           <Matches
             mode="schedule"
@@ -258,14 +238,16 @@ export function App() {
             onBack={() => setDetailTeamId(null)}
             canManage={canEdit}
             canRoster={canEdit || canTeam(loginTeam, "roster")}
+            showTraining={canEdit || detailTeamId === loginTeamId}
           />
         )}
-        {Boolean(loginTeamId) && teamCaps.roster && !teamCaps.season && !canEdit && page === "teams" && (
+        {Boolean(loginTeamId) && !teamCaps.season && !canEdit && page === "teams" && (
           <TeamDetail
             teamId={loginTeamId!}
             onBack={() => go("schedule")}
+            backLabel="← Razpored"
             canManage={false}
-            canRoster
+            canRoster={canTeam(loginTeam, "roster")}
           />
         )}
           </>

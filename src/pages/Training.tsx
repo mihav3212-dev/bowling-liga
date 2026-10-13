@@ -78,9 +78,9 @@ export function Training({
   const pool = useMemo(
     () =>
       [...state.players]
-        .filter((p) => !used.has(p.id))
+        .filter((p) => !used.has(p.id) && (!ownerTeamId || p.teamId === ownerTeamId))
         .sort((a, b) => a.name.localeCompare(b.name, "sl")),
-    [state.players, session?.scores],
+    [state.players, session?.scores, ownerTeamId],
   );
   const q = playerQuery.trim().toLowerCase();
   const visiblePool = useMemo(() => {
@@ -100,14 +100,13 @@ export function Training({
   if (!session) {
     return (
       <section className="panel">
-        <h2 className="round-title">Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
+        <h2 className="round-title">Treningi{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
         <p className="muted">
-          Novi trening: izberi igralce iz baze in vpiši keglje. Število iger ni določeno — ob vpisu se
-          odpre naslednje polje.
+          Samo igralci te ekipe. Število iger ni določeno — ob vpisu se odpre naslednje polje.
         </p>
         <p className="muted">
           {remote
-            ? "Treningi se shranjujejo v bazo (skupno za vse)."
+            ? "Treningi te ekipe se shranjujejo v bazo."
             : "Treningi se shranjujejo samo v ta brskalnik, dokler ni vklopljena baza."}
         </p>
         <div className="row-actions">
@@ -160,7 +159,7 @@ export function Training({
         ← Vsi treningi
       </button>
       <h2 className="round-title" style={{ marginTop: 12 }}>
-        Trening{ownerTeam ? ` — ${ownerTeam.name}` : ""}
+        Trening
       </h2>
       <label className="training-date">
         Datum
@@ -182,9 +181,11 @@ export function Training({
       <h3>Igralci</h3>
       {pool.length === 0 ? (
         <p className="muted">
-          {state.players.length === 0
-            ? "V bazi še ni igralcev — dodaj jih pri ekipah."
-            : "Vsi igralci iz baze so že na tem treningu."}
+          {state.players.filter((p) => !ownerTeamId || p.teamId === ownerTeamId).length === 0
+            ? ownerTeamId
+              ? "Ta ekipa še nima igralcev. Najprej jih dodaj zgoraj."
+              : "V bazi še ni igralcev — dodaj jih pri ekipah."
+            : "Vsi igralci ekipe so že na tem treningu."}
         </p>
       ) : (
         <form
@@ -199,35 +200,16 @@ export function Training({
           <input
             value={playerQuery}
             onChange={(e) => setPlayerQuery(e.target.value)}
-            placeholder="Išči po imenu ali ekipi"
+            placeholder="Išči po imenu"
             aria-label="Išči igralca"
           />
-          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Igralec iz baze">
+          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Igralec ekipe">
             <option value="">Izberi igralca…</option>
-            {state.teams.map((team) => {
-              const members = visiblePool.filter((p) => p.teamId === team.id);
-              if (members.length === 0) return null;
-              return (
-                <optgroup key={team.id} label={team.name}>
-                  {members.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {playerTag(p)}
-                    </option>
-                  ))}
-                </optgroup>
-              );
-            })}
-            {visiblePool.some((p) => !state.teams.some((t) => t.id === p.teamId)) && (
-              <optgroup label="Brez ekipe">
-                {visiblePool
-                  .filter((p) => !state.teams.some((t) => t.id === p.teamId))
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {playerTag(p)}
-                    </option>
-                  ))}
-              </optgroup>
-            )}
+            {visiblePool.map((p) => (
+              <option key={p.id} value={p.id}>
+                {playerTag(p)}
+              </option>
+            ))}
           </select>
           <button className="ghost" type="submit" disabled={!pickId}>
             Dodaj

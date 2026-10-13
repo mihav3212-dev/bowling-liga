@@ -1,19 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
 import { useStore } from "../lib/store";
+import { Training } from "./Training";
 
 export function TeamDetail({
   teamId,
   onBack,
+  backLabel = "← Ekipe",
   canManage = true,
   canRoster = true,
+  showTraining = true,
 }: {
   teamId: string;
   onBack: () => void;
+  backLabel?: string;
   canManage?: boolean;
   canRoster?: boolean;
+  showTraining?: boolean;
 }) {
   const { state, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
@@ -24,15 +29,21 @@ export function TeamDetail({
   const [exporting, setExporting] = useState(false);
   const [access, setAccess] = useState("");
   const [accessBusy, setAccessBusy] = useState(false);
+  const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTrainingSessionId(null);
+  }, [teamId]);
 
   if (!team) return <p>Ekipa ne obstaja.</p>;
   const rosterOpen = teamRosterWindowOpen(state.matches);
   const editRoster = canRoster && (canManage || rosterOpen);
 
   return (
+    <>
     <section className="panel">
       <button className="ghost" onClick={onBack}>
-        ← Ekipe
+        {backLabel}
       </button>
       <h2 style={{ margin: "12px 0" }}>{team.name}</h2>
       {canManage && (
@@ -208,5 +219,15 @@ export function TeamDetail({
         ))}
       </div>
     </section>
+    {showTraining && (
+    <Training
+      sessionId={trainingSessionId}
+      ownerTeamId={teamId}
+      canPickTeam={false}
+      onOpen={setTrainingSessionId}
+      onBack={() => setTrainingSessionId(null)}
+    />
+    )}
+    </>
   );
 }

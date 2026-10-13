@@ -94,7 +94,7 @@ Samo v **Admin → Dovoljenja ekip** (ni zavihka). Za vsako ekipo:
 | Popravljanje rezultatov | Sprememba že vpisanih kegljev. |
 | Urejanje sezone | Žreb, vse ekipe — **pusti izklopljeno**. |
 
-Brez kljukice ekipa vidi javni razpored, rezultate in lestvico. **Trening** (zavihek) imajo, če imajo geslo.
+Brez kljukice ekipa vidi javni razpored, rezultate in lestvico. **Treningi** so na dnu zavihka **Ekipe** — vsaka ekipa vidi samo svoje igralce.
 
 Žreb 2. dela in izvoz vseh prijavnih listov sta samo za admina (razen če ekipi daš urejanje sezone).
 
