@@ -5,6 +5,7 @@ import {
   pickLiveBoardMatch,
   type LiveMatchView,
 } from "../lib/liveBoard";
+import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
 
 type DuelRow = LiveMatchView["roundSummaries"][number]["duels"][number];
@@ -365,9 +366,10 @@ function LiveIdleScreen() {
 
 /** Živi TV prikaz: fiksni URL `?display=live`, pollanje lige. */
 export function LiveMatchBoard() {
-  const [state, setState] = useState<LeagueState | null>(null);
+  const { state: storeState } = useStore();
+  const [polled, setPolled] = useState<LeagueState | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [error, setError] = useState(false);
+  const [booting, setBooting] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -376,14 +378,14 @@ export function LiveMatchBoard() {
       try {
         const payload = await fetchLeague();
         if (cancelled) return;
+        // Na Vercelu brez MySQL API vrne { storage: "local" } — uporabi store/localStorage.
         if (payload.current?.data) {
-          setState(payload.current.data);
-          setError(false);
-        } else {
-          setError(true);
+          setPolled(payload.current.data);
         }
       } catch {
-        if (!cancelled) setError(true);
+        // Ostane storeState; ni napaka, če imamo lokalne podatke.
+      } finally {
+        if (!cancelled) setBooting(false);
       }
     }
 
@@ -397,14 +399,14 @@ export function LiveMatchBoard() {
     };
   }, []);
 
-  if (!state) {
+  const state = polled ?? storeState;
+
+  if (booting && !polled && storeState.matches.length === 0 && storeState.teams.length === 0) {
     return (
       <div className="live-tv">
         <div className="live-tv-idle">
-          <p className="live-tv-idle-title">{error ? "Ni povezave" : "Nalaganje…"}</p>
-          <p className="live-tv-idle-sub">
-            {error ? "Poskusim znova samodejno." : "Prikaz tekem v živo"}
-          </p>
+          <p className="live-tv-idle-title">Nalaganje…</p>
+          <p className="live-tv-idle-sub">Prikaz tekem v živo</p>
         </div>
       </div>
     );

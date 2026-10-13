@@ -82,25 +82,37 @@ export function Matches({
     <section>
       {mode === "schedule" && (
         <p className="muted" style={{ marginBottom: 20 }}>
-          {catalog.intro}{" "}
-          <a className="inline-link" href="/?display=live" target="_blank" rel="noreferrer">
-            TV prikaz v živo
-          </a>
+          {catalog.intro}
         </p>
       )}
       {mode === "schedule" && spotlight.length > 0 && (
         <div className="live-now">
-          <div className="live-now-head">
-            <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
-            <a className="live-tv-link" href="/?display=live" target="_blank" rel="noreferrer">
-              TV prikaz
-            </a>
-          </div>
+          <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
           <h3 className="round-title">
             {spotlight[0].round}. kolo
             {spotlight[0].startsAt ? ` · ${formatMatchWhen(spotlight[0].startsAt)}` : ""}
           </h3>
-          <div className="list">{spotlight.map((match) => matchRow(match))}</div>
+          <div className="list">
+            {spotlight.map((match) => {
+              const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
+              const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
+              return (
+                <button
+                  className="row match-row"
+                  key={match.id}
+                  type="button"
+                  onClick={() => {
+                    window.open("/?display=live", "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
+                  <span className="match-names">
+                    {home} – {away}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
       {mode === "results" && rounds.length > 0 && (

@@ -759,14 +759,6 @@ select {
   color: #fff;
 }
 
-.live-now-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
 .live-now .live-badge {
   display: inline-block;
   font-size: 11px;
@@ -777,29 +769,7 @@ select {
   background: #ef4444;
   padding: 3px 8px;
   border-radius: 4px;
-  margin-bottom: 0;
-}
-
-.live-tv-link {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #fecaca;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.live-tv-link:hover {
-  color: #fff;
-}
-
-html[data-theme="light"] .live-tv-link {
-  color: #991b1b;
-}
-
-html[data-theme="light"] .live-tv-link:hover {
-  color: #7f1d1d;
+  margin-bottom: 8px;
 }
 
 .live-now .round-title {
