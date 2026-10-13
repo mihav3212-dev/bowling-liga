@@ -1,4 +1,4 @@
-import { inviteStillOpen } from "./invite.mjs";
+import { inviteStillOpen } from "./passwords.mjs";
 
 export function sanitizeState(data, { admin = false, teamId = null } = {}) {
   const teams = (data?.teams ?? []).map((team) => {

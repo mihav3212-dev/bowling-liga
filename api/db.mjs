@@ -2,8 +2,14 @@ import mysql from "mysql2/promise";
 import { loadFileConfig } from "./config.mjs";
 import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
 import { applyLineup, lineupLocked, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
-import { hashPassword } from "./passwords.mjs";
-import { findInviteTeam, hashInviteToken, inviteExpiryIso, inviteStillOpen, newInviteToken } from "./invite.mjs";
+import {
+  findInviteTeam,
+  hashInviteToken,
+  hashPassword,
+  inviteExpiryIso,
+  inviteStillOpen,
+  newInviteToken,
+} from "./passwords.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
 import { setAdminPassword } from "./session.mjs";
 
