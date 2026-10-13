@@ -42,26 +42,27 @@ export type LiveBoardPick =
   | { status: "live" | "next"; match: Match; siblings: number; index: number }
   | { status: "idle" };
 
-const ROTATE_MS = 20_000;
-
 function nameFor(players: Player[], id: string, side: "home" | "away", slot: number): string {
   const player = id ? playerById(players, id) : undefined;
   return player?.name || slotLabel(side, slot);
 }
 
-/** Tekme v trenutnem terminu (tudi že končane), sicer naslednje, sicer idle. */
+/**
+ * Tekme v trenutnem terminu: najprej nedokončana (ne preklaplja, dokler ni končana),
+ * sicer prva v terminu. Če ni ničesar v terminu → naslednja, sicer idle.
+ */
 export function pickLiveBoardMatch(matches: Match[], players: Player[], now: number): LiveBoardPick {
   const inSlot = matchesInPlay(matches, now);
   if (inSlot.length > 0) {
-    const index = inSlot.length === 1 ? 0 : Math.floor(now / ROTATE_MS) % inSlot.length;
-    return { status: "live", match: inSlot[index]!, siblings: inSlot.length, index };
+    const openInSlot = inSlot.filter((m) => !matchTotals(m, players).complete);
+    const match = openInSlot[0] ?? inSlot[0]!;
+    return { status: "live", match, siblings: 1, index: 0 };
   }
 
   const open = matches.filter((m) => !matchTotals(m, players).complete);
   const upcoming = nextSlotMatches(open, now);
   if (upcoming.length > 0) {
-    const index = upcoming.length === 1 ? 0 : Math.floor(now / ROTATE_MS) % upcoming.length;
-    return { status: "next", match: upcoming[index]!, siblings: upcoming.length, index };
+    return { status: "next", match: upcoming[0]!, siblings: 1, index: 0 };
   }
 
   return { status: "idle" };

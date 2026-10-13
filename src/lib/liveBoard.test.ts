@@ -58,6 +58,20 @@ describe("pickLiveBoardMatch", () => {
     const pick = pickLiveBoardMatch([], players, Date.now());
     expect(pick.status).toBe("idle");
   });
+
+  it("keeps the incomplete match until it finishes before showing another in the same slot", () => {
+    const start = "2026-10-13T17:00:00.000Z";
+    const now = new Date("2026-10-13T17:30:00.000Z").getTime();
+    const done = matchAt(start, { id: "done", status: "done" });
+    // Fill all pins so matchTotals.complete is true.
+    done.rounds = done.rounds.map((round) => ({
+      games: round.games.map((g) => ({ ...g, homePins: 180, awayPins: 160 })),
+    }));
+    const open = matchAt(start, { id: "open" });
+    const pick = pickLiveBoardMatch([done, open], players, now);
+    expect(pick.status).toBe("live");
+    if (pick.status !== "idle") expect(pick.match.id).toBe("open");
+  });
 });
 
 describe("buildLiveMatchView", () => {

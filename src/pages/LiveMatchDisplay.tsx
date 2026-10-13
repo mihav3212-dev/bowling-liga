@@ -256,7 +256,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
           </div>
           <div className="live-tv-stats-featured">
             <div className="live-tv-stat-block">
-              <span className="live-tv-stat-label">Velike</span>
+              <span className="live-tv-stat-label">Velike točke</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
               </strong>
@@ -269,7 +269,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
             </div>
           </div>
           <div className="live-tv-stats-minor">
-            Male <strong>{m.homeSmall}:{m.awaySmall}</strong>
+            Male točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
           </div>
         </div>
 
@@ -282,7 +282,6 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
       <section className="live-tv-round">
         <div className="live-tv-round-head">
           <h2>Po krogih</h2>
-          <p>Seštevek T · dvoboji</p>
         </div>
         <div className="live-tv-rounds-grid">
           {m.roundSummaries.map((r) => {

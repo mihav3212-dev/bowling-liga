@@ -1529,21 +1529,7 @@ html[data-theme="light"] .live-now .list button.row:hover {
 }
 
 .live-tv-lane {
-  position: absolute;
-  inset: auto 0 0;
-  height: 42%;
-  background:
-    linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.03)),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0,
-      transparent calc(25% - 1px),
-      rgba(255, 255, 255, 0.04) calc(25% - 1px),
-      rgba(255, 255, 255, 0.04) 25%
-    );
-  mask-image: linear-gradient(180deg, transparent, #000 40%);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
 .live-tv > *:not(.live-tv-glow):not(.live-tv-lane) {
