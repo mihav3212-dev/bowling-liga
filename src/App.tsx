@@ -13,6 +13,7 @@ import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
 import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
+import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
@@ -22,6 +23,22 @@ import { useStore } from "./lib/store";
 type Page = "schedule" | "results" | "standings" | "players" | "teams" | "training" | "access";
 
 export function App() {
+  const displayMode = new URLSearchParams(window.location.search).get("display");
+  if (displayMode === "live") {
+    return <LiveMatchBoard />;
+  }
+  if (displayMode === "preview" || displayMode === "preview-end") {
+    return (
+      <LiveMatchDisplay
+        preview
+        previewPhase={displayMode === "preview-end" ? "final" : "live"}
+      />
+    );
+  }
+  return <LeagueApp />;
+}
+
+function LeagueApp() {
   const { admin, teamId: loginTeamId, teamName } = useAuth();
   const {
     state,

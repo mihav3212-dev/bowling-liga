@@ -15,7 +15,7 @@ export type LeaguePayload = {
 
 export async function fetchLeague(id?: string): Promise<LeaguePayload> {
   const url = id ? `/api/league?id=${encodeURIComponent(id)}` : "/api/league";
-  const res = await fetch(url, { credentials: "same-origin" });
+  const res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
   if (!res.ok) throw new Error("league");
   return (await res.json()) as LeaguePayload;
 }

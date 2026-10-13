@@ -82,12 +82,20 @@ export function Matches({
     <section>
       {mode === "schedule" && (
         <p className="muted" style={{ marginBottom: 20 }}>
-          {catalog.intro}
+          {catalog.intro}{" "}
+          <a className="inline-link" href="/?display=live" target="_blank" rel="noreferrer">
+            TV prikaz v živo
+          </a>
         </p>
       )}
       {mode === "schedule" && spotlight.length > 0 && (
         <div className="live-now">
-          <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
+          <div className="live-now-head">
+            <span className="live-badge">{live.length ? "V živo" : "Naslednja"}</span>
+            <a className="live-tv-link" href="/?display=live" target="_blank" rel="noreferrer">
+              TV prikaz
+            </a>
+          </div>
           <h3 className="round-title">
             {spotlight[0].round}. kolo
             {spotlight[0].startsAt ? ` · ${formatMatchWhen(spotlight[0].startsAt)}` : ""}
