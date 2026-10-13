@@ -364,12 +364,14 @@ function LiveIdleScreen() {
   );
 }
 
-/** Živi TV prikaz: fiksni URL `?display=live`, pollanje lige. */
+/** Živi TV prikaz: fiksni URL `?display=live`, pollanje MySQL lige (ali lokalni fallback). */
 export function LiveMatchBoard() {
-  const { state: storeState } = useStore();
+  const { state: storeState, remote } = useStore();
   const [polled, setPolled] = useState<LeagueState | null>(null);
+  const [fromDb, setFromDb] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [booting, setBooting] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -378,12 +380,19 @@ export function LiveMatchBoard() {
       try {
         const payload = await fetchLeague();
         if (cancelled) return;
-        // Na Vercelu brez MySQL API vrne { storage: "local" } — uporabi store/localStorage.
-        if (payload.current?.data) {
+        if (payload.storage === "db" && payload.current?.data) {
           setPolled(payload.current.data);
+          setFromDb(true);
+          setError(false);
+        } else if (payload.current?.data) {
+          setPolled(payload.current.data);
+          setError(false);
+        } else {
+          // Brez MySQL (npr. Vercel): ostane store / localStorage.
+          setFromDb(false);
         }
       } catch {
-        // Ostane storeState; ni napaka, če imamo lokalne podatke.
+        if (!cancelled) setError(true);
       } finally {
         if (!cancelled) setBooting(false);
       }
@@ -399,14 +408,27 @@ export function LiveMatchBoard() {
     };
   }, []);
 
-  const state = polled ?? storeState;
+  // Pri MySQL vedno sveži poll; sicer store (isti vir kot razpored).
+  const state = fromDb && polled ? polled : (polled ?? storeState);
+  const hasData = state.matches.length > 0 || state.teams.length > 0;
 
-  if (booting && !polled && storeState.matches.length === 0 && storeState.teams.length === 0) {
+  if (booting && !hasData) {
     return (
       <div className="live-tv">
         <div className="live-tv-idle">
           <p className="live-tv-idle-title">Nalaganje…</p>
           <p className="live-tv-idle-sub">Prikaz tekem v živo</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !hasData && !remote) {
+    return (
+      <div className="live-tv">
+        <div className="live-tv-idle">
+          <p className="live-tv-idle-title">Ni povezave</p>
+          <p className="live-tv-idle-sub">Poskusim znova samodejno.</p>
         </div>
       </div>
     );
