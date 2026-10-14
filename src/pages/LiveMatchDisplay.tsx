@@ -318,33 +318,35 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
 
         <div className="live-tv-center">
           <div className="live-tv-score-label">{complete ? "Končni rezultat" : "Rezultat"}</div>
-          <div className="live-tv-stats-stack">
+          <div className={`live-tv-stats-stack${complete ? " is-final" : ""}`}>
             <div className="live-tv-stat-row">
               <span className="live-tv-stat-label">Male točke</span>
               <strong>
                 {m.homeSmall}:{m.awaySmall}
               </strong>
             </div>
-            <div className="live-tv-stat-row">
+            <div className="live-tv-stat-row is-featured">
               <span className="live-tv-stat-label">Velike točke</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
               </strong>
             </div>
-            <div className="live-tv-stat-row">
+            <div className="live-tv-stat-row is-featured">
               <span className="live-tv-stat-label">Keglji</span>
               <strong>
                 {m.homePins}:{m.awayPins}
               </strong>
             </div>
-            <div className="live-tv-stat-row is-match">
-              <span className="live-tv-stat-label">Točke</span>
-              <strong>
-                <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                <span className="live-tv-score-sep">:</span>
-                <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-              </strong>
-            </div>
+            {complete ? (
+              <div className="live-tv-stat-row is-match">
+                <span className="live-tv-stat-label">Točke</span>
+                <strong>
+                  <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                  <span className="live-tv-score-sep">:</span>
+                  <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                </strong>
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -395,7 +397,9 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
                     const dLead = duelLead(d.homePins, d.awayPins);
                     return (
                       <div key={d.lane} className="live-tv-mini-duel">
-                        <span className="live-tv-mini-lane">Steza {d.lane}</span>
+                        <span className="live-tv-mini-lane" data-lane={d.lane}>
+                          Steza {d.lane}
+                        </span>
                         <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
                           {d.homeName}
                         </span>
