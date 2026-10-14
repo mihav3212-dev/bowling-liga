@@ -14,6 +14,7 @@ import { AdminMenu } from "./pages/AdminMenu";
 import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
 import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
+import { MatchResultView } from "./pages/MatchResultView";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
@@ -26,6 +27,9 @@ export function App() {
   const displayMode = new URLSearchParams(window.location.search).get("display");
   if (displayMode === "live") {
     return <LiveMatchBoard />;
+  }
+  if (displayMode === "result-preview") {
+    return <MatchResultView preview />;
   }
   if (displayMode === "preview" || displayMode === "preview-end") {
     return (

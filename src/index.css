@@ -2109,3 +2109,542 @@ html[data-theme="light"] .live-now .list button.row:hover {
     grid-area: apins;
   }
 }
+
+/* —— Vertikalni pregled končane tekme (Rezultati) —— */
+.result-view {
+  --rv-bg: #0c0b0b;
+  --rv-ink: #f4f2ef;
+  --rv-muted: #9a9690;
+  --rv-accent: #e8a06a;
+  --rv-lead: #b04fc4;
+  --rv-line: rgba(255, 255, 255, 0.1);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  padding: clamp(14px, 3vw, 28px) clamp(12px, 4vw, 28px) 40px;
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  background: var(--rv-bg);
+  color: var(--rv-ink);
+  overflow-x: hidden;
+}
+
+.result-view-glow {
+  position: absolute;
+  inset: -10% 5% auto;
+  height: 40%;
+  background:
+    radial-gradient(ellipse at 40% 0%, rgba(232, 160, 106, 0.16), transparent 55%),
+    radial-gradient(ellipse at 70% 20%, rgba(176, 79, 196, 0.12), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.result-view > *:not(.result-view-glow) {
+  position: relative;
+  z-index: 1;
+}
+
+.result-view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.result-view-back {
+  color: var(--rv-ink) !important;
+  border-color: var(--rv-line) !important;
+}
+
+.result-view-preview-tag {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rv-accent);
+  font-size: 0.95rem;
+}
+
+.result-view-preview-note {
+  color: var(--rv-muted);
+  font-size: 0.85rem;
+}
+
+.result-view-preview-note code {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--rv-accent);
+  font-size: 0.85em;
+}
+
+.result-view-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: clamp(18px, 3vh, 28px);
+}
+
+.result-view-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.result-view-logo {
+  width: clamp(40px, 5vw, 56px);
+  height: auto;
+  display: block;
+}
+
+.result-view-brand-name {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.result-view-brand-sub {
+  margin-top: 4px;
+  color: var(--rv-muted);
+  font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.result-view-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.result-view-final-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--rv-accent);
+}
+
+.result-view-final {
+  color: var(--rv-accent);
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+}
+
+.result-view-when {
+  color: var(--rv-muted);
+  font-size: clamp(0.9rem, 1.4vw, 1.05rem);
+}
+
+.result-view-scoreboard {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: clamp(10px, 2vw, 28px);
+  margin-bottom: clamp(22px, 4vh, 36px);
+  padding-bottom: clamp(18px, 3vh, 28px);
+  border-bottom: 1px solid var(--rv-line);
+}
+
+.result-view-side {
+  min-width: 0;
+}
+
+.result-view-side.is-away {
+  text-align: right;
+}
+
+.result-view-side-label {
+  color: var(--rv-muted);
+  font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.result-view-side.is-winner .result-view-side-label {
+  color: var(--rv-lead);
+}
+
+.result-view-team {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.8rem, 5vw, 3.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.result-view-side.is-winner .result-view-team {
+  text-shadow: 0 0 28px rgba(176, 79, 196, 0.28);
+}
+
+.result-view-center {
+  text-align: center;
+  padding: 0 6px;
+}
+
+.result-view-score-label {
+  color: var(--rv-accent);
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  letter-spacing: 0.18em;
+  margin-bottom: 2px;
+}
+
+.result-view-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.08em;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: clamp(2.6rem, 7vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.result-view-score span.is-winner {
+  color: var(--rv-lead);
+}
+
+.result-view-score-sep {
+  opacity: 0.45;
+  font-weight: 500;
+}
+
+.result-view-stats-featured {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 22px;
+  margin-top: 12px;
+}
+
+.result-view-stat-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.result-view-stat-label {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rv-accent);
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+}
+
+.result-view-stat-block strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: clamp(1.25rem, 2.6vw, 1.85rem);
+  letter-spacing: -0.02em;
+}
+
+.result-view-stats-minor {
+  margin-top: 8px;
+  color: var(--rv-muted);
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+}
+
+.result-view-stats-minor strong {
+  color: var(--rv-ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+}
+
+.result-view-rounds-title {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.result-view-rounds-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-view-round {
+  border: 1px solid var(--rv-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: clamp(12px, 2vh, 18px) clamp(12px, 2vw, 18px);
+}
+
+.result-view-round-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--rv-line);
+}
+
+.result-view-round-num {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rv-muted);
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  min-width: 4.5rem;
+}
+
+.result-view-round-score {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+  letter-spacing: -0.02em;
+}
+
+.result-view-round-score .is-lead {
+  color: var(--rv-lead);
+}
+
+.result-view-round-pins {
+  margin-left: auto;
+  color: var(--rv-muted);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+}
+
+.result-view-duels {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-view-duel {
+  display: grid;
+  grid-template-columns:
+    minmax(52px, 0.55fr)
+    minmax(0, 1.5fr)
+    auto
+    16px
+    auto
+    minmax(0, 1.5fr);
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+}
+
+.result-view-lane {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rv-muted);
+  font-size: 0.9em;
+}
+
+.result-view-duel-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.88;
+}
+
+.result-view-duel-name.is-away {
+  text-align: right;
+}
+
+.result-view-duel-name.is-lead,
+.result-view-duel-pins.is-lead {
+  opacity: 1;
+  color: var(--rv-lead);
+}
+
+.result-view-duel-pins {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: 1.1em;
+  min-width: 2em;
+  text-align: center;
+}
+
+.result-view-duel-sep {
+  color: var(--rv-muted);
+  opacity: 0.55;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .result-view {
+    max-width: none;
+    padding: 12px 12px 28px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .result-view-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .result-view-preview-note {
+    font-size: 0.75rem;
+    word-break: break-word;
+  }
+
+  .result-view-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .result-view-meta {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .result-view-logo {
+    width: 36px;
+  }
+
+  .result-view-brand-name {
+    font-size: 1.05rem;
+  }
+
+  .result-view-brand-sub {
+    font-size: 0.75rem;
+  }
+
+  /* Domači | rezultat | gostje v eni vrstici */
+  .result-view-scoreboard {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: start;
+    gap: 6px;
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+  }
+
+  .result-view-side.is-home,
+  .result-view-side.is-away {
+    text-align: center;
+  }
+
+  .result-view-side-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+  }
+
+  .result-view-team {
+    font-size: clamp(1.15rem, 6.5vw, 1.55rem);
+  }
+
+  .result-view-score-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+  }
+
+  .result-view-score {
+    font-size: clamp(2rem, 11vw, 2.6rem);
+  }
+
+  .result-view-stats-featured {
+    gap: 8px 14px;
+    margin-top: 8px;
+  }
+
+  .result-view-stat-label {
+    font-size: 0.7rem;
+  }
+
+  .result-view-stat-block strong {
+    font-size: 1.05rem;
+  }
+
+  .result-view-stats-minor {
+    font-size: 0.8rem;
+  }
+
+  .result-view-rounds-title {
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+  }
+
+  .result-view-rounds-stack {
+    gap: 10px;
+  }
+
+  .result-view-round {
+    padding: 10px 10px 12px;
+    border-radius: 5px;
+  }
+
+  .result-view-round-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .result-view-round-num {
+    font-size: 0.85rem;
+  }
+
+  .result-view-round-score {
+    font-size: 1.35rem;
+  }
+
+  .result-view-round-pins {
+    margin-left: 0;
+    width: 100%;
+    font-size: 0.75rem;
+  }
+
+  .result-view-duels {
+    gap: 6px;
+  }
+
+  .result-view-duel {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto
+      10px
+      auto
+      minmax(0, 1fr);
+    gap: 4px 6px;
+    font-size: 0.88rem;
+  }
+
+  .result-view-lane {
+    display: none;
+  }
+
+  .result-view-duel-pins {
+    font-size: 1em;
+    min-width: 1.6em;
+  }
+}
