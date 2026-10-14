@@ -617,20 +617,66 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
 
   const homeLine = [...match.homeStarters, ...match.homeBench];
   const awayLine = [...match.awayStarters, ...match.awayBench];
+  const sl = (n: number) => n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const playerMatchStats = (playerId: string) => {
+    let games = 0;
+    let points = 0;
+    let pins = 0;
+    if (!playerId) return { games, points, pins };
+    const player = players.get(playerId);
+    for (const round of match.rounds) {
+      for (const game of round.games) {
+        if (game.homePlayerId === playerId && game.homePins != null) {
+          const hp = game.homePins === 0 ? 0 : scoredPins(game.homePins, player);
+          if (hp == null) continue;
+          games += 1;
+          pins += hp;
+          const duel = scoreGame(game, state.players);
+          if (duel) points += duel.homeTotal;
+        } else if (game.awayPlayerId === playerId && game.awayPins != null) {
+          const ap = game.awayPins === 0 ? 0 : scoredPins(game.awayPins, player);
+          if (ap == null) continue;
+          games += 1;
+          pins += ap;
+          const duel = scoreGame(game, state.players);
+          if (duel) points += duel.awayTotal;
+        }
+      }
+    }
+    return { games, points, pins };
+  };
+  const playerCols = (playerId: string) => {
+    const name = players.get(playerId)?.name ?? "";
+    const { games, points, pins } = playerMatchStats(playerId);
+    if (!playerId || games === 0) return [name, "", "", ""];
+    return [name, String(points), String(pins), sl(pins / games)];
+  };
   const lineup = [0, 1, 2, 3, 4, 5].map((i) => [
     slotLabel("home", i),
-    players.get(homeLine[i] ?? "")?.name ?? "",
+    ...playerCols(homeLine[i] ?? ""),
     slotLabel("away", i),
-    players.get(awayLine[i] ?? "")?.name ?? "",
+    ...playerCols(awayLine[i] ?? ""),
   ]);
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
     pageBreak: "avoid",
-    styles: { font: "FreeSans", fontSize: 8, cellPadding: 1.1, textColor: [20, 16, 10] },
+    styles: { font: "FreeSans", fontSize: 7.5, cellPadding: 1, textColor: [20, 16, 10], halign: "center" },
     headStyles: tableHead,
     bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
-    head: [["", "Domači", "", "Gostje"]],
+    columnStyles: {
+      0: { cellWidth: 8 },
+      1: { halign: "left", cellWidth: 42 },
+      2: { cellWidth: 10 },
+      3: { cellWidth: 14 },
+      4: { cellWidth: 16 },
+      5: { cellWidth: 8 },
+      6: { halign: "left", cellWidth: 42 },
+      7: { cellWidth: 10 },
+      8: { cellWidth: 14 },
+      9: { cellWidth: 16 },
+    },
+    head: [["", "Domači", "T", "Rez.", "Pov.", "", "Gostje", "T", "Rez.", "Pov."]],
     body: lineup,
   });
   y = ((doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y) + 4;
@@ -643,7 +689,6 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
       if (game.awayPins != null) awayGames += 1;
     }
   }
-  const sl = (n: number) => n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   autoTable(doc, {
     startY: y,
