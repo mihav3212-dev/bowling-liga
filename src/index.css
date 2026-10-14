@@ -2087,6 +2087,32 @@ button.linkish {
   font-size: 1rem;
 }
 
+.live-tv-layout-toggle {
+  display: inline-flex;
+  border: 1px solid var(--tv-line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.live-tv-layout-toggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--tv-muted);
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.live-tv-layout-toggle button.is-on {
+  background: rgba(232, 160, 106, 0.18);
+  color: var(--tv-accent);
+}
+
 /* —— TV layout: kvadrati (2×2 + sredinska hrbtenica), iste barve kot klasični TV —— */
 .live-tv.is-quad {
   gap: clamp(6px, 1.2vh, 12px);
@@ -2101,65 +2127,22 @@ button.linkish {
   flex: 0 0 auto;
 }
 
-.live-quad-teams {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  flex: 0 0 auto;
-}
-
-.live-quad-team {
-  min-width: 0;
-}
-
-.live-quad-team.is-away {
-  text-align: right;
-}
-
-.live-quad-team-label {
-  display: block;
-  color: var(--tv-muted);
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
-  margin-bottom: 2px;
-}
-
-.live-quad-team strong {
-  display: block;
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 800;
-  font-size: clamp(1.35rem, 3.4vw, 2.4rem);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.live-quad-team.is-winner strong {
-  color: var(--tv-live);
-}
-
 .live-quad-board {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 0.42fr) minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: clamp(8px, 1.6vh, 16px) clamp(10px, 2vw, 22px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(8.5rem, 0.48fr) minmax(0, 1.15fr);
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1.05fr);
+  gap: clamp(6px, 1.2vh, 12px) clamp(8px, 1.6vw, 18px);
   align-items: stretch;
 }
 
 .live-tv.is-quad .live-tv-round-card.is-quad {
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--tv-ink);
   border: 1px solid var(--tv-line);
   border-radius: clamp(12px, 1.8vw, 20px);
-  padding: clamp(10px, 1.6vh, 16px) clamp(12px, 1.6vw, 18px);
+  padding: clamp(12px, 1.8vh, 20px) clamp(12px, 1.6vw, 18px);
   min-height: 0;
 }
 
@@ -2171,13 +2154,13 @@ button.linkish {
 .live-tv.is-quad .live-tv-round-card-num {
   color: var(--tv-muted);
   text-align: left;
-  font-size: clamp(1rem, 1.6vw, 1.35rem);
-  margin-bottom: 4px;
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+  margin-bottom: 6px;
 }
 
 .live-tv.is-quad .live-tv-round-card-score {
   color: var(--tv-ink);
-  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-size: clamp(2rem, 3.8vw, 3rem);
 }
 
 .live-tv.is-quad .live-tv-round-card-score .is-lead {
@@ -2186,11 +2169,18 @@ button.linkish {
 
 .live-tv.is-quad .live-tv-round-card-meta {
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+  font-size: clamp(1rem, 1.5vw, 1.3rem);
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.live-tv.is-quad .live-tv-round-duels {
+  gap: 7px;
+  padding-top: 8px;
 }
 
 .live-tv.is-quad .live-tv-mini-duel {
-  font-size: clamp(0.88rem, 1.35vw, 1.2rem);
+  font-size: clamp(1.05rem, 1.7vw, 1.45rem);
 }
 
 .live-quad-spine {
@@ -2198,9 +2188,18 @@ button.linkish {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   text-align: center;
   min-width: 0;
+}
+
+.live-quad-spine-mid {
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+
+.live-quad-spine-bot {
+  min-height: 0;
 }
 
 .live-quad-stat {
@@ -2216,50 +2215,63 @@ button.linkish {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(0.85rem, 1.4vw, 1.15rem);
+  font-size: clamp(1rem, 1.7vw, 1.35rem);
 }
 
 .live-quad-stat strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.35rem, 2.8vw, 2.1rem);
+  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
   line-height: 1;
   color: var(--tv-ink);
 }
 
 .live-quad-stat.is-featured strong {
-  font-size: clamp(1.55rem, 3.2vw, 2.4rem);
+  font-size: clamp(2rem, 4vw, 3.1rem);
 }
 
-.live-quad-stat.is-pins span {
-  font-size: clamp(1.1rem, 2vw, 1.55rem);
+.live-quad-stat.is-pins span,
+.live-quad-stat.is-match span {
+  font-size: clamp(1.2rem, 2.1vw, 1.7rem);
 }
 
-.live-quad-stat.is-pins strong {
-  font-size: clamp(1.8rem, 3.8vw, 2.8rem);
-}
-
+.live-quad-stat.is-pins strong,
 .live-quad-stat.is-match strong {
-  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  font-size: clamp(2.2rem, 4.6vw, 3.5rem);
 }
 
 .live-quad-stat.is-match .is-winner {
   color: var(--tv-live);
 }
 
-.live-quad-stat.is-pending strong {
-  opacity: 0.45;
+.live-quad-mid-label {
+  align-self: start;
+  justify-self: center;
+  width: 100%;
+  min-width: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: clamp(1.25rem, 2.8vw, 2.2rem);
+  line-height: 1.05;
+  color: var(--tv-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-top: 2px;
 }
 
-.live-quad-mid-label {
-  align-self: center;
-  justify-self: center;
-  font-family: "Barlow Condensed", sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-size: clamp(1.1rem, 2.2vw, 1.7rem);
-  color: var(--tv-muted);
+.live-quad-mid-label.is-home {
+  text-align: left;
+}
+
+.live-quad-mid-label.is-away {
+  text-align: right;
+}
+
+.live-quad-mid-label.is-winner {
+  color: var(--tv-live);
 }
 
 .live-tv-preview-bar {
@@ -2359,32 +2371,37 @@ button.linkish {
   }
 
   .live-quad-board {
-    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 0.35fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.38fr) minmax(0, 1fr);
     gap: 8px 6px;
   }
 
   .live-quad-mid-label {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
 
   .live-quad-stat span {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .live-quad-stat strong,
   .live-quad-stat.is-featured strong,
   .live-quad-stat.is-pins strong,
   .live-quad-stat.is-match strong {
-    font-size: 1rem;
+    font-size: 1.15rem;
   }
 
   .live-tv.is-quad .live-tv-mini-duel {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
   }
 
   .live-tv.is-quad .live-tv-round-card.is-quad {
     border-radius: 16px;
     padding: 8px 6px;
+  }
+
+  .live-tv-layout-toggle button {
+    font-size: 0.75rem;
+    padding: 4px 8px;
   }
 
   .live-tv-scoreboard {

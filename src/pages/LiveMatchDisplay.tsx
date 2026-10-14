@@ -260,8 +260,62 @@ const POLL_MS = 8_000;
 
 export type LiveTvLayout = "classic" | "quad";
 
+const LAYOUT_KEY = "liga-tv-layout";
+
 function readLiveLayout(): LiveTvLayout {
-  return new URLSearchParams(window.location.search).get("layout") === "quad" ? "quad" : "classic";
+  const q = new URLSearchParams(window.location.search).get("layout");
+  if (q === "quad" || q === "classic") return q;
+  try {
+    const stored = localStorage.getItem(LAYOUT_KEY);
+    if (stored === "quad" || stored === "classic") return stored;
+  } catch {
+    /* ignore */
+  }
+  return "classic";
+}
+
+function writeLiveLayout(next: LiveTvLayout) {
+  try {
+    localStorage.setItem(LAYOUT_KEY, next);
+  } catch {
+    /* ignore */
+  }
+  const url = new URL(window.location.href);
+  if (next === "quad") url.searchParams.set("layout", "quad");
+  else url.searchParams.delete("layout");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+function useLiveLayout(): [LiveTvLayout, (next: LiveTvLayout) => void] {
+  const [layout, setLayoutState] = useState<LiveTvLayout>(() => readLiveLayout());
+  const setLayout = (next: LiveTvLayout) => {
+    setLayoutState(next);
+    writeLiveLayout(next);
+  };
+  return [layout, setLayout];
+}
+
+function LayoutPicker({
+  layout,
+  onChange,
+}: {
+  layout: LiveTvLayout;
+  onChange: (next: LiveTvLayout) => void;
+}) {
+  return (
+    <div className="live-tv-layout-toggle" role="group" aria-label="Izbira prikaza">
+      <button
+        type="button"
+        className={layout === "classic" ? "is-on" : ""}
+        onClick={() => onChange("classic")}
+      >
+        Klasično
+      </button>
+      <button type="button" className={layout === "quad" ? "is-on" : ""} onClick={() => onChange("quad")}>
+        Kvadrati
+      </button>
+    </div>
+  );
 }
 
 type RoundSummary = LiveMatchView["roundSummaries"][number];
@@ -326,10 +380,11 @@ type ScreenProps = {
   view: LiveMatchView;
   badge: "live" | "next" | "final";
   rotateLabel?: string | null;
-  layout?: LiveTvLayout;
+  layout: LiveTvLayout;
+  onLayoutChange: (next: LiveTvLayout) => void;
 };
 
-function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: ScreenProps) {
+function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }: ScreenProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
   const complete = m.complete || badge === "final";
@@ -361,6 +416,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: Sc
       )}
       <span className="live-tv-when">{m.startsAtLabel}</span>
       {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
+      <LayoutPicker layout={layout} onChange={onLayoutChange} />
       <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
     </div>
   );
@@ -383,17 +439,6 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: Sc
           {meta}
         </header>
 
-        <div className="live-quad-teams">
-          <div className={`live-quad-team is-home${homeWins ? " is-winner" : ""}`}>
-            <span className="live-quad-team-label">Domači</span>
-            <strong>{m.homeName}</strong>
-          </div>
-          <div className={`live-quad-team is-away${awayWins ? " is-winner" : ""}`}>
-            <span className="live-quad-team-label">Gosti</span>
-            <strong>{m.awayName}</strong>
-          </div>
-        </div>
-
         <div className="live-quad-board">
           <RoundCard r={r1} variant="quad" />
           <div className="live-quad-spine live-quad-spine-top">
@@ -412,22 +457,13 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: Sc
           </div>
           <RoundCard r={r2} variant="quad" />
 
-          <div className="live-quad-mid-label is-home">Domači</div>
-          <div className="live-quad-spine live-quad-spine-mid">
-            <div className="live-quad-stat is-pins">
-              <span>Keglji</span>
-              <strong>
-                {m.homePins}:{m.awayPins}
-              </strong>
-            </div>
+          <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
+            {m.homeName}
           </div>
-          <div className="live-quad-mid-label is-away">Gosti</div>
-
-          <RoundCard r={r3} variant="quad" />
-          <div className="live-quad-spine live-quad-spine-bot">
+          <div className="live-quad-spine live-quad-spine-mid">
             {complete ? (
               <div className="live-quad-stat is-match">
-                <span>Skupne točke</span>
+                <span>Končne točke</span>
                 <strong>
                   <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
                   <span className="live-tv-score-sep">:</span>
@@ -435,12 +471,20 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: Sc
                 </strong>
               </div>
             ) : (
-              <div className="live-quad-stat is-match is-pending">
-                <span>Skupne točke</span>
-                <strong>·:·</strong>
+              <div className="live-quad-stat is-pins">
+                <span>Keglji</span>
+                <strong>
+                  {m.homePins}:{m.awayPins}
+                </strong>
               </div>
             )}
           </div>
+          <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
+            {m.awayName}
+          </div>
+
+          <RoundCard r={r3} variant="quad" />
+          <div className="live-quad-spine live-quad-spine-bot" aria-hidden />
           <RoundCard r={r4} variant="quad" />
         </div>
       </div>
@@ -557,6 +601,7 @@ function LiveIdleScreen() {
 /** Živi TV prikaz: fiksni URL `?display=live`, pollanje MySQL lige (ali lokalni fallback). */
 export function LiveMatchBoard() {
   const { state: storeState, remote } = useStore();
+  const [layout, setLayout] = useLiveLayout();
   const [polled, setPolled] = useState<LeagueState | null>(null);
   const [fromDb, setFromDb] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -638,7 +683,8 @@ export function LiveMatchBoard() {
       view={view}
       badge={badge}
       rotateLabel={rotateLabel}
-      layout={readLiveLayout()}
+      layout={layout}
+      onLayoutChange={setLayout}
     />
   );
 }
@@ -651,7 +697,7 @@ type PreviewProps = {
 /** Predogled layouta z mock podatki (`?display=preview`). */
 export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: PreviewProps) {
   const [phase, setPhase] = useState<"live" | "final">(previewPhase);
-  const [layout, setLayout] = useState<LiveTvLayout>(() => readLiveLayout());
+  const [layout, setLayout] = useLiveLayout();
   const view = phase === "final" ? PREVIEW_FINAL : PREVIEW_LIVE;
 
   return (
@@ -660,25 +706,10 @@ export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: Prev
         view={view}
         badge={phase === "final" ? "final" : "live"}
         layout={layout}
+        onLayoutChange={setLayout}
       />
       {preview && (
         <div className="live-tv-preview-bar live-tv-preview-overlay">
-          <div className="live-tv-preview-toggle" role="group" aria-label="Predogled layouta">
-            <button
-              type="button"
-              className={layout === "classic" ? "is-on" : ""}
-              onClick={() => setLayout("classic")}
-            >
-              Klasično
-            </button>
-            <button
-              type="button"
-              className={layout === "quad" ? "is-on" : ""}
-              onClick={() => setLayout("quad")}
-            >
-              Kvadrati
-            </button>
-          </div>
           <div className="live-tv-preview-toggle" role="group" aria-label="Predogled faze">
             <button
               type="button"
@@ -696,7 +727,7 @@ export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: Prev
             </button>
           </div>
           <p className="live-tv-preview-note">
-            Živo: <code>?display=live</code> · kvadrati: <code>&amp;layout=quad</code>
+            Živo: <code>?display=live</code> · layout zgoraj desno (Klasično / Kvadrati)
           </p>
         </div>
       )}
