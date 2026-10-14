@@ -239,12 +239,12 @@ export function TeamDetail({
         </button>
       </form>
       )}
-      <div className="list" style={{ marginTop: 16 }}>
+      <div className="list roster-list" style={{ marginTop: 16 }}>
         {players.map((p) => (
-          <div key={p.id} className="form-row" style={{ justifyContent: "space-between" }}>
-            <strong>{p.name}</strong>
+          <div key={p.id} className={editRoster ? "form-row roster-player-row" : "roster-player-block"}>
             {editRoster ? (
               <>
+                <strong>{p.name}</strong>
                 <label className="muted">
                   <input
                     type="checkbox"
@@ -266,10 +266,13 @@ export function TeamDetail({
                 </button>
               </>
             ) : (
-              <span className="muted">
-                {p.gender === "F" ? "ženska" : "moški"}
-                {p.bzsMember ? " · BZS" : ""}
-              </span>
+              <>
+                <strong className="roster-player-name">{p.name}</strong>
+                <span className="muted roster-player-gender">
+                  {p.gender === "F" ? "ženska" : "moški"}
+                  {p.bzsMember ? " · BZS" : ""}
+                </span>
+              </>
             )}
           </div>
         ))}

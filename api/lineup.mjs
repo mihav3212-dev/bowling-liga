@@ -39,6 +39,43 @@ export function teamMatchSide(match, teamId) {
   return null;
 }
 
+export function lineupsRevealed(match, now = Date.now()) {
+  if (lineupLocked(match?.rounds)) return true;
+  if (!match?.startsAt) return false;
+  const start = new Date(match.startsAt).getTime();
+  return !Number.isNaN(start) && now >= start;
+}
+
+function blankSide(match, side) {
+  const rounds = (match.rounds ?? []).map((round) => ({
+    games: (round.games ?? []).map((game) =>
+      side === "home" ? { ...game, homePlayerId: "" } : { ...game, awayPlayerId: "" },
+    ),
+  }));
+  if (side === "home") {
+    return {
+      ...match,
+      homeStarters: Array.from({ length: PLAYERS_ON_LANE }, () => ""),
+      homeBench: [],
+      rounds,
+    };
+  }
+  return {
+    ...match,
+    awayStarters: Array.from({ length: PLAYERS_ON_LANE }, () => ""),
+    awayBench: [],
+    rounds,
+  };
+}
+
+export function maskMatchLineups(match, viewer = {}, now = Date.now()) {
+  if (viewer.admin || lineupsRevealed(match, now)) return match;
+  const side = teamMatchSide(match, viewer.teamId);
+  if (side === "home") return blankSide(match, "away");
+  if (side === "away") return blankSide(match, "home");
+  return blankSide(blankSide(match, "home"), "away");
+}
+
 export function sanitizeLineup(starters, bench, allowed) {
   const used = new Set();
   const cleanStarters = [];

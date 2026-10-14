@@ -187,7 +187,7 @@ function LeagueApp() {
             {archived && <span className="muted">Arhiv — samo branje.</span>}
             {loginTeamId && (
               <span className="season-note" style={{ margin: 0 }}>
-                Prijava ekipe{teamName ? `: ${teamName}` : ""}. Dovoljenja nastavi admin.
+                Prijava: Moja ekipa{teamName ? ` (${teamName})` : ""}. Dovoljenja nastavi admin.
               </span>
             )}
           </div>
@@ -209,7 +209,9 @@ function LeagueApp() {
               ["results", "Rezultati"],
               ["standings", "Lestvica"],
               ["players", "Igralci"],
-              ...(canEdit || Boolean(loginTeamId) ? [["teams", "Ekipe"] as [Page, string]] : []),
+              ...(canEdit || Boolean(loginTeamId)
+                ? [["teams", loginTeamId && !admin ? "Moja ekipa" : "Ekipe"] as [Page, string]]
+                : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button

@@ -1,3 +1,4 @@
+import { maskMatchLineups } from "./lineup.mjs";
 import { inviteStillOpen } from "./passwords.mjs";
 
 export function sanitizeState(data, { admin = false, teamId = null } = {}) {
@@ -18,9 +19,12 @@ export function sanitizeState(data, { admin = false, teamId = null } = {}) {
   else if (teamId) {
     teamTrainings = { [teamId]: data?.teamTrainings?.[teamId] ?? [] };
   }
+  const viewer = { admin, teamId };
+  const matches = (data?.matches ?? []).map((match) => maskMatchLineups(match, viewer));
   return {
     ...data,
     teams,
+    matches,
     teamTrainings,
     trainingSessions: admin ? data?.trainingSessions : undefined,
   };

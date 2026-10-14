@@ -25,6 +25,64 @@ function liga_team_match_side($match, $teamId)
     return null;
 }
 
+function liga_lineups_revealed($match, $now = null)
+{
+    if (liga_lineup_locked($match['rounds'] ?? [])) {
+        return true;
+    }
+    $starts = $match['startsAt'] ?? null;
+    if (!$starts) {
+        return false;
+    }
+    $start = strtotime($starts);
+    if ($start === false) {
+        return false;
+    }
+    $now = $now ?? time();
+    return $now >= $start;
+}
+
+function liga_blank_match_side($match, $side)
+{
+    $rounds = [];
+    foreach ($match['rounds'] ?? [] as $round) {
+        $games = [];
+        foreach ($round['games'] ?? [] as $game) {
+            if ($side === 'home') {
+                $game['homePlayerId'] = '';
+            } else {
+                $game['awayPlayerId'] = '';
+            }
+            $games[] = $game;
+        }
+        $rounds[] = ['games' => $games];
+    }
+    $match['rounds'] = $rounds;
+    if ($side === 'home') {
+        $match['homeStarters'] = ['', '', '', ''];
+        $match['homeBench'] = [];
+    } else {
+        $match['awayStarters'] = ['', '', '', ''];
+        $match['awayBench'] = [];
+    }
+    return $match;
+}
+
+function liga_mask_match_lineups($match, $viewer, $now = null)
+{
+    if (!empty($viewer['admin']) || liga_lineups_revealed($match, $now)) {
+        return $match;
+    }
+    $side = liga_team_match_side($match, $viewer['teamId'] ?? null);
+    if ($side === 'home') {
+        return liga_blank_match_side($match, 'away');
+    }
+    if ($side === 'away') {
+        return liga_blank_match_side($match, 'home');
+    }
+    return liga_blank_match_side(liga_blank_match_side($match, 'home'), 'away');
+}
+
 function liga_sanitize_lineup($starters, $bench, $allowed)
 {
     $used = [];

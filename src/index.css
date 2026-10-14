@@ -1095,6 +1095,29 @@ html[data-theme="light"] .live-now .list button.row:hover {
   align-items: center;
 }
 
+.roster-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.roster-player-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.2;
+}
+
+.roster-player-name {
+  display: block;
+}
+
+.roster-player-gender {
+  display: block;
+  margin-top: 0;
+  padding-bottom: 2px;
+}
+
 .form-row input,
 .form-row select,
 .form-row button {

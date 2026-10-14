@@ -3,7 +3,7 @@ import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { canEnterPins, teamPerms } from "../lib/access";
-import { teamMatchSide } from "../lib/lineup";
+import { lineupsRevealed, teamMatchSide } from "../lib/lineup";
 import { lineupLocked, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
@@ -200,6 +200,9 @@ export function MatchEntry({
   const awayEditable = lineupTeamId
     ? ownSide === "away" && perms.lineup && !playersLocked
     : !playersLocked;
+  const revealed = lineupsRevealed(match);
+  const hideHomeLineup = Boolean(lineupTeamId && ownSide === "away" && !revealed);
+  const hideAwayLineup = Boolean(lineupTeamId && ownSide === "home" && !revealed);
 
   return (
     <section>
@@ -240,7 +243,8 @@ export function MatchEntry({
 
       {teamLineup && !playersLocked && (
         <p className="muted" style={{ margin: "12px 0 0" }}>
-          Vnesi svojo sestavo ({ownSide === "home" ? "A1–A6" : "B1–B6"}).
+          Vnesi svojo sestavo ({ownSide === "home" ? "A1–A6" : "B1–B6"}). Nasprotnikova ostane skrita do
+          začetka tekme.
           {canResults ? "" : " Rezultate vnaša admin, razen če imaš dovoljenje."}
         </p>
       )}
@@ -257,7 +261,12 @@ export function MatchEntry({
       )}
       <div className="grid-2" style={{ margin: "16px 0" }}>
         <div className="panel">
-          {homeEditable ? (
+          {hideHomeLineup ? (
+            <div>
+              <h3>{home?.name ?? "Domači"}</h3>
+              <p className="muted">Sestava nasprotnika je skrita do začetka tekme.</p>
+            </div>
+          ) : homeEditable ? (
             <LineupEditor
               label={`${home?.name ?? "Domači"} (A)`}
               side="home"
@@ -276,7 +285,12 @@ export function MatchEntry({
           )}
         </div>
         <div className="panel">
-          {awayEditable ? (
+          {hideAwayLineup ? (
+            <div>
+              <h3>{away?.name ?? "Gostje"}</h3>
+              <p className="muted">Sestava nasprotnika je skrita do začetka tekme.</p>
+            </div>
+          ) : awayEditable ? (
             <LineupEditor
               label={`${away?.name ?? "Gostje"} (B)`}
               side="away"

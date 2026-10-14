@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/invite.php';
+require_once __DIR__ . '/lineup.php';
 
 function sanitize_state($data, $viewer)
 {
@@ -26,7 +27,12 @@ function sanitize_state($data, $viewer)
         $all = $data['teamTrainings'] ?? [];
         $teamTrainings = [$teamId => $all[$teamId] ?? []];
     }
+    $matches = [];
+    foreach ($data['matches'] ?? [] as $match) {
+        $matches[] = liga_mask_match_lineups($match, $viewer);
+    }
     $data['teams'] = $teams;
+    $data['matches'] = $matches;
     $data['teamTrainings'] = $teamTrainings;
     if (!$admin) {
         unset($data['trainingSessions']);
