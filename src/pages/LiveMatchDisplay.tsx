@@ -258,18 +258,194 @@ const PREVIEW_FINAL: LiveMatchView = {
 
 const POLL_MS = 8_000;
 
+export type LiveTvLayout = "classic" | "quad";
+
+function readLiveLayout(): LiveTvLayout {
+  return new URLSearchParams(window.location.search).get("layout") === "quad" ? "quad" : "classic";
+}
+
+type RoundSummary = LiveMatchView["roundSummaries"][number];
+
+function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: LiveTvLayout }) {
+  const lead =
+    r.homeSmall == null || r.awaySmall == null
+      ? "open"
+      : r.homeSmall === r.awaySmall
+        ? "tie"
+        : r.homeSmall > r.awaySmall
+          ? "home"
+          : "away";
+  const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
+  return (
+    <div
+      className={`live-tv-round-card${openRound ? " is-open" : ""}${variant === "quad" ? " is-quad" : ""}`}
+    >
+      <div className="live-tv-round-card-num">{r.round}. krog</div>
+      <div className="live-tv-round-card-score">
+        <span className={lead === "home" ? "is-lead" : undefined}>{r.homeSmall ?? "·"}</span>
+        <span className="live-tv-duel-vs">:</span>
+        <span className={lead === "away" ? "is-lead" : undefined}>{r.awaySmall ?? "·"}</span>
+      </div>
+      <div className="live-tv-round-card-meta">
+        <span>Velike {pairLabel(r.homeBig, r.awayBig)}</span>
+        <span>
+          {pairLabel(r.homePins, r.awayPins)}
+          {r.homePins != null ? " kegljev" : ""}
+        </span>
+      </div>
+      <div className="live-tv-round-duels">
+        {r.duels.map((d) => {
+          const dLead = duelLead(d.homePins, d.awayPins);
+          return (
+            <div key={d.lane} className="live-tv-mini-duel">
+              <span className="live-tv-mini-lane" data-lane={d.lane}>
+                Steza {d.lane}
+              </span>
+              <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
+                {d.homeName}
+              </span>
+              <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
+                {pinsLabel(d.homePins)}
+              </span>
+              <span className="live-tv-mini-sep">–</span>
+              <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
+                {pinsLabel(d.awayPins)}
+              </span>
+              <span className={`live-tv-mini-name is-away${dLead === "away" ? " is-lead" : ""}`}>
+                {d.awayName}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 type ScreenProps = {
   view: LiveMatchView;
   badge: "live" | "next" | "final";
   rotateLabel?: string | null;
+  layout?: LiveTvLayout;
 };
 
-function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
+function LiveMatchScreen({ view: m, badge, rotateLabel, layout = "classic" }: ScreenProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
   const complete = m.complete || badge === "final";
   const homeWins = complete && (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = complete && (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
+  const rounds = m.roundSummaries;
+  const r1 = rounds[0]!;
+  const r2 = rounds[1]!;
+  const r3 = rounds[2]!;
+  const r4 = rounds[3]!;
+
+  const meta = (
+    <div className="live-tv-meta">
+      {badge === "final" || (badge === "live" && complete) ? (
+        <>
+          <span className="live-tv-final-mark" aria-hidden />
+          <span className="live-tv-final">Končano</span>
+        </>
+      ) : badge === "next" ? (
+        <>
+          <span className="live-tv-final-mark" aria-hidden />
+          <span className="live-tv-final">Naslednja</span>
+        </>
+      ) : (
+        <>
+          <span className="live-tv-pulse" aria-hidden />
+          <span className="live-tv-live">V živo</span>
+        </>
+      )}
+      <span className="live-tv-when">{m.startsAtLabel}</span>
+      {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
+      <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
+    </div>
+  );
+
+  if (layout === "quad") {
+    return (
+      <div
+        ref={rootRef}
+        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}`}
+      >
+        <div className="live-tv-glow" aria-hidden />
+        <header className="live-tv-top">
+          <div className="live-tv-brand">
+            <img src="/logo-bowling-lenart.png" alt="" className="live-tv-logo" />
+            <div>
+              <div className="live-tv-brand-name">Bowling Lenart</div>
+              <div className="live-tv-brand-sub">Liga · {m.round}. kolo</div>
+            </div>
+          </div>
+          {meta}
+        </header>
+
+        <div className="live-quad-teams">
+          <div className={`live-quad-team is-home${homeWins ? " is-winner" : ""}`}>
+            <span className="live-quad-team-label">Domači</span>
+            <strong>{m.homeName}</strong>
+          </div>
+          <div className={`live-quad-team is-away${awayWins ? " is-winner" : ""}`}>
+            <span className="live-quad-team-label">Gosti</span>
+            <strong>{m.awayName}</strong>
+          </div>
+        </div>
+
+        <div className="live-quad-board">
+          <RoundCard r={r1} variant="quad" />
+          <div className="live-quad-spine live-quad-spine-top">
+            <div className="live-quad-stat">
+              <span>Male točke</span>
+              <strong>
+                {m.homeSmall}:{m.awaySmall}
+              </strong>
+            </div>
+            <div className="live-quad-stat is-featured">
+              <span>Velike točke</span>
+              <strong>
+                {m.homeBig}:{m.awayBig}
+              </strong>
+            </div>
+          </div>
+          <RoundCard r={r2} variant="quad" />
+
+          <div className="live-quad-mid-label is-home">Domači</div>
+          <div className="live-quad-spine live-quad-spine-mid">
+            <div className="live-quad-stat is-pins">
+              <span>Keglji</span>
+              <strong>
+                {m.homePins}:{m.awayPins}
+              </strong>
+            </div>
+          </div>
+          <div className="live-quad-mid-label is-away">Gosti</div>
+
+          <RoundCard r={r3} variant="quad" />
+          <div className="live-quad-spine live-quad-spine-bot">
+            {complete ? (
+              <div className="live-quad-stat is-match">
+                <span>Skupne točke</span>
+                <strong>
+                  <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                  <span className="live-tv-score-sep">:</span>
+                  <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                </strong>
+              </div>
+            ) : (
+              <div className="live-quad-stat is-match is-pending">
+                <span>Skupne točke</span>
+                <strong>·:·</strong>
+              </div>
+            )}
+          </div>
+          <RoundCard r={r4} variant="quad" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -287,27 +463,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
             <div className="live-tv-brand-sub">Liga · {m.round}. kolo</div>
           </div>
         </div>
-        <div className="live-tv-meta">
-          {badge === "final" || (badge === "live" && complete) ? (
-            <>
-              <span className="live-tv-final-mark" aria-hidden />
-              <span className="live-tv-final">Končano</span>
-            </>
-          ) : badge === "next" ? (
-            <>
-              <span className="live-tv-final-mark" aria-hidden />
-              <span className="live-tv-final">Naslednja</span>
-            </>
-          ) : (
-            <>
-              <span className="live-tv-pulse" aria-hidden />
-              <span className="live-tv-live">V živo</span>
-            </>
-          )}
-          <span className="live-tv-when">{m.startsAtLabel}</span>
-          {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
-          <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
-        </div>
+        {meta}
       </header>
 
       <section className="live-tv-scoreboard">
@@ -361,65 +517,9 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
           <h2>Po krogih</h2>
         </div>
         <div className="live-tv-rounds-grid">
-          {m.roundSummaries.map((r) => {
-            const lead =
-              r.homeSmall == null || r.awaySmall == null
-                ? "open"
-                : r.homeSmall === r.awaySmall
-                  ? "tie"
-                  : r.homeSmall > r.awaySmall
-                    ? "home"
-                    : "away";
-            const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
-            return (
-              <div key={r.round} className={`live-tv-round-card${openRound ? " is-open" : ""}`}>
-                <div className="live-tv-round-card-num">{r.round}. krog</div>
-                <div className="live-tv-round-card-score">
-                  <span className={lead === "home" ? "is-lead" : undefined}>
-                    {r.homeSmall ?? "·"}
-                  </span>
-                  <span className="live-tv-duel-vs">:</span>
-                  <span className={lead === "away" ? "is-lead" : undefined}>
-                    {r.awaySmall ?? "·"}
-                  </span>
-                </div>
-                <div className="live-tv-round-card-meta">
-                  <span>
-                    Velike {pairLabel(r.homeBig, r.awayBig)}
-                  </span>
-                  <span>
-                    {pairLabel(r.homePins, r.awayPins)}
-                    {r.homePins != null ? " kegljev" : ""}
-                  </span>
-                </div>
-                <div className="live-tv-round-duels">
-                  {r.duels.map((d) => {
-                    const dLead = duelLead(d.homePins, d.awayPins);
-                    return (
-                      <div key={d.lane} className="live-tv-mini-duel">
-                        <span className="live-tv-mini-lane" data-lane={d.lane}>
-                          Steza {d.lane}
-                        </span>
-                        <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
-                          {d.homeName}
-                        </span>
-                        <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
-                          {pinsLabel(d.homePins)}
-                        </span>
-                        <span className="live-tv-mini-sep">–</span>
-                        <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
-                          {pinsLabel(d.awayPins)}
-                        </span>
-                        <span className={`live-tv-mini-name is-away${dLead === "away" ? " is-lead" : ""}`}>
-                          {d.awayName}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
+          {m.roundSummaries.map((r) => (
+            <RoundCard key={r.round} r={r} />
+          ))}
         </div>
       </section>
     </div>
@@ -533,7 +633,14 @@ export function LiveMatchBoard() {
   const rotateLabel =
     pick.siblings > 1 ? `${pick.index + 1}/${pick.siblings}` : null;
 
-  return <LiveMatchScreen view={view} badge={badge} rotateLabel={rotateLabel} />;
+  return (
+    <LiveMatchScreen
+      view={view}
+      badge={badge}
+      rotateLabel={rotateLabel}
+      layout={readLiveLayout()}
+    />
+  );
 }
 
 type PreviewProps = {
@@ -544,6 +651,7 @@ type PreviewProps = {
 /** Predogled layouta z mock podatki (`?display=preview`). */
 export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: PreviewProps) {
   const [phase, setPhase] = useState<"live" | "final">(previewPhase);
+  const [layout, setLayout] = useState<LiveTvLayout>(() => readLiveLayout());
   const view = phase === "final" ? PREVIEW_FINAL : PREVIEW_LIVE;
 
   return (
@@ -551,9 +659,26 @@ export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: Prev
       <LiveMatchScreen
         view={view}
         badge={phase === "final" ? "final" : "live"}
+        layout={layout}
       />
       {preview && (
         <div className="live-tv-preview-bar live-tv-preview-overlay">
+          <div className="live-tv-preview-toggle" role="group" aria-label="Predogled layouta">
+            <button
+              type="button"
+              className={layout === "classic" ? "is-on" : ""}
+              onClick={() => setLayout("classic")}
+            >
+              Klasično
+            </button>
+            <button
+              type="button"
+              className={layout === "quad" ? "is-on" : ""}
+              onClick={() => setLayout("quad")}
+            >
+              Kvadrati
+            </button>
+          </div>
           <div className="live-tv-preview-toggle" role="group" aria-label="Predogled faze">
             <button
               type="button"
@@ -571,7 +696,7 @@ export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: Prev
             </button>
           </div>
           <p className="live-tv-preview-note">
-            Predogled · živi prikaz: <code>?display=live</code>
+            Živo: <code>?display=live</code> · kvadrati: <code>&amp;layout=quad</code>
           </p>
         </div>
       )}
