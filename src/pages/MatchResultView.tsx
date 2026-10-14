@@ -21,6 +21,8 @@ const PREVIEW: LiveMatchView = {
       round: 1,
       homeSmall: 8,
       awaySmall: 4,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 312,
       awayPins: 278,
       duels: [
@@ -34,6 +36,8 @@ const PREVIEW: LiveMatchView = {
       round: 2,
       homeSmall: 6,
       awaySmall: 4,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 300,
       awayPins: 270,
       duels: [
@@ -47,6 +51,8 @@ const PREVIEW: LiveMatchView = {
       round: 3,
       homeSmall: 7,
       awaySmall: 5,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 293,
       awayPins: 269,
       duels: [
@@ -60,6 +66,8 @@ const PREVIEW: LiveMatchView = {
       round: 4,
       homeSmall: 7,
       awaySmall: 3,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 343,
       awayPins: 279,
       duels: [
