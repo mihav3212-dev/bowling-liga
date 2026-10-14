@@ -350,33 +350,30 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
         <span className="live-tv-duel-vs">:</span>
         <span className={topLead === "away" ? "is-lead" : undefined}>{topAway ?? "·"}</span>
       </div>
-      <div className="live-tv-round-card-meta">
-        {quad ? (
-          <>
-            <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
-            <span>
-              {pairLabel(r.homePins, r.awayPins)}
-              {r.homePins != null ? " kegljev" : ""}
-            </span>
-          </>
-        ) : (
-          <>
-            <span>Velike {pairLabel(r.homeBig, r.awayBig)}</span>
-            <span>
-              {pairLabel(r.homePins, r.awayPins)}
-              {r.homePins != null ? " kegljev" : ""}
-            </span>
-          </>
-        )}
-      </div>
+      {quad ? (
+        <div className="live-tv-round-card-meta">
+          <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
+          <span>
+            {pairLabel(r.homePins, r.awayPins)}
+            {r.homePins != null ? " kegljev" : ""}
+          </span>
+        </div>
+      ) : (
+        <div className="live-tv-round-card-pins">
+          {pairLabel(r.homePins, r.awayPins)}
+          {r.homePins != null ? " kegljev" : ""}
+        </div>
+      )}
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
           const dLead = duelLead(d.homePins, d.awayPins);
           return (
             <div key={d.lane} className="live-tv-mini-duel">
-              <span className="live-tv-mini-lane" data-lane={d.lane}>
-                Steza {d.lane}
-              </span>
+              {quad ? (
+                <span className="live-tv-mini-lane" data-lane={d.lane}>
+                  Steza {d.lane}
+                </span>
+              ) : null}
               <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
                 {d.homeName}
               </span>
@@ -553,36 +550,28 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
         </div>
 
         <div className="live-tv-center">
-          <div className="live-tv-score-label">{complete ? "Končni rezultat" : "Rezultat"}</div>
-          <div className={`live-tv-stats-stack${complete ? " is-final" : ""}`}>
-            <div className="live-tv-stat-row">
-              <span className="live-tv-stat-label">Male točke</span>
-              <strong>
-                {m.homeSmall}:{m.awaySmall}
-              </strong>
-            </div>
-            <div className="live-tv-stat-row is-featured">
+          <div className="live-tv-score-label">{complete ? "KONČNI REZULTAT" : "TOČKE"}</div>
+          <div className="live-tv-score">
+            <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+            <span className="live-tv-score-sep">:</span>
+            <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+          </div>
+          <div className="live-tv-stats-featured">
+            <div className="live-tv-stat-block">
               <span className="live-tv-stat-label">Velike točke</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
               </strong>
             </div>
-            <div className="live-tv-stat-row is-featured">
+            <div className="live-tv-stat-block">
               <span className="live-tv-stat-label">Keglji</span>
               <strong>
                 {m.homePins}:{m.awayPins}
               </strong>
             </div>
-            {complete ? (
-              <div className="live-tv-stat-row is-match">
-                <span className="live-tv-stat-label">Točke</span>
-                <strong>
-                  <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                  <span className="live-tv-score-sep">:</span>
-                  <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-                </strong>
-              </div>
-            ) : null}
+          </div>
+          <div className="live-tv-stats-minor">
+            Male točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
           </div>
         </div>
 

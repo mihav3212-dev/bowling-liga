@@ -1566,10 +1566,10 @@ button.linkish {
   min-height: 100dvh;
   height: 100dvh;
   box-sizing: border-box;
-  padding: clamp(8px, 1.4vh, 18px) clamp(16px, 3.5vw, 40px) clamp(8px, 1.4vh, 16px);
+  padding: clamp(16px, 3vw, 36px) clamp(18px, 4vw, 48px) clamp(20px, 3vw, 40px);
   display: flex;
   flex-direction: column;
-  gap: clamp(8px, 1.6vh, 18px);
+  gap: clamp(18px, 3.5vh, 36px);
   background: var(--tv-bg);
   color: var(--tv-ink);
   overflow: hidden;
@@ -1610,7 +1610,7 @@ button.linkish {
 }
 
 .live-tv-logo {
-  width: clamp(36px, 4.5vw, 52px);
+  width: clamp(44px, 6vw, 64px);
   height: auto;
   display: block;
 }
@@ -1618,16 +1618,16 @@ button.linkish {
 .live-tv-brand-name {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
 }
 
 .live-tv-brand-sub {
-  margin-top: 2px;
+  margin-top: 4px;
   color: var(--tv-muted);
-  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+  font-size: clamp(0.85rem, 1.4vw, 1rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1700,9 +1700,8 @@ button.linkish {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: clamp(10px, 2.5vw, 32px);
-  padding: 0;
-  flex: 0 0 auto;
+  gap: clamp(12px, 3vw, 40px);
+  padding: clamp(12px, 2vh, 20px) 0;
   animation: live-tv-in 0.65s ease 0.08s both;
 }
 
@@ -1716,16 +1715,16 @@ button.linkish {
 
 .live-tv-side-label {
   color: var(--tv-muted);
-  font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
 }
 
 .live-tv-team {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
-  font-size: clamp(1.5rem, 4vw, 3rem);
+  font-size: clamp(2.4rem, 7vw, 5.5rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1734,38 +1733,49 @@ button.linkish {
 
 .live-tv-center {
   text-align: center;
-  padding: 0 clamp(6px, 1.5vw, 18px);
-  min-width: min(16rem, 30vw);
+  padding: 0 clamp(8px, 2vw, 24px);
 }
 
 .live-tv-score-label {
   color: var(--tv-accent);
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(0.75rem, 1.3vw, 1rem);
+  font-size: clamp(0.85rem, 1.5vw, 1.1rem);
   letter-spacing: 0.2em;
-  text-transform: uppercase;
   margin-bottom: 4px;
+}
+
+.live-tv-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.08em;
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: clamp(3.5rem, 10vw, 7.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
 }
 
 .live-tv-score-sep {
   opacity: 0.45;
   font-weight: 500;
-  margin: 0 0.05em;
 }
 
-.live-tv-stats-stack {
+.live-tv-stats-featured {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px 28px;
+  margin-top: 14px;
 }
 
-.live-tv-stat-row {
+.live-tv-stat-block {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 2px;
+  min-width: 5.5rem;
 }
 
 .live-tv-stat-label {
@@ -1774,35 +1784,35 @@ button.linkish {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
 }
 
-.live-tv-stat-row strong {
+.live-tv-stat-block strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+  font-size: clamp(1.55rem, 3.2vw, 2.35rem);
   letter-spacing: -0.03em;
-  line-height: 1.02;
+  line-height: 1.1;
   color: var(--tv-ink);
 }
 
-.live-tv-stat-row.is-featured strong {
-  font-size: clamp(2.1rem, 4.6vw, 3.4rem);
+.live-tv-stats-minor {
+  margin-top: 8px;
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.3vw, 1rem);
 }
 
-.live-tv-stat-row.is-match strong {
-  font-size: clamp(2.5rem, 5.5vw, 3.9rem);
-}
-
-.live-tv-stat-row.is-match .is-winner {
-  color: var(--tv-live);
+.live-tv-stats-minor strong {
+  color: var(--tv-ink);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
 }
 
 .live-tv-round {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   min-height: 0;
   animation: live-tv-in 0.7s ease 0.16s both;
 }
@@ -1813,13 +1823,13 @@ button.linkish {
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--tv-line);
-  padding-bottom: 4px;
+  padding-bottom: 10px;
 }
 
 .live-tv-round-head h2 {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1926,25 +1936,24 @@ button.linkish {
   text-shadow: 0 0 40px rgba(176, 79, 196, 0.28);
 }
 
+.live-tv-score span.is-winner {
+  color: var(--tv-live);
+}
+
 .live-tv-rounds-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  align-items: stretch;
-  flex: 1;
-  min-height: 0;
+  gap: 12px;
+  align-items: start;
 }
 
 .live-tv-round-card {
-  padding: clamp(8px, 1.2vh, 14px) clamp(8px, 1.2vw, 14px);
+  padding: clamp(12px, 1.8vh, 18px) clamp(10px, 1.4vw, 16px);
   text-align: center;
-  background: rgba(255, 255, 255, 0.045);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 4px;
   border: 1px solid var(--tv-line);
   min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .live-tv-round-card.is-open {
@@ -1958,24 +1967,31 @@ button.linkish {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
-  margin-bottom: 2px;
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  margin-bottom: 6px;
 }
 
 .live-tv-round-card-score {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+  font-size: clamp(1.85rem, 3.6vw, 2.75rem);
   letter-spacing: -0.02em;
-  line-height: 1;
 }
 
 .live-tv-round-card-score .is-lead {
   color: var(--tv-live);
+}
+
+.live-tv-round-card-pins {
+  margin-top: 6px;
+  margin-bottom: 12px;
+  color: var(--tv-muted);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-family: "IBM Plex Mono", monospace;
 }
 
 .live-tv-round-card-meta {
@@ -1993,22 +2009,19 @@ button.linkish {
 .live-tv-round-duels {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding-top: 6px;
+  gap: 8px;
+  padding-top: 10px;
   border-top: 1px solid var(--tv-line);
   text-align: left;
-  flex: 1;
-  min-width: 0;
 }
 
 .live-tv-mini-duel {
   display: grid;
-  grid-template-columns: 3.4em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   align-items: baseline;
-  gap: 2px 4px;
-  font-size: clamp(0.95rem, 1.55vw, 1.35rem);
-  line-height: 1.2;
-  min-width: 0;
+  gap: 4px 8px;
+  font-size: clamp(1.05rem, 1.75vw, 1.45rem);
+  line-height: 1.3;
 }
 
 .live-tv-mini-lane {
@@ -2043,8 +2056,8 @@ button.linkish {
 .live-tv-mini-pins {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: 1.15em;
-  min-width: 1.8em;
+  font-size: 1.2em;
+  min-width: 2.1em;
   text-align: center;
   white-space: nowrap;
 }
@@ -2144,6 +2157,9 @@ button.linkish {
   border-radius: clamp(10px, 1.5vw, 16px);
   padding: clamp(8px, 1.2vh, 14px) clamp(10px, 1.3vw, 16px);
   min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .live-tv.is-quad .live-tv-round-card.is-quad.is-open {
@@ -2177,10 +2193,15 @@ button.linkish {
 .live-tv.is-quad .live-tv-round-duels {
   gap: 6px;
   padding-top: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .live-tv.is-quad .live-tv-mini-duel {
+  grid-template-columns: 3.4em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  gap: 2px 4px;
   font-size: clamp(1.15rem, 1.85vw, 1.55rem);
+  line-height: 1.2;
 }
 
 .live-quad-spine {
@@ -2384,13 +2405,13 @@ button.linkish {
     height: auto;
     min-height: 100dvh;
     overflow: auto;
-    gap: 10px;
-    padding: 10px 12px 16px;
   }
 
   .live-tv.is-quad {
     height: auto;
     min-height: 100dvh;
+    gap: 10px;
+    padding: 10px 12px 16px;
   }
 
   .live-quad-board {
@@ -2399,7 +2420,7 @@ button.linkish {
   }
 
   .live-quad-mid-label {
-    font-size: 0.95rem;
+    font-size: 1.15rem;
   }
 
   .live-quad-stat span {
@@ -2416,17 +2437,35 @@ button.linkish {
     font-size: 1rem;
   }
 
-  .live-quad-mid-label {
-    font-size: 1.15rem;
-  }
-
   .live-tv.is-quad .live-tv-mini-duel {
+    grid-template-columns: 1.6em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+    gap: 1px 2px;
     font-size: 0.72rem;
   }
 
   .live-tv.is-quad .live-tv-round-card.is-quad {
     border-radius: 16px;
     padding: 8px 6px;
+  }
+
+  .live-tv.is-quad .live-tv-round-card-meta {
+    font-size: 0.75rem;
+    margin-top: 2px;
+    margin-bottom: 4px;
+  }
+
+  .live-tv.is-quad .live-tv-round-duels {
+    gap: 4px;
+    padding-top: 4px;
+  }
+
+  .live-tv.is-quad .live-tv-mini-lane {
+    font-size: 0.7em;
+  }
+
+  .live-tv.is-quad .live-tv-mini-pins {
+    min-width: 1.4em;
+    font-size: 1.05em;
   }
 
   .live-tv-layout-toggle button {
@@ -2437,7 +2476,7 @@ button.linkish {
   .live-tv-scoreboard {
     grid-template-columns: 1fr;
     text-align: center;
-    gap: 10px;
+    gap: 18px;
   }
 
   .live-tv-side.is-away,
@@ -2445,71 +2484,8 @@ button.linkish {
     text-align: center;
   }
 
-  .live-tv-team {
-    font-size: clamp(1.35rem, 7vw, 1.9rem);
-  }
-
-  .live-tv-center {
-    min-width: 0;
-  }
-
-  .live-tv-stats-stack {
-    gap: 6px;
-  }
-
-  .live-tv-stat-row strong {
-    font-size: clamp(1.4rem, 6vw, 1.9rem);
-  }
-
-  .live-tv-stat-row.is-featured strong {
-    font-size: clamp(1.7rem, 7.5vw, 2.3rem);
-  }
-
-  .live-tv-stat-row.is-match strong {
-    font-size: clamp(2rem, 9vw, 2.6rem);
-  }
-
   .live-tv-rounds-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .live-tv-round-card {
-    padding: 8px 6px;
-  }
-
-  .live-tv-round-card-num {
-    font-size: 0.85rem;
-  }
-
-  .live-tv-round-card-score {
-    font-size: 1.35rem;
-  }
-
-  .live-tv-round-card-meta {
-    font-size: 0.75rem;
-    margin-top: 2px;
-    margin-bottom: 4px;
-  }
-
-  .live-tv-round-duels {
-    gap: 4px;
-    padding-top: 4px;
-  }
-
-  .live-tv-mini-duel {
-    grid-template-columns: 1.6em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-    gap: 1px 2px;
-    font-size: 0.72rem;
-  }
-
-  .live-tv-mini-lane {
-    font-size: 0.7em;
-  }
-
-  .live-tv-mini-pins {
-    min-width: 1.4em;
-    font-size: 1.05em;
   }
 
   .live-tv-duel {
