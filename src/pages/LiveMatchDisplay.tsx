@@ -321,7 +321,7 @@ function LayoutPicker({
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
 function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: LiveTvLayout }) {
-  const lead =
+  const smallLead =
     r.homeSmall == null || r.awaySmall == null
       ? "open"
       : r.homeSmall === r.awaySmall
@@ -329,23 +329,45 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
         : r.homeSmall > r.awaySmall
           ? "home"
           : "away";
+  const bigLead =
+    r.homeBig == null || r.awayBig == null
+      ? "open"
+      : r.homeBig === r.awayBig
+        ? "tie"
+        : r.homeBig > r.awayBig
+          ? "home"
+          : "away";
   const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
+  const quad = variant === "quad";
+  const topLead = quad ? bigLead : smallLead;
+  const topHome = quad ? r.homeBig : r.homeSmall;
+  const topAway = quad ? r.awayBig : r.awaySmall;
   return (
-    <div
-      className={`live-tv-round-card${openRound ? " is-open" : ""}${variant === "quad" ? " is-quad" : ""}`}
-    >
+    <div className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}`}>
       <div className="live-tv-round-card-num">{r.round}. krog</div>
       <div className="live-tv-round-card-score">
-        <span className={lead === "home" ? "is-lead" : undefined}>{r.homeSmall ?? "·"}</span>
+        <span className={topLead === "home" ? "is-lead" : undefined}>{topHome ?? "·"}</span>
         <span className="live-tv-duel-vs">:</span>
-        <span className={lead === "away" ? "is-lead" : undefined}>{r.awaySmall ?? "·"}</span>
+        <span className={topLead === "away" ? "is-lead" : undefined}>{topAway ?? "·"}</span>
       </div>
       <div className="live-tv-round-card-meta">
-        <span>Velike {pairLabel(r.homeBig, r.awayBig)}</span>
-        <span>
-          {pairLabel(r.homePins, r.awayPins)}
-          {r.homePins != null ? " kegljev" : ""}
-        </span>
+        {quad ? (
+          <>
+            <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
+            <span>
+              {pairLabel(r.homePins, r.awayPins)}
+              {r.homePins != null ? " kegljev" : ""}
+            </span>
+          </>
+        ) : (
+          <>
+            <span>Velike {pairLabel(r.homeBig, r.awayBig)}</span>
+            <span>
+              {pairLabel(r.homePins, r.awayPins)}
+              {r.homePins != null ? " kegljev" : ""}
+            </span>
+          </>
+        )}
       </div>
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
@@ -442,16 +464,16 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
         <div className="live-quad-board">
           <RoundCard r={r1} variant="quad" />
           <div className="live-quad-spine live-quad-spine-top">
-            <div className="live-quad-stat">
-              <span>Male točke</span>
-              <strong>
-                {m.homeSmall}:{m.awaySmall}
-              </strong>
-            </div>
             <div className="live-quad-stat is-featured">
               <span>Velike točke</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
+              </strong>
+            </div>
+            <div className="live-quad-stat">
+              <span>Male točke</span>
+              <strong>
+                {m.homeSmall}:{m.awaySmall}
               </strong>
             </div>
           </div>
@@ -462,7 +484,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
           </div>
           <div className="live-quad-spine live-quad-spine-mid">
             {complete ? (
-              <div className="live-quad-stat is-match">
+              <div className="live-quad-stat is-slot-large is-match">
                 <span>Končne točke</span>
                 <strong>
                   <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
@@ -471,7 +493,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
                 </strong>
               </div>
             ) : (
-              <div className="live-quad-stat is-pins">
+              <div className="live-quad-stat is-slot-large">
                 <span>Keglji</span>
                 <strong>
                   {m.homePins}:{m.awayPins}
@@ -486,14 +508,14 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
           <RoundCard r={r3} variant="quad" />
           <div className="live-quad-spine live-quad-spine-bot">
             {complete ? (
-              <div className="live-quad-stat is-pins">
+              <div className="live-quad-stat is-slot-small">
                 <span>Keglji</span>
                 <strong>
                   {m.homePins}:{m.awayPins}
                 </strong>
               </div>
             ) : (
-              <div className="live-quad-stat is-match is-pending">
+              <div className="live-quad-stat is-slot-small is-match is-pending">
                 <span>Končne točke</span>
                 <strong>·:·</strong>
               </div>

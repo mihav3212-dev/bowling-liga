@@ -2224,29 +2224,40 @@ button.linkish {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1.1rem, 1.85vw, 1.45rem);
+  font-size: clamp(1.25rem, 2.1vw, 1.65rem);
 }
 
 .live-quad-stat strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.9rem, 3.8vw, 2.9rem);
+  font-size: clamp(2.15rem, 4.2vw, 3.2rem);
   line-height: 1;
   color: var(--tv-ink);
 }
 
+.live-quad-stat.is-featured span {
+  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+}
+
 .live-quad-stat.is-featured strong {
-  font-size: clamp(2.25rem, 4.4vw, 3.4rem);
+  font-size: clamp(2.55rem, 5vw, 3.8rem);
 }
 
-.live-quad-stat.is-pins span,
-.live-quad-stat.is-match span {
-  font-size: clamp(1.3rem, 2.3vw, 1.85rem);
+/* Velikost po mestu: sredina ostane velika, spodaj manjša — tudi po zamenjavi. */
+.live-quad-stat.is-slot-large span {
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
 }
 
-.live-quad-stat.is-pins strong,
-.live-quad-stat.is-match strong {
-  font-size: clamp(2.5rem, 5.2vw, 3.9rem);
+.live-quad-stat.is-slot-large strong {
+  font-size: clamp(2.7rem, 5.6vw, 4.2rem);
+}
+
+.live-quad-stat.is-slot-small span {
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+}
+
+.live-quad-stat.is-slot-small strong {
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
 }
 
 .live-quad-stat.is-match .is-winner {
@@ -2266,7 +2277,7 @@ button.linkish {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: clamp(1.55rem, 3.4vw, 2.7rem);
+  font-size: clamp(1.85rem, 4vw, 3.2rem);
   line-height: 1.05;
   color: var(--tv-ink);
   overflow: hidden;
@@ -2397,8 +2408,15 @@ button.linkish {
 
   .live-quad-stat strong,
   .live-quad-stat.is-featured strong,
-  .live-quad-stat.is-pins strong,
-  .live-quad-stat.is-match strong {
+  .live-quad-stat.is-slot-large strong {
+    font-size: 1.25rem;
+  }
+
+  .live-quad-stat.is-slot-small strong {
+    font-size: 1rem;
+  }
+
+  .live-quad-mid-label {
     font-size: 1.15rem;
   }
 
