@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { fetchLeague } from "../lib/leagueApi";
 import {
   buildLiveMatchView,
@@ -7,6 +7,53 @@ import {
 } from "../lib/liveBoard";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
+
+function useLiveFullscreen(rootRef: RefObject<HTMLElement | null>) {
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      setActive(document.fullscreenElement === rootRef.current);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, [rootRef]);
+
+  const toggle = async () => {
+    const el = rootRef.current;
+    if (!el) return;
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else {
+        await el.requestFullscreen();
+      }
+    } catch {
+      // Brskalnik ali politika lahko zavrne fullscreen.
+    }
+  };
+
+  return { active, toggle };
+}
+
+function LiveFullscreenButton({
+  active,
+  onToggle,
+}: {
+  active: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`live-tv-fs-btn${active ? " is-on" : ""}`}
+      onClick={() => void onToggle()}
+      title={active ? "Izhod iz celozaslonskega (Esc)" : "Celozaslonski prikaz"}
+    >
+      {active ? "Zapri cel zaslon" : "Cel zaslon"}
+    </button>
+  );
+}
 
 type DuelRow = LiveMatchView["roundSummaries"][number]["duels"][number];
 
@@ -202,12 +249,17 @@ type ScreenProps = {
 };
 
 function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
   const complete = m.complete || badge === "final";
   const homeWins = complete && (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = complete && (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
 
   return (
-    <div className={`live-tv${complete ? " is-final" : ""}`}>
+    <div
+      ref={rootRef}
+      className={`live-tv${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}`}
+    >
       <div className="live-tv-glow" aria-hidden />
       <div className="live-tv-lane" aria-hidden />
 
@@ -238,6 +290,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
           )}
           <span className="live-tv-when">{m.startsAtLabel}</span>
           {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
+          <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
         </div>
       </header>
 
@@ -342,8 +395,11 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
 }
 
 function LiveIdleScreen() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
+
   return (
-    <div className="live-tv">
+    <div ref={rootRef} className={`live-tv${fullscreen ? " is-fullscreen" : ""}`}>
       <div className="live-tv-glow" aria-hidden />
       <div className="live-tv-lane" aria-hidden />
       <header className="live-tv-top">
@@ -353,6 +409,9 @@ function LiveIdleScreen() {
             <div className="live-tv-brand-name">Bowling Lenart</div>
             <div className="live-tv-brand-sub">Liga</div>
           </div>
+        </div>
+        <div className="live-tv-meta">
+          <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
         </div>
       </header>
       <div className="live-tv-idle">
