@@ -116,7 +116,7 @@ Ekipa z dovoljenjem za sestavo na razporedu odpre **samo svojo** tekmo in vpiše
 
 ### Točkovanje (kot uradni zapisnik)
 
-- **Male točke (T):** zmaga dvoboja 2, remi 1; bonus za 220/240; ženske +8 kegljev, član BZS −8.
+- **Male točke (T):** zmaga dvoboja 2, remi 1; bonus 220–239 +1, 240–300 +2; ženske +8 kegljev, član BZS −8.
 - **Velike točke:** vsak krog 2 / 1 / 0 po seštevku rumenih T; na koncu +2 ekipi z več keglji.
 - **TOČKE (rezultat tekme):** 2 : 0 ali 1 : 1 po primerjavi velikih točk.
 

@@ -22,9 +22,10 @@ export function scoredPins(raw: number | null, player?: Player): number | null {
   return player ? adjustedPins(raw, player) : raw;
 }
 
+/** Do 219 brez pribitka; 220–239 +1; 240–300 +2 (po pribitku/odbitku). */
 export function bonusPoints(adjusted: number): number {
-  if (adjusted > BONUS_DOUBLE) return 2;
-  if (adjusted > BONUS_SINGLE) return 1;
+  if (adjusted >= BONUS_DOUBLE) return 2;
+  if (adjusted >= BONUS_SINGLE) return 1;
   return 0;
 }
 

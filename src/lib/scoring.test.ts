@@ -45,11 +45,12 @@ describe("pribitki in odbitki", () => {
     expect(adjustedPins(200, both)).toBe(200);
   });
 
-  it("pribitek nad 220 in 240", () => {
-    expect(bonusPoints(220)).toBe(0);
-    expect(bonusPoints(221)).toBe(1);
-    expect(bonusPoints(240)).toBe(1);
-    expect(bonusPoints(241)).toBe(2);
+  it("pribitek od 220 in od 240", () => {
+    expect(bonusPoints(219)).toBe(0);
+    expect(bonusPoints(220)).toBe(1);
+    expect(bonusPoints(239)).toBe(1);
+    expect(bonusPoints(240)).toBe(2);
+    expect(bonusPoints(300)).toBe(2);
   });
 });
 

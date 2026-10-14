@@ -10,8 +10,8 @@ export function Rules() {
         </li>
         <li>Vsak domač igralec igra z vsakim gostom (4 krogi, 16 dvobojev), vedno na drugi stezi.</li>
         <li>
-          <strong>Male točke (igralec):</strong> zmaga v dvoboju 2, neodločeno 1:1. Nad 220 kegljev +1,
-          nad 240 +2 (po pribitku/odbitku).
+          <strong>Male točke (igralec):</strong> zmaga v dvoboju 2, neodločeno 1:1. Do 219 brez
+          pribitka, 220–239 +1, 240–300 +2 (po pribitku/odbitku).
         </li>
         <li>Ženske: +8 kegljev. Član Bowling zveze Slovenije: −8 kegljev.</li>
         <li>
