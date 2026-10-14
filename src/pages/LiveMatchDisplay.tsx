@@ -484,7 +484,21 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
           </div>
 
           <RoundCard r={r3} variant="quad" />
-          <div className="live-quad-spine live-quad-spine-bot" aria-hidden />
+          <div className="live-quad-spine live-quad-spine-bot">
+            {complete ? (
+              <div className="live-quad-stat is-pins">
+                <span>Keglji</span>
+                <strong>
+                  {m.homePins}:{m.awayPins}
+                </strong>
+              </div>
+            ) : (
+              <div className="live-quad-stat is-match is-pending">
+                <span>Končne točke</span>
+                <strong>·:·</strong>
+              </div>
+            )}
+          </div>
           <RoundCard r={r4} variant="quad" />
         </div>
       </div>
