@@ -1,22 +1,45 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "../lib/auth";
 import { claimTeamInvite, previewTeamInvite } from "../lib/leagueApi";
-import { hashInviteToken, MIN_TEAM_PASSWORD } from "../lib/invite";
+import { formatInviteCode, hashInviteToken, MIN_TEAM_PASSWORD, normalizeInviteToken } from "../lib/invite";
 import { useStore } from "../lib/store";
 
-export function ClaimInvite({ token, onDone }: { token: string; onDone: () => void }) {
+export function ClaimInvite({
+  token: initialToken,
+  onDone,
+}: {
+  token: string;
+  onDone: () => void;
+}) {
   const { login } = useAuth();
   const { state, setTeamAccess } = useStore();
+  const [token, setToken] = useState(() => normalizeInviteToken(initialToken));
+  const [codeInput, setCodeInput] = useState(() => formatInviteCode(initialToken) || "");
   const [teamName, setTeamName] = useState<string | null>(null);
-  const [status, setStatus] = useState<"load" | "ok" | "expired" | "invalid">("load");
+  const [status, setStatus] = useState<"code" | "load" | "ok" | "expired" | "invalid">(
+    normalizeInviteToken(initialToken) ? "load" : "code",
+  );
   const [password, setPassword] = useState("");
   const [repeat, setRepeat] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const next = normalizeInviteToken(initialToken);
+    if (!next) {
+      setStatus("code");
+      return;
+    }
+    setToken(next);
+    setCodeInput(formatInviteCode(next));
+    setStatus("load");
+  }, [initialToken]);
+
+  useEffect(() => {
+    if (!token) return;
     let cancelled = false;
     (async () => {
+      setStatus("load");
       const remote = await previewTeamInvite(token).catch(() => ({ ok: false as const, error: "invalid" }));
       if (cancelled) return;
       if (remote.ok) {
@@ -43,6 +66,17 @@ export function ClaimInvite({ token, onDone }: { token: string; onDone: () => vo
       cancelled = true;
     };
   }, [token, state.teams]);
+
+  const applyCode = (raw: string) => {
+    const next = normalizeInviteToken(raw);
+    if (next.length < 6) {
+      setError("Koda je prekratka. Preveri sporočilo od admina.");
+      return;
+    }
+    setError("");
+    setToken(next);
+    setCodeInput(formatInviteCode(next));
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -89,12 +123,58 @@ export function ClaimInvite({ token, onDone }: { token: string; onDone: () => vo
     }
   };
 
+  const codeForm = (
+    <form
+      className="form-row"
+      onSubmit={(e) => {
+        e.preventDefault();
+        applyCode(codeInput);
+      }}
+    >
+      <input
+        value={codeInput}
+        onChange={(e) => setCodeInput(e.target.value)}
+        placeholder="npr. AB3K-9M2P"
+        autoComplete="one-time-code"
+        autoCapitalize="characters"
+        spellCheck={false}
+        aria-label="Koda ekipe"
+      />
+      <button className="primary" type="submit">
+        Naprej
+      </button>
+    </form>
+  );
+
   return (
     <section className="panel">
+      <button className="ghost" type="button" onClick={onDone}>
+        ← Nazaj
+      </button>
       <h2 className="round-title">Nastavi geslo ekipe</h2>
-      {status === "load" && <p className="muted">Preverjam povezavo…</p>}
-      {status === "invalid" && <p>Ta povezava ni veljavna. Prosi admina za novo.</p>}
-      {status === "expired" && <p>Povezava je potekla. Prosi admina za novo.</p>}
+      {status === "code" && (
+        <>
+          <p className="muted">Vpiši kodo, ki ti jo je poslal admin (npr. v Messengerju).</p>
+          {codeForm}
+          {error && <p className="login-error">{error}</p>}
+        </>
+      )}
+      {status === "load" && <p className="muted">Preverjam kodo…</p>}
+      {status === "invalid" && (
+        <>
+          <p>Ta koda / povezava ni veljavna. Preveri kodo ali prosi admina za novo.</p>
+          <p className="muted">Vpiši kodo znova:</p>
+          {codeForm}
+          {error && <p className="login-error">{error}</p>}
+        </>
+      )}
+      {status === "expired" && (
+        <>
+          <p>Koda je potekla. Prosi admina za novo.</p>
+          <p className="muted">Če imaš novo kodo, jo vpiši tukaj:</p>
+          {codeForm}
+        </>
+      )}
       {status === "ok" && (
         <>
           <p>

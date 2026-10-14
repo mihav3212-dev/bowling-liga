@@ -3,7 +3,7 @@ import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
 import { useStore } from "../lib/store";
-import { formatInviteUntil, inviteStillOpen } from "../lib/invite";
+import { formatInviteCode, formatInviteUntil, inviteStillOpen } from "../lib/invite";
 import { Training } from "./Training";
 
 export function TeamDetail({
@@ -21,8 +21,18 @@ export function TeamDetail({
   canRoster?: boolean;
   showTraining?: boolean;
 }) {
-  const { state, remote, renameTeam, updateTeam, addPlayer, updatePlayer, removePlayer, setTeamAccess, createTeamInvite } =
-    useStore();
+  const {
+    state,
+    remote,
+    renameTeam,
+    updateTeam,
+    addPlayer,
+    updatePlayer,
+    removePlayer,
+    setTeamAccess,
+    createTeamInvite,
+    saveTeamRosterNow,
+  } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
   const players = state.players.filter((p) => p.teamId === teamId);
   const [name, setName] = useState("");
@@ -32,15 +42,20 @@ export function TeamDetail({
   const [access, setAccess] = useState("");
   const [accessBusy, setAccessBusy] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [inviteUntil, setInviteUntil] = useState("");
   const [inviteNote, setInviteNote] = useState("");
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveNote, setSaveNote] = useState("");
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     setTrainingSessionId(null);
     setInviteUrl("");
+    setInviteCode("");
     setInviteUntil("");
     setInviteNote("");
+    setSaveNote("");
   }, [teamId]);
 
   if (!team) return <p>Ekipa ne obstaja.</p>;
@@ -107,8 +122,9 @@ export function TeamDetail({
       </div>
       <h3 style={{ marginTop: 24 }}>Prijava ekipe</h3>
       <p className="muted">
-        Pošlji ekipi povezavo, da si geslo nastavijo sami. Kaj smejo v aplikaciji, nastaviš v Admin →
-        Dovoljenja ekip. {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
+        Ustvari kodo in jo pošlji kapitanu (npr. v Messengerju). Tam odpre liga.bowlinglenart.si → »Imam
+        kodo« in nastavi geslo. Kaj smejo v aplikaciji, nastaviš v Admin → Dovoljenja ekip.{" "}
+        {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
       </p>
       <div className="row-actions" style={{ marginBottom: 12 }}>
         <button
@@ -120,44 +136,71 @@ export function TeamDetail({
             setInviteNote("");
             try {
               const created = await createTeamInvite(team.id);
+              const code = formatInviteCode(created.token);
+              setInviteCode(code);
               setInviteUrl(created.url);
               setInviteUntil(created.expiresAt);
               try {
-                await navigator.clipboard.writeText(created.url);
-                setInviteNote("Povezava je v odložišču.");
+                await navigator.clipboard.writeText(code);
+                setInviteNote("Koda je v odložišču — prilepi jo v sporočilo kapitanu.");
               } catch {
-                setInviteNote("Kopiraj povezavo in jo pošlji ekipi.");
+                setInviteNote("Kopiraj kodo in jo pošlji kapitanu.");
               }
             } catch {
-              window.alert("Povezave ni bilo mogoče ustvariti.");
+              window.alert("Kode ni bilo mogoče ustvariti.");
             } finally {
               setAccessBusy(false);
             }
           }}
         >
-          {accessBusy ? "…" : inviteStillOpen(team) || inviteUrl ? "Nova povezava" : "Ustvari povezavo za geslo"}
+          {accessBusy ? "…" : inviteStillOpen(team) || inviteCode ? "Nova koda" : "Ustvari kodo za geslo"}
         </button>
+        {inviteCode && (
+          <button
+            className="ghost"
+            type="button"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(inviteCode);
+                setInviteNote("Koda je v odložišču.");
+              } catch {
+                setInviteNote("Označi kodo in jo skopiraj.");
+              }
+            }}
+          >
+            Kopiraj kodo
+          </button>
+        )}
       </div>
-      {(inviteUrl || inviteStillOpen(team)) && (
+      {inviteCode && (
+        <p className="invite-code-block" aria-label="Koda ekipe">
+          <span className="muted">Koda</span>
+          <strong className="invite-code">{inviteCode}</strong>
+        </p>
+      )}
+      {(inviteCode || inviteStillOpen(team)) && (
         <p className="muted">
-          {inviteUrl ? (
+          {inviteCode ? (
             <>
-              Povezava velja do {formatInviteUntil(inviteUntil || team.inviteExpires)}. Nova povezava prejšnjo
+              Koda velja do {formatInviteUntil(inviteUntil || team.inviteExpires)}. Nova koda prejšnjo
               razveljavi.
             </>
           ) : (
-            <>Aktivna povezava do {formatInviteUntil(team.inviteExpires)}. Nova jo razveljavi.</>
+            <>Aktivna koda do {formatInviteUntil(team.inviteExpires)}. Nova jo razveljavi.</>
           )}
           {!remote ? " Brez baze deluje samo v tem brskalniku." : ""}
         </p>
       )}
       {inviteUrl && (
-        <p className="form-row">
-          <input readOnly value={inviteUrl} aria-label="Povezava za geslo" onFocus={(e) => e.target.select()} />
-        </p>
+        <details className="invite-link-details">
+          <summary className="muted">Povezava (lahko v Messengerju ne deluje)</summary>
+          <p className="form-row" style={{ marginTop: 8 }}>
+            <input readOnly value={inviteUrl} aria-label="Povezava za geslo" onFocus={(e) => e.target.select()} />
+          </p>
+        </details>
       )}
       {inviteNote && <p className="muted">{inviteNote}</p>}
-      <p className="muted">Ali vpiši geslo sam:</p>
+      <p className="muted">Ali vpiši geslo sam in ga povej kapitanu:</p>
       <form
         className="form-row"
         onSubmit={async (e) => {
@@ -208,8 +251,8 @@ export function TeamDetail({
       <p className="muted">
         {editRoster
           ? canManage
-            ? "Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Člani gredo na prijavni list."
-            : "Člane lahko vnašate do začetka 2. kola. Pred tekmo izbereš 4 + do 2 menjavi."
+            ? "Seznam je neomejen. Pred tekmo izbereš 4 + do 2 menjavi. Po vnosu pritisni Shrani."
+            : "Člane lahko vnašate do začetka 2. kola. Po vnosu pritisni Shrani."
           : canRoster && !rosterOpen
             ? "Od 2. kola naprej člane spreminja samo admin."
             : "Igralce vnaša admin ali vodja z dovoljenjem za vnos v ekipo."}
@@ -244,7 +287,16 @@ export function TeamDetail({
           <div key={p.id} className={editRoster ? "form-row roster-player-row" : "roster-player-block"}>
             {editRoster ? (
               <>
-                <strong>{p.name}</strong>
+                <input
+                  className="roster-player-name-input"
+                  value={p.name}
+                  aria-label="Ime igralca"
+                  onChange={(e) => updatePlayer({ ...p, name: e.target.value })}
+                  onBlur={(e) => {
+                    const trimmed = e.target.value.trim();
+                    if (trimmed !== p.name) updatePlayer({ ...p, name: trimmed || p.name });
+                  }}
+                />
                 <label className="muted">
                   <input
                     type="checkbox"
@@ -277,6 +329,31 @@ export function TeamDetail({
           </div>
         ))}
       </div>
+      {(editRoster || canManage) && (
+        <div className="row-actions" style={{ marginTop: 16 }}>
+          <button
+            className="primary"
+            type="button"
+            disabled={saveBusy}
+            onClick={async () => {
+              setSaveBusy(true);
+              setSaveNote("");
+              const ok = await saveTeamRosterNow(team.id);
+              setSaveBusy(false);
+              setSaveNote(
+                ok
+                  ? remote
+                    ? "Shranjeno v bazo."
+                    : "Shranjeno v ta brskalnik."
+                  : "Shranjevanje ni uspelo. Poskusi znova.",
+              );
+            }}
+          >
+            {saveBusy ? "Shranjujem…" : "Shrani"}
+          </button>
+          {saveNote && <span className="muted">{saveNote}</span>}
+        </div>
+      )}
     </section>
     {showTraining && (
     <Training

@@ -155,8 +155,9 @@ type Store = {
   deleteTrainingSession: (sessionId: string, teamId?: string) => void;
   saveTrainingNow: () => Promise<boolean>;
   saveMatchLineupNow: (matchId: string) => Promise<boolean>;
+  saveTeamRosterNow: (teamId: string) => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
-  createTeamInvite: (teamId: string) => Promise<{ url: string; expiresAt: string }>;
+  createTeamInvite: (teamId: string) => Promise<{ url: string; token: string; expiresAt: string }>;
   setTeamPerms: (teamId: string, perms: Partial<TeamPerms>) => void;
   importState: (next: LeagueState) => void;
   importSeason: (next: LeagueState) => Promise<void>;
@@ -792,6 +793,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return false;
         }
       },
+      saveTeamRosterNow: async (teamId) => {
+        const packed = compactTrainings(stateRef.current);
+        clearTimeout(saveTimer.current);
+        update(() => packed);
+        if (archivedRef.current) return false;
+        if (!remoteRef.current || !seasonIdRef.current) return true;
+        try {
+          const team = viewerTeamRef.current;
+          if (team) {
+            if (team !== teamId) return false;
+            const perms = teamPerms(packed.teams.find((item) => item.id === team));
+            if (perms.season) {
+              return await saveLeague(seasonIdRef.current, packed);
+            }
+            return await saveTeamRoster(
+              seasonIdRef.current,
+              team,
+              packed.players.filter((player) => player.teamId === team),
+            );
+          }
+          return await saveLeague(seasonIdRef.current, packed);
+        } catch {
+          return false;
+        }
+      },
       saveTrainingNow: async () => {
         const packed = compactTrainings(state);
         update(() => packed);
@@ -846,7 +872,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (remoteRef.current && season) {
           const payload = await createTeamInviteRemote(season, id);
           applyRemote(payload);
-          return { url: inviteLink(payload.token), expiresAt: payload.expiresAt };
+          return { url: inviteLink(payload.token), token: payload.token, expiresAt: payload.expiresAt };
         }
         const token = newInviteToken();
         const expiresAt = inviteExpiryIso();
@@ -857,7 +883,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             team.id === id ? { ...team, inviteHash, inviteExpires: expiresAt, hasInvite: true } : team,
           ),
         }));
-        return { url: inviteLink(token), expiresAt };
+        return { url: inviteLink(token), token, expiresAt };
       },
       importState: (next) =>
         update(() => ({

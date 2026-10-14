@@ -18,13 +18,26 @@ export function verifyPassword(plain, stored) {
 }
 
 export const INVITE_DAYS = 14;
+const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+export function normalizeInviteToken(token) {
+  return String(token ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+}
 
 export function newInviteToken() {
-  return randomBytes(24).toString("base64url");
+  const bytes = randomBytes(8);
+  let out = "";
+  for (const b of bytes) {
+    out += INVITE_ALPHABET[b % INVITE_ALPHABET.length];
+  }
+  return out;
 }
 
 export function hashInviteToken(token) {
-  return createHash("sha256").update(String(token ?? "")).digest("hex");
+  return createHash("sha256").update(normalizeInviteToken(token)).digest("hex");
 }
 
 export function inviteStillOpen(team) {
@@ -41,7 +54,9 @@ export function hashesEqual(a, b) {
 }
 
 export function findInviteTeam(teams, token) {
-  const hash = hashInviteToken(token);
+  const normalized = normalizeInviteToken(token);
+  if (!normalized) return null;
+  const hash = hashInviteToken(normalized);
   return (teams ?? []).find((team) => hashesEqual(team.inviteHash, hash)) ?? null;
 }
 

@@ -1112,6 +1112,39 @@ html[data-theme="light"] .live-now .list button.row:hover {
   display: block;
 }
 
+.roster-player-name-input {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+  font-weight: 600;
+}
+
+.invite-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+}
+
+.invite-code {
+  font-size: clamp(1.6rem, 6vw, 2.2rem);
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.invite-link-details {
+  margin: 8px 0 12px;
+}
+
+button.linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent, #5b8def);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
 .roster-player-gender {
   display: block;
   margin-top: 0;

@@ -1,18 +1,31 @@
 export const INVITE_DAYS = 14;
 export const MIN_TEAM_PASSWORD = 4;
 
+/** Brez I/O/0/1 — lažje prebrati iz Messengerja. */
+const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+export function normalizeInviteToken(token: string): string {
+  return token.trim().toUpperCase().replace(/[^A-Z0-9]/gi, "");
+}
+
+export function formatInviteCode(token: string): string {
+  const t = normalizeInviteToken(token);
+  if (t.length === 8) return `${t.slice(0, 4)}-${t.slice(4)}`;
+  return t;
+}
+
 export function newInviteToken(): string {
-  const bytes = new Uint8Array(24);
+  const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);
-  let bin = "";
-  bytes.forEach((b) => {
-    bin += String.fromCharCode(b);
-  });
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  let out = "";
+  for (const b of bytes) {
+    out += INVITE_ALPHABET[b % INVITE_ALPHABET.length];
+  }
+  return out;
 }
 
 export async function hashInviteToken(token: string): Promise<string> {
-  const data = new TextEncoder().encode(token);
+  const data = new TextEncoder().encode(normalizeInviteToken(token));
   const buf = await crypto.subtle.digest("SHA-256", data);
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -21,7 +34,7 @@ export function inviteLink(token: string): string {
   const url = new URL(window.location.href);
   url.search = "";
   url.hash = "";
-  url.searchParams.set("invite", token);
+  url.searchParams.set("invite", normalizeInviteToken(token));
   return url.toString();
 }
 

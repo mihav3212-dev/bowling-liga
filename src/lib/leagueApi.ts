@@ -185,8 +185,15 @@ export async function previewTeamInvite(token: string): Promise<InvitePreview> {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "previewInvite", token }),
+    body: JSON.stringify({ action: "previewInvite", token: String(token ?? "").trim() }),
   });
+  if (!res.ok) {
+    try {
+      return (await res.json()) as InvitePreview;
+    } catch {
+      return { ok: false, error: "invalid" };
+    }
+  }
   return (await res.json()) as InvitePreview;
 }
 
@@ -195,8 +202,15 @@ export async function claimTeamInvite(token: string, password: string): Promise<
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "claimInvite", token, password }),
+    body: JSON.stringify({ action: "claimInvite", token: String(token ?? "").trim(), password }),
   });
+  if (!res.ok) {
+    try {
+      return (await res.json()) as InvitePreview;
+    } catch {
+      return { ok: false, error: "invalid" };
+    }
+  }
   return (await res.json()) as InvitePreview;
 }
 
