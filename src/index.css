@@ -2032,7 +2032,7 @@ button.linkish {
 .live-tv-mini-duel {
   display: grid;
   grid-template-columns: 2.1em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-  align-items: baseline;
+  align-items: start;
   gap: 4px 6px;
   font-size: clamp(1.05rem, 1.75vw, 1.45rem);
   line-height: 1.3;
@@ -2050,11 +2050,14 @@ button.linkish {
 }
 
 .live-tv-mini-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
   opacity: 0.88;
   font-weight: 500;
+  line-height: 1.15;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .live-tv-mini-name.is-away {
@@ -2213,6 +2216,7 @@ button.linkish {
 
 .live-tv.is-quad .live-tv-mini-duel {
   grid-template-columns: 3.4em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  align-items: start;
   gap: 2px 4px;
   font-size: clamp(1.15rem, 1.85vw, 1.55rem);
   line-height: 1.2;
@@ -2293,6 +2297,11 @@ button.linkish {
 
 .live-quad-stat.is-slot-large strong {
   font-size: clamp(2.7rem, 5.6vw, 4.2rem);
+}
+
+/* Po koncu: končne točke v velikem slotu še 1.5×. */
+.live-quad-stat.is-slot-large.is-match strong {
+  font-size: clamp(4.05rem, 8.4vw, 6.3rem);
 }
 
 .live-quad-stat.is-slot-small > span {
@@ -2481,8 +2490,18 @@ button.linkish {
     font-size: 1.25rem;
   }
 
+  .live-quad-stat.is-slot-large.is-match strong {
+    font-size: 1.875rem;
+  }
+
   .live-quad-stat.is-slot-small strong {
     font-size: 1rem;
+  }
+
+  .live-tv-mini-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .live-tv.is-quad .live-tv-mini-duel {
