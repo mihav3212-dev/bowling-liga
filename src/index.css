@@ -1771,6 +1771,10 @@ button.linkish {
   margin-top: 14px;
 }
 
+.live-tv-stats-featured.is-bottom {
+  margin-top: 10px;
+}
+
 .live-tv-stat-block {
   display: flex;
   flex-direction: column;
@@ -1993,7 +1997,7 @@ button.linkish {
 }
 
 .live-tv-round-card-pins {
-  margin-top: 6px;
+  margin-top: 2px;
   margin-bottom: 12px;
   color: var(--tv-muted);
   font-size: clamp(1rem, 1.5vw, 1.25rem);
@@ -2005,11 +2009,15 @@ button.linkish {
   flex-direction: column;
   gap: 0;
   margin-top: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
   color: var(--tv-muted);
-  font-size: clamp(0.9rem, 1.35vw, 1.15rem);
+  font-size: clamp(0.95rem, 1.45vw, 1.2rem);
   font-family: "IBM Plex Mono", monospace;
   line-height: 1.2;
+}
+
+.live-tv:not(.is-quad) .live-tv-round-card-meta {
+  margin-bottom: 0;
 }
 
 .live-tv-round-duels {
@@ -2300,6 +2308,9 @@ button.linkish {
   justify-self: center;
   width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -2308,20 +2319,43 @@ button.linkish {
   line-height: 1.05;
   color: var(--tv-ink);
   overflow: hidden;
+}
+
+.live-quad-mid-side {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.live-quad-mid-team {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .live-quad-mid-label.is-home {
   text-align: left;
+  align-items: flex-start;
 }
 
 .live-quad-mid-label.is-away {
   text-align: right;
+  align-items: flex-end;
 }
 
 .live-quad-mid-label.is-winner {
   color: var(--tv-live);
+}
+
+.live-quad-mid-label.is-winner .live-quad-mid-side {
+  color: var(--tv-live);
+  opacity: 0.85;
 }
 
 .live-tv-preview-bar {

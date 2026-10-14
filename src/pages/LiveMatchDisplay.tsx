@@ -321,14 +321,6 @@ function LayoutPicker({
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
 function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: LiveTvLayout }) {
-  const smallLead =
-    r.homeSmall == null || r.awaySmall == null
-      ? "open"
-      : r.homeSmall === r.awaySmall
-        ? "tie"
-        : r.homeSmall > r.awaySmall
-          ? "home"
-          : "away";
   const bigLead =
     r.homeBig == null || r.awayBig == null
       ? "open"
@@ -339,16 +331,13 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
           : "away";
   const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
   const quad = variant === "quad";
-  const topLead = quad ? bigLead : smallLead;
-  const topHome = quad ? r.homeBig : r.homeSmall;
-  const topAway = quad ? r.awayBig : r.awaySmall;
   return (
     <div className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}`}>
       <div className="live-tv-round-card-num">{r.round}. krog</div>
       <div className="live-tv-round-card-score">
-        <span className={topLead === "home" ? "is-lead" : undefined}>{topHome ?? "·"}</span>
+        <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
         <span className="live-tv-duel-vs">:</span>
-        <span className={topLead === "away" ? "is-lead" : undefined}>{topAway ?? "·"}</span>
+        <span className={bigLead === "away" ? "is-lead" : undefined}>{r.awayBig ?? "·"}</span>
       </div>
       {quad ? (
         <div className="live-tv-round-card-meta">
@@ -359,10 +348,15 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
           </span>
         </div>
       ) : (
-        <div className="live-tv-round-card-pins">
-          {pairLabel(r.homePins, r.awayPins)}
-          {r.homePins != null ? " kegljev" : ""}
-        </div>
+        <>
+          <div className="live-tv-round-card-meta">
+            <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
+          </div>
+          <div className="live-tv-round-card-pins">
+            {pairLabel(r.homePins, r.awayPins)}
+            {r.homePins != null ? " kegljev" : ""}
+          </div>
+        </>
       )}
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
@@ -475,46 +469,48 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
           <RoundCard r={r2} variant="quad" />
 
           <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
-            {m.homeName}
+            <span className="live-quad-mid-side">Domači</span>
+            <span className="live-quad-mid-team">{m.homeName}</span>
           </div>
           <div className="live-quad-spine live-quad-spine-mid">
-            {complete ? (
-              <div className="live-quad-stat is-slot-large is-match">
-                <span>Končne točke</span>
-                <strong>
-                  <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                  <span className="live-tv-score-sep">:</span>
-                  <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-                </strong>
-              </div>
-            ) : (
-              <div className="live-quad-stat is-slot-large">
-                <span>Keglji</span>
-                <strong>
-                  {m.homePins}:{m.awayPins}
-                </strong>
-              </div>
-            )}
+            <div className={`live-quad-stat is-slot-large${complete ? " is-match" : ""}`}>
+              <span>{complete ? "Končne točke" : "Keglji"}</span>
+              <strong>
+                {complete ? (
+                  <>
+                    <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                    <span className="live-tv-score-sep">:</span>
+                    <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                  </>
+                ) : (
+                  <>
+                    {m.homePins}:{m.awayPins}
+                  </>
+                )}
+              </strong>
+            </div>
           </div>
           <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
-            {m.awayName}
+            <span className="live-quad-mid-side">Gostje</span>
+            <span className="live-quad-mid-team">{m.awayName}</span>
           </div>
 
           <RoundCard r={r3} variant="quad" />
           <div className="live-quad-spine live-quad-spine-bot">
-            {complete ? (
-              <div className="live-quad-stat is-slot-small">
-                <span>Keglji</span>
-                <strong>
-                  {m.homePins}:{m.awayPins}
-                </strong>
-              </div>
-            ) : (
-              <div className="live-quad-stat is-slot-small is-match is-pending">
-                <span>Končne točke</span>
-                <strong>·:·</strong>
-              </div>
-            )}
+            <div
+              className={`live-quad-stat is-slot-small${complete ? "" : " is-match is-pending"}`}
+            >
+              <span>{complete ? "Keglji" : "Končne točke"}</span>
+              <strong>
+                {complete ? (
+                  <>
+                    {m.homePins}:{m.awayPins}
+                  </>
+                ) : (
+                  "·:·"
+                )}
+              </strong>
+            </div>
           </div>
           <RoundCard r={r4} variant="quad" />
         </div>
@@ -587,25 +583,25 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
               </div>
             )}
           </div>
-          <div className="live-tv-stats-minor">
-            {complete ? (
-              <>
-                Keglji{" "}
+          {complete ? (
+            <div className="live-tv-stats-featured is-bottom">
+              <div className="live-tv-stat-block">
+                <span className="live-tv-stat-label">Keglji</span>
                 <strong>
                   {m.homePins}:{m.awayPins}
                 </strong>
-              </>
-            ) : (
-              <>
-                Končne točke{" "}
-                <strong>
-                  <span>{m.homeMatch ?? "·"}</span>
-                  <span className="live-tv-score-sep">:</span>
-                  <span>{m.awayMatch ?? "·"}</span>
-                </strong>
-              </>
-            )}
-          </div>
+              </div>
+            </div>
+          ) : (
+            <div className="live-tv-stats-minor">
+              Končne točke{" "}
+              <strong>
+                <span>{m.homeMatch ?? "·"}</span>
+                <span className="live-tv-score-sep">:</span>
+                <span>{m.awayMatch ?? "·"}</span>
+              </strong>
+            </div>
+          )}
         </div>
 
         <div className={`live-tv-side is-away${awayWins ? " is-winner" : ""}`}>
