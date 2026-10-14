@@ -296,6 +296,12 @@ export function MatchEntry({
         </div>
       </div>
 
+      {!hideScores && !pinsReadOnly && (
+        <p className="muted" style={{ margin: "8px 0 0" }}>
+          Če igralec (ali ekipa) manjka, vpiši <strong>0</strong> kegljev — nasprotnik avtomatsko dobi
+          zmago v tistem dvoboju.
+        </p>
+      )}
       {!hideScores && match.rounds.map((round, ri) => {
         const pair = pairingTemplate()[ri] ?? [];
         const roundTot = totals.rounds[ri];

@@ -15,6 +15,10 @@ export function Rules() {
         </li>
         <li>Ženske: +8 kegljev. Član Bowling zveze Slovenije: −8 kegljev.</li>
         <li>
+          Če igralec ali celotna ekipa manjka, se vpiše <strong>0</strong> kegljev — nasprotnik v
+          tistem dvoboju avtomatsko zmaga (2 male točke). Tekma se sicer odvija normalno.
+        </li>
+        <li>
           <strong>Skupaj igralci:</strong> seštejejo se male točke vseh 16 dvobojev (npr. 5:4).
         </li>
         <li>

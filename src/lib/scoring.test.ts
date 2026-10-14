@@ -4,7 +4,15 @@ import { ROUNDS_2025, SEASON_TEAM_NAMES_2025 } from "./fixtures2025";
 import { createSeed, createSeed2025 } from "./seed";
 import { pairingTemplate } from "./pairings";
 import { roundRobinPairings } from "./schedule";
-import { adjustedPins, bonusPoints, lineupLocked, matchTotals, scoreDuel } from "./scoring";
+import {
+  adjustedPins,
+  bonusPoints,
+  lineupLocked,
+  matchTotals,
+  scoreDuel,
+  scoreForfeit,
+  scoreGame,
+} from "./scoring";
 import { computePlayerStandings, topGames } from "./standings";
 import type { LeagueState, Match, Player } from "./types";
 
@@ -90,6 +98,53 @@ describe("dvoboj", () => {
     expect(r.homeDuel).toBe(2);
     expect(r.homeBonus).toBe(1);
     expect(r.homeTotal).toBe(3);
+  });
+});
+
+describe("odsotnost (0 kegljev)", () => {
+  const home = player({ id: "h", teamId: "H" });
+  const away = player({ id: "a", teamId: "A" });
+
+  it("0 proti vpisanim = nasprotnik 2:0", () => {
+    expect(scoreForfeit(0, 180, away)).toMatchObject({
+      homeDuel: 0,
+      awayDuel: 2,
+      homeTotal: 0,
+      awayTotal: 2,
+      homeAdjusted: 0,
+    });
+    expect(scoreForfeit(190, 0, home)).toMatchObject({
+      homeDuel: 2,
+      awayDuel: 0,
+      homeTotal: 2,
+      awayTotal: 0,
+    });
+  });
+
+  it("ženska z 0 ne dobi +8 — še vedno izgubi", () => {
+    const w = player({ id: "w", gender: "F" });
+    const m = player({ id: "m" });
+    const r = scoreGame(
+      { homePlayerId: "w", awayPlayerId: "m", lane: 1, homePins: 0, awayPins: 150 },
+      [w, m],
+    );
+    expect(r).toMatchObject({ homeDuel: 0, awayDuel: 2, homeAdjusted: 0, homeTotal: 0 });
+  });
+
+  it("šteje tudi brez izbranega igralca, če sta keglja vpisana", () => {
+    const r = scoreGame(
+      { homePlayerId: "", awayPlayerId: "a", lane: 1, homePins: 0, awayPins: 160 },
+      [away],
+    );
+    expect(r).toMatchObject({ homeDuel: 0, awayDuel: 2, awayTotal: 2 });
+  });
+
+  it("nasprotnik ob 0 lahko dobi bonus za visok rezultat", () => {
+    const r = scoreGame(
+      { homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: 0, awayPins: 245 },
+      [home, away],
+    );
+    expect(r).toMatchObject({ homeTotal: 0, awayDuel: 2, awayBonus: 2, awayTotal: 4 });
   });
 });
 

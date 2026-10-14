@@ -64,15 +64,82 @@ export function playerById(players: Player[], id: string): Player | undefined {
   return players.find((p) => p.id === id);
 }
 
+/** Odsotnost: 0 kegljev proti vpisanim = poraz 0:2 (brez pribitkov na 0). */
+export function scoreForfeit(
+  homePins: number,
+  awayPins: number,
+  present?: Player,
+): DuelResult | null {
+  if (homePins === 0 && awayPins > 0) {
+    const awayAdjusted = present ? adjustedPins(awayPins, present) : awayPins;
+    const awayBonus = bonusPoints(awayAdjusted);
+    return {
+      homeDuel: 0,
+      awayDuel: 2,
+      homeBonus: 0,
+      awayBonus,
+      homeTotal: 0,
+      awayTotal: 2 + awayBonus,
+      homeAdjusted: 0,
+      awayAdjusted,
+    };
+  }
+  if (awayPins === 0 && homePins > 0) {
+    const homeAdjusted = present ? adjustedPins(homePins, present) : homePins;
+    const homeBonus = bonusPoints(homeAdjusted);
+    return {
+      homeDuel: 2,
+      awayDuel: 0,
+      homeBonus,
+      awayBonus: 0,
+      homeTotal: 2 + homeBonus,
+      awayTotal: 0,
+      homeAdjusted,
+      awayAdjusted: 0,
+    };
+  }
+  return null;
+}
+
+/** Brez igralca: samo surovi keglji (npr. oba mesti izpolnjeni, igralec še ni izbran). */
+function scoreRawDuel(homePins: number, awayPins: number): DuelResult {
+  const duel = duelPoints(homePins, awayPins);
+  const homeBonus = bonusPoints(homePins);
+  const awayBonus = bonusPoints(awayPins);
+  return {
+    homeDuel: duel.home,
+    awayDuel: duel.away,
+    homeBonus,
+    awayBonus,
+    homeTotal: duel.home + homeBonus,
+    awayTotal: duel.away + awayBonus,
+    homeAdjusted: homePins,
+    awayAdjusted: awayPins,
+  };
+}
+
 export function scoreGame(
   game: GameScore,
   players: Player[],
 ): DuelResult | null {
   if (game.homePins == null || game.awayPins == null) return null;
+
   const home = playerById(players, game.homePlayerId);
   const away = playerById(players, game.awayPlayerId);
-  if (!home || !away) return null;
-  return scoreDuel(game.homePins, game.awayPins, home, away);
+
+  // 0 = manjkajoči igralec / ekipa; nasprotnik z več kot 0 zmaga (tudi brez izbranega igralca).
+  const forfeit = scoreForfeit(
+    game.homePins,
+    game.awayPins,
+    game.homePins === 0 ? away : home,
+  );
+  if (forfeit) return forfeit;
+
+  if (home && away) {
+    return scoreDuel(game.homePins, game.awayPins, home, away);
+  }
+  // Oba sta vpisala keglje, a igralec manjka v sestavi — štej surovo.
+  return scoreRawDuel(game.homePins, game.awayPins);
 }
 
 export function matchTotals(match: Match, players: Player[]): MatchTotals {
@@ -93,8 +160,17 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     let rpa = 0;
     let rscored = 0;
     for (const game of round.games) {
-      const hp = scoredPins(game.homePins, playerById(players, game.homePlayerId));
-      const ap = scoredPins(game.awayPins, playerById(players, game.awayPlayerId));
+      // Pri odsotnosti (0) ne štej ženskega +8 — ostane 0 kegljev.
+      const homeP = playerById(players, game.homePlayerId);
+      const awayP = playerById(players, game.awayPlayerId);
+      const hp =
+        game.homePins === 0
+          ? 0
+          : scoredPins(game.homePins, homeP);
+      const ap =
+        game.awayPins === 0
+          ? 0
+          : scoredPins(game.awayPins, awayP);
       if (hp != null) {
         homePins += hp;
         rph += hp;
