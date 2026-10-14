@@ -8,6 +8,12 @@ export function normalizeInviteToken(token: string): string {
   return token.trim().toUpperCase().replace(/[^A-Z0-9]/gi, "");
 }
 
+/** Kratka koda ekipe (8 znakov), ne običajno geslo. */
+export function looksLikeInviteCode(raw: string): boolean {
+  const t = normalizeInviteToken(raw);
+  return t.length === 8 && /^[A-HJ-NP-Z2-9]+$/.test(t);
+}
+
 export function formatInviteCode(token: string): string {
   const t = normalizeInviteToken(token);
   if (t.length === 8) return `${t.slice(0, 4)}-${t.slice(4)}`;

@@ -16,6 +16,8 @@ export type LiveRoundSummary = {
   round: number;
   homeSmall: number | null;
   awaySmall: number | null;
+  homeBig: number | null;
+  awayBig: number | null;
   homePins: number | null;
   awayPins: number | null;
   duels: LiveDuelRow[];
@@ -88,10 +90,13 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
       };
     });
     const hasPins = duels.some((d) => d.homePins != null || d.awayPins != null);
+    const roundDone = Boolean(rt?.complete);
     return {
       round: ri + 1,
       homeSmall: hasPins ? (rt?.homeSmall ?? 0) : null,
       awaySmall: hasPins ? (rt?.awaySmall ?? 0) : null,
+      homeBig: roundDone ? (rt?.homeBig ?? 0) : null,
+      awayBig: roundDone ? (rt?.awayBig ?? 0) : null,
       homePins: hasPins ? (rt?.homePins ?? 0) : null,
       awayPins: hasPins ? (rt?.awayPins ?? 0) : null,
       duels,
@@ -104,6 +109,8 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
       round: n,
       homeSmall: null,
       awaySmall: null,
+      homeBig: null,
+      awayBig: null,
       homePins: null,
       awayPins: null,
       duels: [1, 2, 3, 4].map((lane) => ({

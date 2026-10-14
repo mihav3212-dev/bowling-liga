@@ -129,6 +129,8 @@ const PREVIEW_LIVE: LiveMatchView = {
       round: 1,
       homeSmall: 8,
       awaySmall: 4,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 312,
       awayPins: 278,
       duels: [
@@ -142,6 +144,8 @@ const PREVIEW_LIVE: LiveMatchView = {
       round: 2,
       homeSmall: 6,
       awaySmall: 4,
+      homeBig: null,
+      awayBig: null,
       homePins: 300,
       awayPins: 270,
       duels: [
@@ -155,6 +159,8 @@ const PREVIEW_LIVE: LiveMatchView = {
       round: 3,
       homeSmall: null,
       awaySmall: null,
+      homeBig: null,
+      awayBig: null,
       homePins: null,
       awayPins: null,
       duels: emptyDuels(LINEUPS[2]!),
@@ -163,6 +169,8 @@ const PREVIEW_LIVE: LiveMatchView = {
       round: 4,
       homeSmall: null,
       awaySmall: null,
+      homeBig: null,
+      awayBig: null,
       homePins: null,
       awayPins: null,
       duels: emptyDuels(LINEUPS[3]!),
@@ -189,6 +197,8 @@ const PREVIEW_FINAL: LiveMatchView = {
       round: 1,
       homeSmall: 8,
       awaySmall: 4,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 312,
       awayPins: 278,
       duels: [
@@ -202,6 +212,8 @@ const PREVIEW_FINAL: LiveMatchView = {
       round: 2,
       homeSmall: 6,
       awaySmall: 4,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 300,
       awayPins: 270,
       duels: [
@@ -215,6 +227,8 @@ const PREVIEW_FINAL: LiveMatchView = {
       round: 3,
       homeSmall: 7,
       awaySmall: 5,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 293,
       awayPins: 269,
       duels: [
@@ -228,6 +242,8 @@ const PREVIEW_FINAL: LiveMatchView = {
       round: 4,
       homeSmall: 7,
       awaySmall: 3,
+      homeBig: 2,
+      awayBig: 0,
       homePins: 343,
       awayPins: 279,
       duels: [
@@ -301,28 +317,34 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
         </div>
 
         <div className="live-tv-center">
-          <div className="live-tv-score-label">{complete ? "KONČNI REZULTAT" : "TOČKE"}</div>
-          <div className="live-tv-score">
-            <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-            <span className="live-tv-score-sep">:</span>
-            <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-          </div>
-          <div className="live-tv-stats-featured">
-            <div className="live-tv-stat-block">
+          <div className="live-tv-score-label">{complete ? "Končni rezultat" : "Rezultat"}</div>
+          <div className="live-tv-stats-stack">
+            <div className="live-tv-stat-row">
+              <span className="live-tv-stat-label">Male točke</span>
+              <strong>
+                {m.homeSmall}:{m.awaySmall}
+              </strong>
+            </div>
+            <div className="live-tv-stat-row">
               <span className="live-tv-stat-label">Velike točke</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
               </strong>
             </div>
-            <div className="live-tv-stat-block">
+            <div className="live-tv-stat-row">
               <span className="live-tv-stat-label">Keglji</span>
               <strong>
                 {m.homePins}:{m.awayPins}
               </strong>
             </div>
-          </div>
-          <div className="live-tv-stats-minor">
-            Male točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
+            <div className="live-tv-stat-row is-match">
+              <span className="live-tv-stat-label">Točke</span>
+              <strong>
+                <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                <span className="live-tv-score-sep">:</span>
+                <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+              </strong>
+            </div>
           </div>
         </div>
 
@@ -359,15 +381,21 @@ function LiveMatchScreen({ view: m, badge, rotateLabel }: ScreenProps) {
                     {r.awaySmall ?? "·"}
                   </span>
                 </div>
-                <div className="live-tv-round-card-pins">
-                  {pairLabel(r.homePins, r.awayPins)}
-                  {r.homePins != null ? " kegljev" : ""}
+                <div className="live-tv-round-card-meta">
+                  <span>
+                    Velike {pairLabel(r.homeBig, r.awayBig)}
+                  </span>
+                  <span>
+                    {pairLabel(r.homePins, r.awayPins)}
+                    {r.homePins != null ? " kegljev" : ""}
+                  </span>
                 </div>
                 <div className="live-tv-round-duels">
                   {r.duels.map((d) => {
                     const dLead = duelLead(d.homePins, d.awayPins);
                     return (
                       <div key={d.lane} className="live-tv-mini-duel">
+                        <span className="live-tv-mini-lane">Steza {d.lane}</span>
                         <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
                           {d.homeName}
                         </span>

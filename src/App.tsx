@@ -65,7 +65,6 @@ function LeagueApp() {
   const [inviteToken, setInviteToken] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get("invite"),
   );
-  const [claimOpen, setClaimOpen] = useState(false);
   const prevLoginTeam = useRef<string | null>(null);
 
   useEffect(() => {
@@ -148,35 +147,30 @@ function LeagueApp() {
               onAccess={() => go("access")}
             />
           )}
-          <Login />
+          <Login
+            onInviteCode={(token) => {
+              setInviteToken(token);
+            }}
+          />
           <ThemePicker />
         </div>
       </header>
 
       <div className={page === "players" ? "app-shell is-wide" : "app-shell"}>
         <h1 className="page-title">Bowling liga Lenart.</h1>
-        {(inviteToken != null || claimOpen) && !loginTeamId && !admin ? (
+        {inviteToken != null && !loginTeamId && !admin ? (
           <ClaimInvite
-            token={inviteToken ?? ""}
+            token={inviteToken}
             onDone={() => {
               const url = new URL(window.location.href);
               url.searchParams.delete("invite");
               const qs = url.searchParams.toString();
               window.history.replaceState({}, "", `${url.pathname}${qs ? `?${qs}` : ""}`);
               setInviteToken(null);
-              setClaimOpen(false);
             }}
           />
         ) : (
         <>
-        {!loginTeamId && !admin && (
-          <p className="muted" style={{ marginBottom: 12 }}>
-            Kapetan ekipe?{" "}
-            <button className="linkish" type="button" onClick={() => setClaimOpen(true)}>
-              Imam kodo za geslo
-            </button>
-          </p>
-        )}
         {shownSeasons.length > 0 && (
           <div className="season-bar">
             <label>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatInviteCode, normalizeInviteToken, newInviteToken } from "./invite";
+import { formatInviteCode, looksLikeInviteCode, normalizeInviteToken, newInviteToken } from "./invite";
 
 describe("invite codes", () => {
   it("normalizes spacing and case", () => {
@@ -11,5 +11,8 @@ describe("invite codes", () => {
     const token = newInviteToken();
     expect(token).toMatch(/^[A-HJ-NP-Z2-9]{8}$/);
     expect(token).not.toMatch(/[IO01]/);
+    expect(looksLikeInviteCode(token)).toBe(true);
+    expect(looksLikeInviteCode("moje-geslo")).toBe(false);
   });
 });
+

@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+import { looksLikeInviteCode, normalizeInviteToken } from "../lib/invite";
+import { previewTeamInvite } from "../lib/leagueApi";
 
-export function Login() {
+export function Login({ onInviteCode }: { onInviteCode?: (token: string) => void }) {
   const { admin, teamId, ready, login, logout } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
@@ -26,27 +28,39 @@ export function Login() {
         e.preventDefault();
         setBusy(true);
         setError(false);
-        const ok = await login(password);
-        setBusy(false);
+        const raw = password.trim();
+        const ok = await login(raw);
         if (ok) {
           setPassword("");
-        } else {
-          setError(true);
+          setBusy(false);
+          return;
         }
+        if (onInviteCode && looksLikeInviteCode(raw)) {
+          const token = normalizeInviteToken(raw);
+          const preview = await previewTeamInvite(token).catch(() => ({ ok: false as const }));
+          if (preview.ok) {
+            setPassword("");
+            setBusy(false);
+            onInviteCode(token);
+            return;
+          }
+        }
+        setBusy(false);
+        setError(true);
       }}
     >
       <input
         type="password"
         autoComplete="current-password"
-        placeholder="Geslo"
+        placeholder="Geslo ali koda"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        aria-label="Geslo za admin ali ekipo"
+        aria-label="Geslo ali koda ekipe"
       />
       <button className="ghost" type="submit" disabled={busy || !password}>
         {busy ? "…" : "Prijava"}
       </button>
-      {error && <span className="login-error">Napačno geslo.</span>}
+      {error && <span className="login-error">Napačno geslo ali koda.</span>}
     </form>
   );
 }

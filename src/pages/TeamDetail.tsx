@@ -122,8 +122,9 @@ export function TeamDetail({
       </div>
       <h3 style={{ marginTop: 24 }}>Prijava ekipe</h3>
       <p className="muted">
-        Ustvari kodo in jo pošlji kapitanu (npr. v Messengerju). Tam odpre liga.bowlinglenart.si → »Imam
-        kodo« in nastavi geslo. Kaj smejo v aplikaciji, nastaviš v Admin → Dovoljenja ekip.{" "}
+        Ustvari kodo in jo pošlji kapitanu (npr. v Messengerju). Kapetan jo vpiše zgoraj pri prijavi
+        (Geslo ali koda) — odpre se nastavitev gesla. Kaj smejo v aplikaciji, nastaviš v Admin →
+        Dovoljenja ekip.{" "}
         {team.hasAccess ? "Prijava je vklopljena." : "Prijava še ni nastavljena."}
       </p>
       <div className="row-actions" style={{ marginBottom: 12 }}>
