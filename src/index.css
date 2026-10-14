@@ -2253,7 +2253,7 @@ button.linkish {
   gap: 2px;
 }
 
-.live-quad-stat span {
+.live-quad-stat > span {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -2270,7 +2270,15 @@ button.linkish {
   color: var(--tv-ink);
 }
 
-.live-quad-stat.is-featured span {
+.live-quad-stat strong span {
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+  color: inherit;
+}
+
+.live-quad-stat.is-featured > span {
   font-size: clamp(1.35rem, 2.3vw, 1.8rem);
 }
 
@@ -2279,7 +2287,7 @@ button.linkish {
 }
 
 /* Velikost po mestu: sredina ostane velika, spodaj manjša — tudi po zamenjavi. */
-.live-quad-stat.is-slot-large span {
+.live-quad-stat.is-slot-large > span {
   font-size: clamp(1.35rem, 2.4vw, 1.9rem);
 }
 
@@ -2287,7 +2295,7 @@ button.linkish {
   font-size: clamp(2.7rem, 5.6vw, 4.2rem);
 }
 
-.live-quad-stat.is-slot-small span {
+.live-quad-stat.is-slot-small > span {
   font-size: clamp(1.05rem, 1.7vw, 1.35rem);
 }
 
@@ -2463,7 +2471,7 @@ button.linkish {
     font-size: 1.15rem;
   }
 
-  .live-quad-stat span {
+  .live-quad-stat > span {
     font-size: 0.75rem;
   }
 
