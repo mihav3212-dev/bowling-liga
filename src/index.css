@@ -2227,8 +2227,8 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-duel {
-  font-size: clamp(0.85rem, 1.25vw, 1.1rem);
-  column-gap: 5px;
+  font-size: clamp(1rem, 1.55vw, 1.35rem);
+  column-gap: 6px;
   align-items: center;
   line-height: 1.2;
 }
@@ -2305,8 +2305,8 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-pins {
-  font-size: 1.1em;
-  min-width: 1.9em;
+  font-size: 1.15em;
+  min-width: 2.05em;
   text-align: center;
   justify-self: center;
 }
