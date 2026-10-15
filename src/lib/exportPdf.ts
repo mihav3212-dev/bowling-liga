@@ -548,6 +548,7 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   doc.text(`GOSTI: ${away}`, pageW / 2 + 4, 38);
 
   let y = 47;
+  const tableW = pageW - margin * 2;
   const tableHead = {
     font: "FreeSans",
     fontStyle: "bold" as const,
@@ -555,6 +556,37 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
     textColor: [20, 16, 10] as [number, number, number],
     lineWidth: 0.2,
     lineColor: [40, 40, 40] as [number, number, number],
+  };
+  // Skupna širina vseh tabel (A4 − robovi), da so v isti liniji.
+  const roundCols = {
+    0: { cellWidth: 10 },
+    1: { cellWidth: 10 },
+    2: { halign: "left" as const, cellWidth: 50 },
+    3: { cellWidth: 16 },
+    4: { cellWidth: 12, fontStyle: "bold" as const, fillColor: [245, 225, 74] as [number, number, number] },
+    5: { cellWidth: 12, fontStyle: "bold" as const, fillColor: [245, 225, 74] as [number, number, number] },
+    6: { cellWidth: 16 },
+    7: { halign: "left" as const, cellWidth: 50 },
+    8: { cellWidth: 10 },
+  };
+  const lineupCols = {
+    0: { cellWidth: 10 },
+    1: { halign: "left" as const, cellWidth: 45 },
+    2: { cellWidth: 12 },
+    3: { cellWidth: 14 },
+    4: { cellWidth: 12 },
+    5: { cellWidth: 10 },
+    6: { halign: "left" as const, cellWidth: 45 },
+    7: { cellWidth: 12 },
+    8: { cellWidth: 14 },
+    9: { cellWidth: 12 },
+  };
+  const totalsCols = {
+    0: { halign: "left" as const, fontStyle: "bold" as const, cellWidth: tableW - 96 },
+    1: { cellWidth: 24 },
+    2: { cellWidth: 24 },
+    3: { cellWidth: 24 },
+    4: { cellWidth: 24 },
   };
 
   for (let ri = 0; ri < 4; ri++) {
@@ -582,21 +614,12 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
     autoTable(doc, {
       startY: y,
       margin: { left: margin, right: margin },
+      tableWidth: tableW,
       pageBreak: "avoid",
       styles: { font: "FreeSans", fontSize: 8, cellPadding: 1.1, textColor: [20, 16, 10], halign: "center" },
       headStyles: tableHead,
       bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
-      columnStyles: {
-        0: { cellWidth: 10 },
-        1: { cellWidth: 10 },
-        2: { halign: "left", cellWidth: 48 },
-        3: { cellWidth: 16 },
-        4: { cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
-        5: { cellWidth: 12, fontStyle: "bold", fillColor: [245, 225, 74] },
-        6: { cellWidth: 16 },
-        7: { halign: "left", cellWidth: 48 },
-        8: { cellWidth: 10 },
-      },
+      columnStyles: roundCols,
       head: [["S", "", "Priimek in ime", "Rez.", "T", "T", "Rez.", "Priimek in ime", ""]],
       body,
     });
@@ -660,22 +683,12 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
+    tableWidth: tableW,
     pageBreak: "avoid",
     styles: { font: "FreeSans", fontSize: 7.5, cellPadding: 1, textColor: [20, 16, 10], halign: "center" },
     headStyles: tableHead,
     bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
-    columnStyles: {
-      0: { cellWidth: 8 },
-      1: { halign: "left", cellWidth: 42 },
-      2: { cellWidth: 10 },
-      3: { cellWidth: 14 },
-      4: { cellWidth: 16 },
-      5: { cellWidth: 8 },
-      6: { halign: "left", cellWidth: 42 },
-      7: { cellWidth: 10 },
-      8: { cellWidth: 14 },
-      9: { cellWidth: 16 },
-    },
+    columnStyles: lineupCols,
     head: [["", "Domači", "T", "Rez.", "Pov.", "", "Gostje", "T", "Rez.", "Pov."]],
     body: lineup,
   });
@@ -693,11 +706,12 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   autoTable(doc, {
     startY: y,
     margin: { left: margin, right: margin },
+    tableWidth: tableW,
     pageBreak: "avoid",
     styles: { font: "FreeSans", fontSize: 9, cellPadding: 1.5, textColor: [20, 16, 10], halign: "center" },
     headStyles: tableHead,
     bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
-    columnStyles: { 0: { halign: "left", fontStyle: "bold" } },
+    columnStyles: totalsCols,
     head: [["", "Skupaj", "Povp.", "Sk. točk", "Rezultat"]],
     body: [
       [home, totals.homePins, homeGames ? sl(totals.homePins / homeGames) : "—", totals.homeBig, totals.complete ? totals.homeMatch : "—"],
