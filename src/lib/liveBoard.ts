@@ -1,8 +1,15 @@
 import { formatMatchWhen } from "./labels";
 import { matchesInPlay, nextSlotMatches } from "./live";
-import { matchTotals, playerById } from "./scoring";
+import { matchTotals, playerById, scoredPins } from "./scoring";
 import { pairingTemplate, slotLabel } from "./pairings";
 import type { LeagueState, Match, Player } from "./types";
+
+/** Na TV: končni keglji s +8/−8; odsotnost (0) ostane 0. */
+function displayPins(raw: number | null, playerId: string, players: Player[]): number | null {
+  if (raw == null) return null;
+  if (raw === 0) return 0;
+  return scoredPins(raw, playerById(players, playerId));
+}
 
 export type LiveDuelRow = {
   lane: number;
@@ -132,8 +139,8 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
         lane: game.lane || pair?.lane || gi + 1,
         homeName: nameFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi),
         awayName: nameFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi),
-        homePins: game.homePins,
-        awayPins: game.awayPins,
+        homePins: displayPins(game.homePins, game.homePlayerId, state.players),
+        awayPins: displayPins(game.awayPins, game.awayPlayerId, state.players),
       };
     });
     const hasPins = duels.some((d) => d.homePins != null || d.awayPins != null);

@@ -122,4 +122,39 @@ describe("buildLiveMatchView", () => {
     expect(view.roundSummaries).toHaveLength(4);
     expect(view.roundSummaries[0]?.duels[0]?.homeName).toBe("M. Novak");
   });
+
+  it("shows duel pins with +8 / −8 applied", () => {
+    const roster: Player[] = [
+      { id: "p1", teamId: "h", name: "A. Ženska", gender: "F", bzsMember: false },
+      { id: "p2", teamId: "h", name: "B. BZS", gender: "M", bzsMember: true },
+      { id: "p3", teamId: "h", name: "C. Navadni", gender: "M", bzsMember: false },
+      { id: "p4", teamId: "h", name: "D. Navadni", gender: "M", bzsMember: false },
+      { id: "p5", teamId: "a", name: "E. Navadni", gender: "M", bzsMember: false },
+      { id: "p6", teamId: "a", name: "F. Navadni", gender: "M", bzsMember: false },
+      { id: "p7", teamId: "a", name: "G. Navadni", gender: "M", bzsMember: false },
+      { id: "p8", teamId: "a", name: "H. Navadni", gender: "M", bzsMember: false },
+    ];
+    const m = matchAt("2026-10-13T17:00:00.000Z");
+    m.rounds[0]!.games[0] = {
+      ...m.rounds[0]!.games[0]!,
+      homePlayerId: "p1",
+      awayPlayerId: "p5",
+      homePins: 180,
+      awayPins: 180,
+    };
+    m.rounds[0]!.games[1] = {
+      ...m.rounds[0]!.games[1]!,
+      homePlayerId: "p2",
+      awayPlayerId: "p6",
+      homePins: 180,
+      awayPins: 180,
+    };
+    const view = buildLiveMatchView({ teams, players: roster, matches: [m] }, m);
+    const d0 = view.roundSummaries[0]?.duels[0];
+    const d1 = view.roundSummaries[0]?.duels[1];
+    expect(d0?.homePins).toBe(188); // +8
+    expect(d0?.awayPins).toBe(180);
+    expect(d1?.homePins).toBe(172); // −8
+    expect(d1?.awayPins).toBe(180);
+  });
 });
