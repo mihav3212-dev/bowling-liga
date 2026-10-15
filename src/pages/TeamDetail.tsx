@@ -270,7 +270,12 @@ export function TeamDetail({
           setBzs(false);
         }}
       >
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ime igralca" />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value.toLocaleUpperCase("sl"))}
+          placeholder="Priimek in ime igralca"
+          aria-label="Priimek in ime igralca"
+        />
         <select value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
           <option value="M">Moški</option>
           <option value="F">Ženska (+8)</option>
@@ -291,10 +296,12 @@ export function TeamDetail({
                 <input
                   className="roster-player-name-input"
                   value={p.name}
-                  aria-label="Ime igralca"
-                  onChange={(e) => updatePlayer({ ...p, name: e.target.value })}
+                  aria-label="Priimek in ime igralca"
+                  onChange={(e) =>
+                    updatePlayer({ ...p, name: e.target.value.toLocaleUpperCase("sl") })
+                  }
                   onBlur={(e) => {
-                    const trimmed = e.target.value.trim();
+                    const trimmed = e.target.value.trim().toLocaleUpperCase("sl");
                     if (trimmed !== p.name) updatePlayer({ ...p, name: trimmed || p.name });
                   }}
                 />

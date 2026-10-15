@@ -361,7 +361,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         update((s) => {
           const next = {
             ...s,
-            players: [...s.players, { id: uid("p"), teamId, name: name.trim(), gender, bzsMember }],
+            players: [
+              ...s.players,
+              {
+                id: uid("p"),
+                teamId,
+                name: name.trim().toLocaleUpperCase("sl"),
+                gender,
+                bzsMember,
+              },
+            ],
           };
           flushRoster(next);
           return next;
@@ -372,8 +381,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (viewer && (player.teamId !== viewer || !viewerMayRoster())) {
           return;
         }
+        const normalized = {
+          ...player,
+          name: player.name.toLocaleUpperCase("sl"),
+        };
         update((s) => {
-          const next = { ...s, players: s.players.map((p) => (p.id === player.id ? player : p)) };
+          const next = {
+            ...s,
+            players: s.players.map((p) => (p.id === normalized.id ? normalized : p)),
+          };
           flushRoster(next);
           return next;
         });
