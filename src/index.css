@@ -1807,6 +1807,42 @@ button.linkish {
   box-sizing: border-box;
 }
 
+/* Brez celozaslonskega: stisni zgornji del, da se »Po krogih« vidi v celoti. */
+.live-tv:not(.is-fullscreen):not(.is-quad) {
+  gap: clamp(8px, 1.6vh, 16px);
+  padding: clamp(10px, 1.8vh, 20px) clamp(14px, 3vw, 36px) clamp(10px, 1.6vh, 18px);
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-scoreboard {
+  padding: clamp(4px, 0.8vh, 10px) 0;
+  gap: clamp(8px, 2vw, 24px);
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-team {
+  font-size: clamp(1.9rem, 5.2vw, 3.6rem);
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-score {
+  font-size: clamp(2.8rem, 7.5vw, 5.2rem);
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-stat-block strong {
+  font-size: clamp(1.4rem, 2.8vw, 2.1rem);
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-stats-featured {
+  margin-top: 8px;
+  gap: 10px 20px;
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-round {
+  gap: 8px;
+}
+
+.live-tv:not(.is-fullscreen):not(.is-quad) .live-tv-round-head {
+  padding-bottom: 6px;
+}
+
 .live-tv-pulse {
   width: 10px;
   height: 10px;
@@ -2084,7 +2120,9 @@ button.linkish {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .live-tv-round-card {
@@ -2094,6 +2132,11 @@ button.linkish {
   border-radius: 4px;
   border: 1px solid var(--tv-line);
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
 }
 
 .live-tv-round-card.is-open {
@@ -2157,6 +2200,17 @@ button.linkish {
   padding-top: 10px;
   border-top: 1px solid var(--tv-line);
   text-align: left;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Cel zaslon (klasično): vsi kvadratki enake višine kot prvi. */
+.live-tv.is-fullscreen:not(.is-quad) .live-tv-rounds-grid {
+  align-items: stretch;
+}
+
+.live-tv.is-fullscreen:not(.is-quad) .live-tv-round-card {
+  height: 100%;
 }
 
 .live-tv-mini-duel {
@@ -2275,8 +2329,8 @@ button.linkish {
 
 /* —— TV layout: kvadrati (2×2 + sredinska hrbtenica), iste barve kot klasični TV —— */
 .live-tv.is-quad {
-  gap: clamp(6px, 1.2vh, 12px);
-  padding: clamp(8px, 1.5vh, 16px) clamp(14px, 3vw, 36px) clamp(8px, 1.5vh, 14px);
+  gap: clamp(4px, 0.9vh, 10px);
+  padding: clamp(6px, 1.2vh, 12px) clamp(10px, 2.2vw, 28px) clamp(6px, 1.2vh, 12px);
 }
 
 .live-tv.is-quad .live-tv-glow {
@@ -2291,9 +2345,9 @@ button.linkish {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(9rem, 0.52fr) minmax(0, 1.05fr);
-  grid-template-rows: minmax(0, 0.92fr) minmax(3.2rem, auto) minmax(0, 0.92fr);
-  gap: clamp(10px, 1.8vh, 18px) clamp(10px, 2vw, 22px);
+  grid-template-columns: minmax(0, 1.12fr) minmax(7.5rem, 0.42fr) minmax(0, 1.12fr);
+  grid-template-rows: minmax(0, 1fr) minmax(2.6rem, auto) minmax(0, 1fr);
+  gap: clamp(8px, 1.4vh, 14px) clamp(8px, 1.5vw, 16px);
   align-items: stretch;
 }
 
@@ -2302,7 +2356,7 @@ button.linkish {
   color: var(--tv-ink);
   border: 1px solid var(--tv-line);
   border-radius: clamp(10px, 1.5vw, 16px);
-  padding: clamp(8px, 1.2vh, 14px) clamp(10px, 1.3vw, 16px);
+  padding: clamp(8px, 1.1vh, 12px) clamp(10px, 1.4vw, 16px) clamp(10px, 1.3vh, 14px);
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -2317,13 +2371,13 @@ button.linkish {
 .live-tv.is-quad .live-tv-round-card-num {
   color: var(--tv-muted);
   text-align: left;
-  font-size: clamp(1.15rem, 1.9vw, 1.55rem);
-  margin-bottom: 4px;
+  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
+  margin-bottom: 2px;
 }
 
 .live-tv.is-quad .live-tv-round-card-score {
   color: var(--tv-ink);
-  font-size: clamp(2.25rem, 4.2vw, 3.35rem);
+  font-size: clamp(1.7rem, 3.2vw, 2.55rem);
 }
 
 .live-tv.is-quad .live-tv-round-card-score .is-lead {
@@ -2332,24 +2386,35 @@ button.linkish {
 
 .live-tv.is-quad .live-tv-round-card-meta {
   color: var(--tv-muted);
-  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
-  margin-top: 4px;
-  margin-bottom: 6px;
+  font-size: clamp(0.85rem, 1.25vw, 1.05rem);
+  margin-top: 2px;
+  margin-bottom: 4px;
 }
 
 .live-tv.is-quad .live-tv-round-duels {
-  gap: 6px;
-  padding-top: 6px;
+  gap: clamp(3px, 0.7vh, 6px);
+  padding-top: 5px;
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  justify-content: space-evenly;
 }
 
 .live-tv.is-quad .live-tv-mini-duel {
-  grid-template-columns: 3.4em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-  align-items: start;
-  gap: 2px 4px;
-  font-size: clamp(1.15rem, 1.85vw, 1.55rem);
+  grid-template-columns: 2.8em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 5px;
+  font-size: clamp(0.9rem, 1.35vw, 1.2rem);
   line-height: 1.2;
+}
+
+.live-tv.is-quad .live-tv-mini-lane {
+  font-size: 0.85em;
+}
+
+.live-tv.is-quad .live-tv-mini-pins {
+  min-width: 1.7em;
+  font-size: 1.05em;
 }
 
 .live-quad-spine {
@@ -2377,7 +2442,7 @@ button.linkish {
 .live-quad-spine-bot {
   justify-content: flex-start;
   align-self: start;
-  padding-top: clamp(2.4rem, 5.2vh, 3.6rem);
+  padding-top: clamp(1.4rem, 3.2vh, 2.4rem);
 }
 
 .live-quad-stat {
@@ -2462,7 +2527,7 @@ button.linkish {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: clamp(1.85rem, 4vw, 3.2rem);
+  font-size: clamp(1.45rem, 3.2vw, 2.6rem);
   line-height: 1.05;
   color: var(--tv-ink);
   overflow: hidden;
