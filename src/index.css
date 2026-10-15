@@ -2216,10 +2216,15 @@ button.linkish {
 .live-tv-mini-duel {
   display: grid;
   grid-template-columns: 2.1em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 4px 6px;
   font-size: clamp(1.05rem, 1.75vw, 1.45rem);
   line-height: 1.3;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-duel {
+  font-size: clamp(1.15rem, 1.95vw, 1.6rem);
+  column-gap: 8px;
 }
 
 .live-tv-mini-lane {
@@ -2244,6 +2249,28 @@ button.linkish {
   hyphens: auto;
 }
 
+.live-tv:not(.is-quad) .live-tv-mini-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  line-height: 1.12;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name.is-home {
+  text-align: left;
+  align-items: flex-start;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name.is-away {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name-line {
+  display: block;
+  min-width: 0;
+}
+
 .live-tv-mini-name.is-away {
   text-align: right;
 }
@@ -2263,6 +2290,13 @@ button.linkish {
   white-space: nowrap;
 }
 
+.live-tv:not(.is-quad) .live-tv-mini-pins {
+  font-size: 1.25em;
+  min-width: 2.35em;
+  text-align: center;
+  justify-self: center;
+}
+
 .live-tv-mini-name,
 .live-tv-mini-pins,
 .live-tv-mini-sep {
@@ -2273,6 +2307,8 @@ button.linkish {
   color: var(--tv-muted);
   opacity: 0.55;
   font-size: 1.05em;
+  text-align: center;
+  justify-self: center;
 }
 
 .live-tv-idle {
@@ -2401,20 +2437,24 @@ button.linkish {
 }
 
 .live-tv.is-quad .live-tv-mini-duel {
-  grid-template-columns: 2.8em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  grid-template-columns: 3em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   align-items: baseline;
-  gap: 2px 5px;
-  font-size: clamp(0.9rem, 1.35vw, 1.2rem);
+  gap: 2px 6px;
+  font-size: clamp(1.15rem, 1.8vw, 1.55rem);
   line-height: 1.2;
 }
 
+.live-tv.is-quad .live-tv-mini-name {
+  font-weight: 550;
+}
+
 .live-tv.is-quad .live-tv-mini-lane {
-  font-size: 0.85em;
+  font-size: 0.82em;
 }
 
 .live-tv.is-quad .live-tv-mini-pins {
-  min-width: 1.7em;
-  font-size: 1.05em;
+  min-width: 2em;
+  font-size: 1.12em;
 }
 
 .live-quad-spine {

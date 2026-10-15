@@ -73,6 +73,34 @@ function duelLead(home: number | null, away: number | null): "home" | "away" | "
   return "tie";
 }
 
+/** Ime in priimek v dveh vrsticah (klasični TV). */
+function splitPersonName(name: string): string[] {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return ["—"];
+  if (parts.length === 1) return [parts[0]!];
+  return [parts[0]!, parts.slice(1).join(" ")];
+}
+
+function TvStackedName({
+  name,
+  side,
+  lead,
+}: {
+  name: string;
+  side: "home" | "away";
+  lead?: boolean;
+}) {
+  return (
+    <span className={`live-tv-mini-name is-${side}${lead ? " is-lead" : ""}`}>
+      {splitPersonName(name).map((line, i) => (
+        <span key={i} className="live-tv-mini-name-line">
+          {line}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const emptyDuels = (names: [string, string][]): DuelRow[] =>
   names.map(([homeName, awayName], i) => ({
     lane: i + 1,
@@ -366,9 +394,13 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
               <span className="live-tv-mini-lane" data-lane={d.lane}>
                 {quad ? `Steza ${d.lane}` : `S${d.lane}`}
               </span>
-              <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
-                {d.homeName}
-              </span>
+              {quad ? (
+                <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
+                  {d.homeName}
+                </span>
+              ) : (
+                <TvStackedName name={d.homeName} side="home" lead={dLead === "home"} />
+              )}
               <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
                 {pinsLabel(d.homePins)}
               </span>
@@ -376,9 +408,13 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
               <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
                 {pinsLabel(d.awayPins)}
               </span>
-              <span className={`live-tv-mini-name is-away${dLead === "away" ? " is-lead" : ""}`}>
-                {d.awayName}
-              </span>
+              {quad ? (
+                <span className={`live-tv-mini-name is-away${dLead === "away" ? " is-lead" : ""}`}>
+                  {d.awayName}
+                </span>
+              ) : (
+                <TvStackedName name={d.awayName} side="away" lead={dLead === "away"} />
+              )}
             </div>
           );
         })}
