@@ -23,6 +23,60 @@ import { useStore } from "./lib/store";
 
 type Page = "schedule" | "results" | "standings" | "players" | "teams" | "training" | "access";
 
+const PAGE_SET = new Set<Page>([
+  "schedule",
+  "results",
+  "standings",
+  "players",
+  "teams",
+  "training",
+  "access",
+]);
+
+type NavState = {
+  page: Page;
+  matchId: string | null;
+  detailTeamId: string | null;
+  trainingSessionId: string | null;
+};
+
+function readNavFromUrl(): NavState {
+  const q = new URLSearchParams(window.location.search);
+  const raw = q.get("page");
+  const page = raw && PAGE_SET.has(raw as Page) ? (raw as Page) : "schedule";
+  return {
+    page,
+    matchId: q.get("match"),
+    detailTeamId: q.get("team"),
+    trainingSessionId: q.get("training"),
+  };
+}
+
+function buildNavUrl(nav: NavState): string {
+  const url = new URL(window.location.href);
+  if (nav.page && nav.page !== "schedule") url.searchParams.set("page", nav.page);
+  else url.searchParams.delete("page");
+  if (nav.matchId) url.searchParams.set("match", nav.matchId);
+  else url.searchParams.delete("match");
+  if (nav.detailTeamId) url.searchParams.set("team", nav.detailTeamId);
+  else url.searchParams.delete("team");
+  if (nav.trainingSessionId) url.searchParams.set("training", nav.trainingSessionId);
+  else url.searchParams.delete("training");
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function writeNavToUrl(nav: NavState, mode: "push" | "replace") {
+  const next = buildNavUrl(nav);
+  const cur = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next === cur) {
+    window.history.replaceState({ ligaNav: true }, "", next);
+    return false;
+  }
+  if (mode === "push") window.history.pushState({ ligaNav: true }, "", next);
+  else window.history.replaceState({ ligaNav: true }, "", next);
+  return true;
+}
+
 export function App() {
   const displayMode = new URLSearchParams(window.location.search).get("display");
   if (displayMode === "live") {
@@ -43,7 +97,7 @@ export function App() {
 }
 
 function LeagueApp() {
-  const { admin, teamId: loginTeamId, teamName } = useAuth();
+  const { admin, teamId: loginTeamId, teamName, ready: authReady } = useAuth();
   const {
     state,
     archived,
@@ -57,15 +111,77 @@ function LeagueApp() {
   const teamCaps = teamPerms(loginTeam);
   const shownSeasons = admin ? seasons : seasons.filter((s) => !s.training);
   const training = Boolean(state.training || seasons.find((s) => s.id === seasonId)?.training);
-  const [page, setPage] = useState<Page>("schedule");
-  const [matchId, setMatchId] = useState<string | null>(null);
-  const [detailTeamId, setDetailTeamId] = useState<string | null>(null);
-  const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
+  const initialNav = useRef(readNavFromUrl()).current;
+  const [page, setPage] = useState<Page>(initialNav.page);
+  const [matchId, setMatchId] = useState<string | null>(initialNav.matchId);
+  const [detailTeamId, setDetailTeamId] = useState<string | null>(initialNav.detailTeamId);
+  const [trainingSessionId, setTrainingSessionId] = useState<string | null>(
+    initialNav.trainingSessionId,
+  );
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(() =>
     new URLSearchParams(window.location.search).get("invite"),
   );
-  const prevLoginTeam = useRef<string | null>(null);
+  /** undefined = še ni bilo prvega auth ticka (osvežitev strani ne sme vreči na razpored). */
+  const prevLoginTeam = useRef<string | null | undefined>(undefined);
+  const navRef = useRef<NavState>(initialNav);
+  navRef.current = { page, matchId, detailTeamId, trainingSessionId };
+  /** Koliko naših pushState vnosov — da Nazaj ne zapusti aplikacije. */
+  const navDepthRef = useRef(0);
+
+  const commitNav = (next: NavState, mode: "push" | "replace") => {
+    setPage(next.page);
+    setMatchId(next.matchId);
+    setDetailTeamId(next.detailTeamId);
+    setTrainingSessionId(next.trainingSessionId);
+    navRef.current = next;
+    if (writeNavToUrl(next, mode) && mode === "push") navDepthRef.current += 1;
+  };
+
+  const go = (next: Page, mode: "push" | "replace" = "push") => {
+    commitNav(
+      {
+        page: next,
+        matchId: null,
+        detailTeamId: null,
+        trainingSessionId: navRef.current.trainingSessionId,
+      },
+      mode,
+    );
+  };
+
+  const openMatch = (id: string) => {
+    commitNav({ ...navRef.current, matchId: id, detailTeamId: null }, "push");
+  };
+
+  const openTeam = (id: string) => {
+    commitNav({ ...navRef.current, page: "teams", detailTeamId: id, matchId: null }, "push");
+  };
+
+  const navigateBack = (fallback: () => void) => {
+    if (navDepthRef.current > 0) window.history.back();
+    else fallback();
+  };
+
+  const openTraining = (id: string | null) => {
+    if (id) commitNav({ ...navRef.current, trainingSessionId: id }, "push");
+    else navigateBack(() => commitNav({ ...navRef.current, trainingSessionId: null }, "replace"));
+  };
+
+  useEffect(() => {
+    window.history.replaceState({ ligaNav: true }, "", window.location.href);
+    const onPop = () => {
+      navDepthRef.current = Math.max(0, navDepthRef.current - 1);
+      const nav = readNavFromUrl();
+      navRef.current = nav;
+      setPage(nav.page);
+      setMatchId(nav.matchId);
+      setDetailTeamId(nav.detailTeamId);
+      setTrainingSessionId(nav.trainingSessionId);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   useEffect(() => {
     if (sessionStorage.getItem("liga-skip-setup")) {
@@ -78,12 +194,6 @@ function LeagueApp() {
       .catch(() => setSetupNeeded(false));
   }, []);
 
-  const go = (next: Page) => {
-    setPage(next);
-    setMatchId(null);
-    setDetailTeamId(null);
-  };
-
   const startNewSeason = async () => {
     const title = window.prompt("Ime nove sezone (npr. 2027/2028)", "");
     if (title == null) return;
@@ -93,15 +203,26 @@ function LeagueApp() {
   };
 
   useEffect(() => {
-    if (page === "training") setPage("teams");
-    if (canEdit) return;
-    if (page === "access") setPage("schedule");
-    if (page === "teams" && !loginTeamId) {
-      setPage("schedule");
-      setDetailTeamId(null);
+    if (!authReady) return;
+    const cur = navRef.current;
+    if (cur.page === "training") {
+      commitNav({ ...cur, page: "teams" }, "replace");
+      return;
     }
-    if (!admin && !loginTeamId && page === "schedule") setMatchId(null);
-  }, [admin, canEdit, loginTeamId, page]);
+    if (canEdit) return;
+    if (cur.page === "access") {
+      commitNav({ ...cur, page: "schedule", matchId: null, detailTeamId: null }, "replace");
+      return;
+    }
+    if (cur.page === "teams" && !loginTeamId) {
+      commitNav({ ...cur, page: "schedule", detailTeamId: null }, "replace");
+      return;
+    }
+    // Gost brez ekipe ne odpre vpisa — šele ko auth ve, da ni prijave.
+    if (!admin && !loginTeamId && cur.page === "schedule" && cur.matchId) {
+      commitNav({ ...cur, matchId: null }, "replace");
+    }
+  }, [authReady, admin, canEdit, loginTeamId, page, matchId]);
 
   useEffect(() => {
     if (admin || !training) return;
@@ -110,7 +231,11 @@ function LeagueApp() {
   }, [admin, training, seasons, seasonId, loadSeason]);
 
   useEffect(() => {
-    if (!prevLoginTeam.current && loginTeamId) go("schedule");
+    if (prevLoginTeam.current === undefined) {
+      prevLoginTeam.current = loginTeamId;
+      return;
+    }
+    if (!prevLoginTeam.current && loginTeamId) go("schedule", "replace");
     prevLoginTeam.current = loginTeamId;
   }, [loginTeamId]);
 
@@ -203,8 +328,10 @@ function LeagueApp() {
             sessionId={trainingSessionId}
             ownerTeamId={null}
             canPickTeam={false}
-            onOpen={setTrainingSessionId}
-            onBack={() => setTrainingSessionId(null)}
+            onOpen={openTraining}
+            onBack={() =>
+              navigateBack(() => commitNav({ ...navRef.current, trainingSessionId: null }, "replace"))
+            }
           />
         ) : (
           <>
@@ -233,7 +360,7 @@ function LeagueApp() {
         {page === "schedule" && !matchId && (
           <Matches
             mode="schedule"
-            onOpen={canEdit || canOpenTeamMatch(loginTeam) ? setMatchId : undefined}
+            onOpen={canEdit || canOpenTeamMatch(loginTeam) ? openMatch : undefined}
             canOpen={
               canEdit
                 ? undefined
@@ -248,14 +375,16 @@ function LeagueApp() {
         )}
         {page === "results" && !matchId && (
           <>
-            <Matches mode="results" onOpen={setMatchId} />
+            <Matches mode="results" onOpen={openMatch} />
             <PdfButton label="Izvozi PDF rezultatov" onExport={() => exportResultsPdf(state)} />
           </>
         )}
         {(page === "schedule" || page === "results") && matchId && (
           <MatchEntry
             matchId={matchId}
-            onBack={() => setMatchId(null)}
+            onBack={() =>
+              navigateBack(() => commitNav({ ...navRef.current, matchId: null }, "replace"))
+            }
             readOnly={!canEdit && !loginTeamId}
             lineupTeamId={canEdit ? null : loginTeamId}
           />
@@ -274,12 +403,14 @@ function LeagueApp() {
         )}
         {page === "access" && canEdit && <TeamAccess />}
         {(canEdit || teamCaps.season) && page === "teams" && !detailTeamId && (
-          <Teams onOpen={setDetailTeamId} />
+          <Teams onOpen={openTeam} />
         )}
         {(canEdit || teamCaps.season) && page === "teams" && detailTeamId && (
           <TeamDetail
             teamId={detailTeamId}
-            onBack={() => setDetailTeamId(null)}
+            onBack={() =>
+              navigateBack(() => commitNav({ ...navRef.current, detailTeamId: null }, "replace"))
+            }
             canManage={canEdit}
             canRoster={canEdit || canTeam(loginTeam, "roster")}
             showTraining={canEdit || detailTeamId === loginTeamId}
@@ -288,7 +419,7 @@ function LeagueApp() {
         {Boolean(loginTeamId) && !teamCaps.season && !canEdit && page === "teams" && (
           <TeamDetail
             teamId={loginTeamId!}
-            onBack={() => go("schedule")}
+            onBack={() => navigateBack(() => go("schedule", "replace"))}
             backLabel="← Razpored"
             canManage={false}
             canRoster={canTeam(loginTeam, "roster")}
