@@ -330,7 +330,6 @@ export function MatchEntry({
                 <th>Domači</th>
                 <th>Rez.</th>
                 <th>T</th>
-                <th>T</th>
                 <th>Rez.</th>
                 <th>Gostje</th>
               </tr>
@@ -342,9 +341,9 @@ export function MatchEntry({
                 const awayPlayers = awayRoster.filter((p) => awayNom.includes(p.id));
                 const slots = pair[gi];
                 return (
-                  <tr key={gi}>
-                    <td className="mono" data-label="Steza">{game.lane}</td>
-                    <td data-label="Domači">
+                  <tr key={gi} className="duel-row">
+                    <td className="mono duel-lane" data-label="Steza">{game.lane}</td>
+                    <td className="duel-home" data-label="Domači">
                       <span className="player-pick">
                         <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
                         {lockRoundPlayers ? (
@@ -364,7 +363,7 @@ export function MatchEntry({
                         )}
                       </span>
                     </td>
-                    <td className="mono" data-label="Keglji (domači)">
+                    <td className="mono duel-pins-home" data-label="Keglji">
                       <PinField
                         raw={game.homePins}
                         player={homeRoster.find((p) => p.id === game.homePlayerId)}
@@ -376,13 +375,18 @@ export function MatchEntry({
                         onChange={(pins) => setPins(match.id, ri, gi, "home", pins)}
                       />
                     </td>
-                    <td className="mono t-cell" data-label="T domači">
-                      {duel ? duel.homeTotal : "—"}
+                    <td className="mono t-cell t-duel" data-label="T">
+                      {duel ? (
+                        <>
+                          <span>{duel.homeTotal}</span>
+                          <span className="t-sep">:</span>
+                          <span>{duel.awayTotal}</span>
+                        </>
+                      ) : (
+                        "—"
+                      )}
                     </td>
-                    <td className="mono t-cell" data-label="T gostje">
-                      {duel ? duel.awayTotal : "—"}
-                    </td>
-                    <td className="mono" data-label="Keglji (gostje)">
+                    <td className="mono duel-pins-away" data-label="Keglji">
                       <PinField
                         raw={game.awayPins}
                         player={awayRoster.find((p) => p.id === game.awayPlayerId)}
@@ -394,7 +398,7 @@ export function MatchEntry({
                         onChange={(pins) => setPins(match.id, ri, gi, "away", pins)}
                       />
                     </td>
-                    <td data-label="Gostje">
+                    <td className="duel-away" data-label="Gostje">
                       <span className="player-pick">
                         <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
                         {lockRoundPlayers ? (

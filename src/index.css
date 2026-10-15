@@ -275,6 +275,17 @@ a {
   width: 2.4rem;
 }
 
+.scorecard .t-duel {
+  width: 4.2rem;
+  white-space: nowrap;
+}
+
+.scorecard .t-duel .t-sep {
+  opacity: 0.55;
+  margin: 0 0.1em;
+  font-weight: 500;
+}
+
 .slot-tag {
   display: inline-block;
   min-width: 1.6rem;
@@ -1383,21 +1394,26 @@ button.linkish {
   }
 
   .scorecard table,
-  .scorecard tbody,
-  .scorecard tr,
-  .scorecard td {
+  .scorecard tbody {
     display: block;
     width: 100%;
   }
 
-  .scorecard tr {
+  /* Seštevek spodaj: klasični stacked cardi */
+  .scorecard.match-summary tr,
+  .scorecard.match-summary td {
+    display: block;
+    width: 100%;
+  }
+
+  .scorecard.match-summary tr {
     border: 1px solid #c5cbe8;
     border-radius: 8px;
     margin-bottom: 10px;
     padding: 6px 8px 2px;
   }
 
-  .scorecard td {
+  .scorecard.match-summary td {
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -1406,7 +1422,7 @@ button.linkish {
     padding: 8px 0;
   }
 
-  .scorecard td::before {
+  .scorecard.match-summary td::before {
     content: attr(data-label);
     font-size: 11px;
     letter-spacing: 0.06em;
@@ -1414,8 +1430,105 @@ button.linkish {
     color: #5a64a0;
   }
 
-  .scorecard td:not([data-label])::before {
+  .scorecard.match-summary td:not([data-label])::before {
     display: none;
+  }
+
+  /* Dvoboji: kompaktna kartica domači | T | gostje */
+  .scorecard:not(.match-summary) tr.duel-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 3.6rem minmax(0, 1fr);
+    grid-template-areas:
+      "lane lane score"
+      "home . away"
+      "ph . pa";
+    column-gap: 8px;
+    row-gap: 8px;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #c5cbe8;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    padding: 10px 12px 12px;
+    background: rgba(255, 255, 255, 0.35);
+  }
+
+  .scorecard:not(.match-summary) tr.duel-row td {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    border: 0;
+    padding: 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .scorecard:not(.match-summary) tr.duel-row td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #5a64a0;
+  }
+
+  .scorecard:not(.match-summary) .duel-lane {
+    grid-area: lane;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 1.05rem;
+    font-weight: 650;
+  }
+
+  .scorecard:not(.match-summary) .duel-lane::before {
+    margin: 0;
+  }
+
+  .scorecard:not(.match-summary) .duel-home {
+    grid-area: home;
+  }
+
+  .scorecard:not(.match-summary) .duel-pins-home {
+    grid-area: ph;
+  }
+
+  .scorecard:not(.match-summary) .t-duel {
+    grid-area: score;
+    width: auto;
+    min-height: 2.4rem;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    gap: 0;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    padding: 6px 4px;
+  }
+
+  .scorecard:not(.match-summary) .t-duel::before {
+    display: none;
+  }
+
+  .scorecard:not(.match-summary) .duel-pins-away {
+    grid-area: pa;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .scorecard:not(.match-summary) .duel-away {
+    grid-area: away;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .scorecard:not(.match-summary) .duel-away .player-pick {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+  }
+
+  .scorecard:not(.match-summary) .duel-away .player-pick select {
+    text-align: right;
   }
 
   .scorecard input,
@@ -1425,8 +1538,16 @@ button.linkish {
     width: 100%;
   }
 
+  .pin-entry {
+    width: 100%;
+  }
+
   .pin-entry input {
     max-width: none;
+  }
+
+  .duel-pins-away .pin-entry {
+    flex-direction: row-reverse;
   }
 
   .player-pick {
