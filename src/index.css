@@ -1863,6 +1863,79 @@ button.linkish {
   padding: clamp(8px, 1.2vh, 14px) clamp(8px, 1.1vw, 12px);
 }
 
+/* Klasično okno (ne cel zaslon): dvigni Po krogih, da S1–S4 ostanejo v viewportu. */
+.live-tv:not(.is-quad):not(.is-fullscreen) {
+  gap: clamp(2px, 0.55vh, 8px);
+  padding-top: clamp(8px, 1.1vh, 14px);
+  padding-bottom: clamp(6px, 0.9vh, 12px);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-scoreboard {
+  padding: 0;
+  flex-shrink: 1;
+  min-height: 0;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-team {
+  font-size: clamp(2rem, 5.5vw, 4rem);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-score {
+  font-size: clamp(2.6rem, 7vw, 5.25rem);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stat-block strong {
+  font-size: clamp(1.45rem, 2.8vw, 2.25rem);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stats-featured {
+  margin-top: 2px;
+  gap: 2px 14px;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stats-featured.is-bottom {
+  margin-top: 2px;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round {
+  gap: 4px;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-head {
+  padding-bottom: 3px;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-head h2 {
+  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card {
+  padding: clamp(5px, 0.8vh, 10px) clamp(6px, 1vw, 10px);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-num {
+  margin-bottom: 2px;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-score {
+  font-size: clamp(1.7rem, 3.2vw, 2.55rem);
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-duels {
+  gap: 3px;
+  padding-top: 4px;
+  justify-content: space-evenly;
+}
+
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
+  line-height: 1.08;
+}
+
+/* Predogled: prostor za spodnji overlay, da ne prekrije zadnje vrstice. */
+body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
+  padding-bottom: 4.75rem;
+}
+
 .live-tv-pulse {
   width: 10px;
   height: 10px;
