@@ -111,12 +111,11 @@ export async function handleLeague(req, res) {
         return;
       }
       if (body.action === "saveGame") {
-        const teamId = viewer.teamId;
-        if (!teamId) {
+        if (!viewer.admin && !viewer.teamId) {
           json(res, 401, { ok: false });
           return;
         }
-        const current = await saveMatchGame(sql, teamId, body, body.id);
+        const current = await saveMatchGame(sql, viewer, body, body.id);
         if (!current) {
           json(res, 409, { ok: false });
           return;

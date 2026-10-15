@@ -104,6 +104,8 @@ type Store = {
     side: "home" | "away",
     playerId: string,
   ) => void;
+  /** Osveži tekme/igralce iz baze (za hkratni vpis). Vrne false, če ni oddaljeno. */
+  syncFromRemote: () => Promise<boolean>;
   resetDemo: () => void;
   loadSeason2025: () => Promise<void>;
   newEmptySeason: (title: string) => Promise<void>;
@@ -251,6 +253,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState((s) => {
       if (archivedRef.current) return s;
       return persist(recipe(s));
+    });
+  };
+
+  /** Lokalni popravek brez celotnega saveLeague — za keglje/igralce na tekmi. */
+  const touchLocal = (recipe: (s: LeagueState) => LeagueState) => {
+    setState((s) => {
+      if (archivedRef.current) return s;
+      const packed = compactTrainings(recipe(s));
+      stateRef.current = packed;
+      if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
+        vaultRef.current = writeCurrent(vaultRef.current, packed);
+        setSeasons(vaultInfos(vaultRef.current));
+      } else {
+        saveState(packed);
+      }
+      return packed;
+    });
+  };
+
+  const applyRemoteMatches = (data: LeagueState) => {
+    setState((s) => {
+      const next = {
+        ...s,
+        matches: data.matches,
+        players: data.players,
+        teams: data.teams,
+      };
+      stateRef.current = next;
+      saveState(next);
+      return next;
     });
   };
 
@@ -466,7 +498,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             match.rounds[roundIndex]?.games[gameIndex]?.[side === "home" ? "homePins" : "awayPins"] ?? null;
           if (!canEnterPins(stateRef.current.teams.find((t) => t.id === team), existing)) return;
         }
-        update((s) => ({
+        // Ne shranjuj cele sezone — sicer starejši zavihek prepiše sveže keglje.
+        clearTimeout(saveTimer.current);
+        touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
             if (m.id !== matchId) return m;
@@ -485,7 +519,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             return { ...m, rounds, status: filled ? "done" : "scheduled" };
           }),
         }));
-        if (remoteRef.current && team && seasonIdRef.current) {
+        if (remoteRef.current && seasonIdRef.current) {
+          // Ne apply-aj odziva tukaj — hitro tipkanje bi sicer lahko prepisalo novejšo lokalno vrednost.
           void saveMatchGame(seasonIdRef.current, { matchId, roundIndex, gameIndex, side, pins });
         }
       },
@@ -496,7 +531,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const match = stateRef.current.matches.find((m) => m.id === matchId);
           if (!match || teamMatchSide(match, team) !== side) return;
         }
-        update((s) => ({
+        clearTimeout(saveTimer.current);
+        touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
             if (m.id !== matchId) return m;
@@ -522,9 +558,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             };
           }),
         }));
-        if (remoteRef.current && team && seasonIdRef.current) {
-          void saveMatchGame(seasonIdRef.current, { matchId, roundIndex, gameIndex, side, playerId });
+        if (remoteRef.current && seasonIdRef.current) {
+          void saveMatchGame(seasonIdRef.current, {
+            matchId,
+            roundIndex,
+            gameIndex,
+            side,
+            playerId,
+          });
         }
+      },
+      syncFromRemote: async () => {
+        if (!remoteRef.current || !seasonIdRef.current || archivedRef.current) return false;
+        try {
+          const payload = await fetchLeague(seasonIdRef.current);
+          if (payload.storage === "db" && payload.current?.data) {
+            applyRemoteMatches(payload.current.data);
+            return true;
+          }
+        } catch {
+          return false;
+        }
+        return false;
       },
       resetDemo: () => update(() => createSeed()),
       loadSeason2025: async () => {

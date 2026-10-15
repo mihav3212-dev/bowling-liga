@@ -95,14 +95,15 @@ export async function saveMatchGame(
     pins?: number | null;
     playerId?: string;
   },
-): Promise<boolean> {
+): Promise<LeaguePayload | null> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "saveGame", id, ...patch }),
   });
-  return res.ok;
+  if (!res.ok) return null;
+  return (await res.json()) as LeaguePayload;
 }
 
 export async function saveTeamRoster(

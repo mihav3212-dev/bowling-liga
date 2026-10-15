@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
@@ -8,6 +8,9 @@ import { lineupLocked, matchTotals, scoreGame, scoredPins } from "../lib/scoring
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
 import type { Player } from "../lib/types";
+
+/** Kot TV: hitro osveževanje, da vsi vidijo isto vpisano. */
+const MATCH_SYNC_MS = 800;
 
 function playerName(roster: Player[], id: string): string {
   const player = roster.find((p) => p.id === id);
@@ -19,11 +22,13 @@ export function PinField({
   player,
   readOnly,
   onChange,
+  onEditingChange,
 }: {
   raw: number | null;
   player?: Player;
   readOnly: boolean;
   onChange: (pins: number | null) => void;
+  onEditingChange?: (editing: boolean) => void;
 }) {
   const final = scoredPins(raw, player);
   if (readOnly) return <>{final ?? "—"}</>;
@@ -35,6 +40,8 @@ export function PinField({
         inputMode="numeric"
         value={raw ?? ""}
         onChange={(e) => onChange(parsePins(e.target.value))}
+        onFocus={() => onEditingChange?.(true)}
+        onBlur={() => onEditingChange?.(false)}
       />
       {showAdj ? <span className="pin-adj">({final})</span> : null}
     </span>
@@ -165,8 +172,28 @@ export function MatchEntry({
   readOnly?: boolean;
   lineupTeamId?: string | null;
 }) {
-  const { state, setLineup, setPins, setRoundPlayer, saveMatchLineupNow } = useStore();
+  const { state, remote, setLineup, setPins, setRoundPlayer, saveMatchLineupNow, syncFromRemote } =
+    useStore();
+  const editingPinsRef = useRef(false);
+  const syncRef = useRef(syncFromRemote);
+  syncRef.current = syncFromRemote;
   const match = state.matches.find((m) => m.id === matchId);
+
+  useEffect(() => {
+    if (!remote) return;
+    let cancelled = false;
+    const tick = async () => {
+      if (cancelled || editingPinsRef.current) return;
+      await syncRef.current();
+    };
+    void tick();
+    const poll = window.setInterval(() => void tick(), MATCH_SYNC_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, [remote, matchId]);
+
   if (!match) return <p>Tekma ne obstaja.</p>;
   const ownSide = teamMatchSide(match, lineupTeamId);
   const viewerTeam = lineupTeamId ? state.teams.find((t) => t.id === lineupTeamId) : undefined;
@@ -373,6 +400,9 @@ export function MatchEntry({
                             !canEnterPins(viewerTeam, game.homePins))
                         }
                         onChange={(pins) => setPins(match.id, ri, gi, "home", pins)}
+                        onEditingChange={(editing) => {
+                          editingPinsRef.current = editing;
+                        }}
                       />
                     </td>
                     <td className="mono t-cell t-duel" data-label="T">
@@ -396,6 +426,9 @@ export function MatchEntry({
                             !canEnterPins(viewerTeam, game.awayPins))
                         }
                         onChange={(pins) => setPins(match.id, ri, gi, "away", pins)}
+                        onEditingChange={(editing) => {
+                          editingPinsRef.current = editing;
+                        }}
                       />
                     </td>
                     <td className="duel-away" data-label="Gostje">

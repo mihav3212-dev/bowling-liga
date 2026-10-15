@@ -300,51 +300,126 @@ export async function saveMatchLineup(pool, teamId, matchId, side, starters, ben
   return ok ? getSeason(pool, current.id) : null;
 }
 
-export async function saveMatchGame(pool, teamId, patch, seasonId) {
-  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
-  if (!current || current.archived) return null;
-  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
-  if (!team) return null;
-  const matches = [...(current.data.matches ?? [])];
-  const index = matches.findIndex((match) => match.id === patch.matchId);
-  if (index < 0) return null;
-  const match = matches[index];
-  if (teamMatchSide(match, teamId) == null) return null;
-  const ri = Number(patch.roundIndex);
-  const gi = Number(patch.gameIndex);
-  const game = match.rounds?.[ri]?.games?.[gi];
-  if (!game || (patch.side !== "home" && patch.side !== "away")) return null;
-  const nextGame = { ...game };
-  if ("pins" in patch) {
-    const key = patch.side === "home" ? "homePins" : "awayPins";
-    if (!canEnterPins(team, game[key] ?? null)) return null;
-    nextGame[key] = patch.pins;
+/**
+ * Shrani eno celico (keglji / igralec). Admin sme vse strani; ekipa samo svojo.
+ * FOR UPDATE prepreči, da dva hkratna vpisa drug drugemu zbrišeta polja.
+ */
+export async function saveMatchGame(pool, viewer, patch, seasonId) {
+  const admin = Boolean(viewer?.admin);
+  const teamId = viewer?.teamId || null;
+  if (!admin && !teamId) return null;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    let id = seasonId;
+    if (!id) {
+      const [ids] = await conn.execute(
+        `SELECT id FROM seasons WHERE archived_at IS NULL ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
+      );
+      id = ids[0]?.id;
+    }
+    if (!id) {
+      await conn.rollback();
+      return null;
+    }
+    const [rows] = await conn.execute(
+      `SELECT * FROM seasons WHERE id = ? AND archived_at IS NULL FOR UPDATE`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) {
+      await conn.rollback();
+      return null;
+    }
+    const current = asSeason(row);
+    const team = teamId ? (current.data.teams ?? []).find((item) => item.id === teamId) : null;
+    if (!admin && !team) {
+      await conn.rollback();
+      return null;
+    }
+    const matches = [...(current.data.matches ?? [])];
+    const index = matches.findIndex((match) => match.id === patch.matchId);
+    if (index < 0) {
+      await conn.rollback();
+      return null;
+    }
+    const match = matches[index];
+    if (!admin && teamMatchSide(match, teamId) == null) {
+      await conn.rollback();
+      return null;
+    }
+    const ri = Number(patch.roundIndex);
+    const gi = Number(patch.gameIndex);
+    const game = match.rounds?.[ri]?.games?.[gi];
+    if (!game || (patch.side !== "home" && patch.side !== "away")) {
+      await conn.rollback();
+      return null;
+    }
+    const nextGame = { ...game };
+    if ("pins" in patch) {
+      const key = patch.side === "home" ? "homePins" : "awayPins";
+      if (!admin && !canEnterPins(team, game[key] ?? null)) {
+        await conn.rollback();
+        return null;
+      }
+      nextGame[key] = patch.pins;
+    }
+    if ("playerId" in patch) {
+      if (!admin) {
+        if (!teamPerms(team).lineup) {
+          await conn.rollback();
+          return null;
+        }
+        if (teamMatchSide(match, teamId) !== patch.side) {
+          await conn.rollback();
+          return null;
+        }
+      }
+      if (ri === 0 && lineupLocked(match.rounds)) {
+        await conn.rollback();
+        return null;
+      }
+      const pid = patch.playerId || "";
+      const starters = patch.side === "home" ? match.homeStarters : match.awayStarters;
+      const bench = patch.side === "home" ? match.homeBench : match.awayBench;
+      const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
+      if (pid && !allowed.has(pid)) {
+        await conn.rollback();
+        return null;
+      }
+      if (patch.side === "home") nextGame.homePlayerId = pid;
+      else nextGame.awayPlayerId = pid;
+    }
+    const rounds = match.rounds.map((round, r) =>
+      r !== ri
+        ? round
+        : {
+            games: round.games.map((item, g) => (g !== gi ? item : nextGame)),
+          },
+    );
+    const filled = rounds.every((round) =>
+      round.games.every((item) => item.homePins != null && item.awayPins != null),
+    );
+    matches[index] = { ...match, rounds, status: filled ? "done" : "scheduled" };
+    const nextData = { ...current.data, matches };
+    const payload = preserveSecrets(asState(nextData), current.data, { lockPerms: !admin });
+    await conn.execute(
+      "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+      [dump(payload), id],
+    );
+    await conn.commit();
+    return getSeason(pool, id);
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  } finally {
+    conn.release();
   }
-  if ("playerId" in patch) {
-    if (!teamPerms(team).lineup) return null;
-    if (teamMatchSide(match, teamId) !== patch.side) return null;
-    if (ri === 0 && lineupLocked(match.rounds)) return null;
-    const pid = patch.playerId || "";
-    const starters = patch.side === "home" ? match.homeStarters : match.awayStarters;
-    const bench = patch.side === "home" ? match.homeBench : match.awayBench;
-    const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
-    if (pid && !allowed.has(pid)) return null;
-    if (patch.side === "home") nextGame.homePlayerId = pid;
-    else nextGame.awayPlayerId = pid;
-  }
-  const rounds = match.rounds.map((round, r) =>
-    r !== ri
-      ? round
-      : {
-          games: round.games.map((item, g) => (g !== gi ? item : nextGame)),
-        },
-  );
-  const filled = rounds.every((round) =>
-    round.games.every((item) => item.homePins != null && item.awayPins != null),
-  );
-  matches[index] = { ...match, rounds, status: filled ? "done" : "scheduled" };
-  const ok = await saveSeason(pool, current.id, { ...current.data, matches });
-  return ok ? getSeason(pool, current.id) : null;
 }
 
 export async function saveTeamRoster(pool, teamId, roster, seasonId) {
