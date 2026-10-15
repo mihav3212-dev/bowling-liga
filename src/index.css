@@ -2208,13 +2208,19 @@ button.linkish {
   min-height: 0;
 }
 
-/* Cel zaslon (klasično): vsi kvadratki enake višine kot prvi. */
+/* Cel zaslon (klasično): vsi kvadratki enake višine, dvoboji raztegnjeni. */
 .live-tv.is-fullscreen:not(.is-quad) .live-tv-rounds-grid {
   align-items: stretch;
 }
 
 .live-tv.is-fullscreen:not(.is-quad) .live-tv-round-card {
   height: 100%;
+}
+
+.live-tv.is-fullscreen:not(.is-quad) .live-tv-round-duels {
+  gap: clamp(10px, 1.8vh, 18px);
+  justify-content: space-evenly;
+  padding-top: clamp(10px, 1.4vh, 14px);
 }
 
 .live-tv-mini-duel {
@@ -2305,23 +2311,27 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-pins {
-  font-size: 1.15em;
-  min-width: 2.05em;
+  font-size: 1.35em;
+  min-width: 2.3em;
   text-align: center;
   justify-self: center;
 }
 
+.live-tv:not(.is-quad) .live-tv-mini-sep {
+  font-size: 1.15em;
+}
+
 .live-tv:not(.is-quad) .live-tv-round-card-score {
-  font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+  font-size: clamp(1.75rem, 3.3vw, 2.65rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-meta,
 .live-tv:not(.is-quad) .live-tv-round-card-pins {
-  font-size: clamp(0.8rem, 1.2vw, 1rem);
+  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
-  gap: 5px;
+  gap: 8px;
   padding-top: 8px;
 }
 
