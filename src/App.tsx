@@ -100,11 +100,13 @@ function LeagueApp() {
   const { admin, teamId: loginTeamId, teamName, ready: authReady } = useAuth();
   const {
     state,
+    remote,
     archived,
     newEmptySeason,
     seasons,
     seasonId,
     loadSeason,
+    syncFromRemote,
   } = useStore();
   const canEdit = admin && !archived;
   const loginTeam = state.teams.find((team) => team.id === loginTeamId);
@@ -128,6 +130,22 @@ function LeagueApp() {
   navRef.current = { page, matchId, detailTeamId, trainingSessionId };
   /** Koliko naših pushState vnosov — da Nazaj ne zapusti aplikacije. */
   const navDepthRef = useRef(0);
+  const syncRef = useRef(syncFromRemote);
+  syncRef.current = syncFromRemote;
+
+  /** Ob preklopu zavihka naloži sveže rezultate/lestvico iz baze. */
+  useEffect(() => {
+    if (!remote || matchId || detailTeamId || trainingSessionId) return;
+    if (
+      page === "schedule" ||
+      page === "results" ||
+      page === "standings" ||
+      page === "players" ||
+      page === "teams"
+    ) {
+      void syncRef.current();
+    }
+  }, [remote, page, matchId, detailTeamId, trainingSessionId]);
 
   const commitNav = (next: NavState, mode: "push" | "replace") => {
     setPage(next.page);

@@ -272,20 +272,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const applyRemoteMatches = (data: LeagueState) => {
-    setState((s) => {
-      const next = {
-        ...s,
-        matches: data.matches,
-        players: data.players,
-        teams: data.teams,
-      };
-      stateRef.current = next;
-      saveState(next);
-      return next;
-    });
-  };
-
   const viewerMayRoster = () => {
     const viewer = viewerTeamRef.current;
     if (!viewer) return true;
@@ -572,8 +558,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!remoteRef.current || !seasonIdRef.current || archivedRef.current) return false;
         try {
           const payload = await fetchLeague(seasonIdRef.current);
-          if (payload.storage === "db" && payload.current?.data) {
-            applyRemoteMatches(payload.current.data);
+          if (payload.storage === "db" && payload.current) {
+            applyRemote(payload);
             return true;
           }
         } catch {
