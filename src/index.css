@@ -1818,16 +1818,32 @@ button.linkish {
   gap: clamp(8px, 2vw, 24px);
 }
 
+.live-tv:not(.is-quad) .live-tv-side-label {
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+}
+
 .live-tv:not(.is-quad) .live-tv-team {
-  font-size: clamp(1.85rem, 5vw, 3.8rem);
+  font-size: clamp(2.3rem, 6.25vw, 4.75rem);
+}
+
+.live-tv:not(.is-quad) .live-tv-score-label {
+  font-size: clamp(1.25rem, 2.25vw, 1.625rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-score {
-  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  font-size: clamp(3.25rem, 8.75vw, 6.875rem);
+}
+
+.live-tv:not(.is-quad) .live-tv-stat-label {
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stat-block strong {
-  font-size: clamp(1.35rem, 2.6vw, 2.15rem);
+  font-size: clamp(1.7rem, 3.25vw, 2.7rem);
+}
+
+.live-tv:not(.is-quad) .live-tv-stats-minor {
+  font-size: clamp(1.3rem, 2vw, 1.55rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stats-featured {
@@ -2322,12 +2338,12 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-score {
-  font-size: clamp(1.75rem, 3.3vw, 2.65rem);
+  font-size: clamp(2.1rem, 3.9vw, 3.2rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-meta,
 .live-tv:not(.is-quad) .live-tv-round-card-pins {
-  font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
@@ -2536,13 +2552,13 @@ button.linkish {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1.25rem, 2.1vw, 1.65rem);
+  font-size: clamp(1.4rem, 2.35vw, 1.85rem);
 }
 
 .live-quad-stat strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(2.15rem, 4.2vw, 3.2rem);
+  font-size: clamp(2.55rem, 5vw, 3.85rem);
   line-height: 1;
   color: var(--tv-ink);
 }
@@ -2556,11 +2572,11 @@ button.linkish {
 }
 
 .live-quad-stat.is-featured > span {
-  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+  font-size: clamp(1.55rem, 2.6vw, 2.05rem);
 }
 
 .live-quad-stat.is-featured strong {
-  font-size: clamp(2.55rem, 5vw, 3.8rem);
+  font-size: clamp(3.05rem, 6vw, 4.55rem);
 }
 
 /* Velikost po mestu: sredina ostane velika, spodaj manjša — tudi po zamenjavi. */
@@ -2605,7 +2621,7 @@ button.linkish {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: clamp(1.45rem, 3.2vw, 2.6rem);
+  font-size: clamp(1.8rem, 4vw, 3.25rem);
   line-height: 1.05;
   color: var(--tv-ink);
   overflow: hidden;
@@ -2615,7 +2631,7 @@ button.linkish {
   font-weight: 600;
   letter-spacing: 0.14em;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+  font-size: clamp(1rem, 1.65vw, 1.3rem);
   line-height: 1;
   white-space: nowrap;
 }
