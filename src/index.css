@@ -1437,9 +1437,9 @@ button.linkish {
   /* Dvoboji: kompaktna kartica domači | T | gostje */
   .scorecard:not(.match-summary) tr.duel-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 3.6rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     grid-template-areas:
-      "lane lane score"
+      "lane score ."
       "home . away"
       "ph . pa";
     column-gap: 8px;
@@ -1493,21 +1493,30 @@ button.linkish {
     grid-area: ph;
   }
 
-  .scorecard:not(.match-summary) .t-duel {
+  .scorecard:not(.match-summary) tr.duel-row td.t-duel {
     grid-area: score;
+    justify-self: center;
     width: auto;
-    min-height: 2.4rem;
+    min-width: 3.75rem;
+    min-height: 2.25rem;
+    flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
-    flex-direction: row;
     gap: 0;
     border-radius: 8px;
-    font-size: 1.05rem;
-    padding: 6px 4px;
+    font-size: 1.1rem;
+    line-height: 1;
+    padding: 8px 12px;
+    white-space: nowrap;
   }
 
-  .scorecard:not(.match-summary) .t-duel::before {
+  .scorecard:not(.match-summary) tr.duel-row td.t-duel::before {
     display: none;
+  }
+
+  .scorecard:not(.match-summary) tr.duel-row td.t-duel .t-sep {
+    margin: 0 0.2em;
   }
 
   .scorecard:not(.match-summary) .duel-pins-away {
