@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildLiveMatchView, pickLiveBoardMatch } from "./liveBoard";
+import {
+  FINAL_SCORE_HOLD_MS,
+  buildLiveMatchView,
+  pickLiveBoardMatch,
+  withFinalScoreHold,
+} from "./liveBoard";
 import { emptyRounds } from "./pairings";
 import type { LeagueState, Match, Player, Team } from "./types";
 
@@ -71,6 +76,37 @@ describe("pickLiveBoardMatch", () => {
     const pick = pickLiveBoardMatch([done, open], players, now);
     expect(pick.status).toBe("live");
     if (pick.status !== "idle") expect(pick.match.id).toBe("open");
+  });
+
+  it("holds the just-finished match so final points stay on TV before switching", () => {
+    const start = "2026-10-13T17:00:00.000Z";
+    const now = new Date("2026-10-13T17:30:00.000Z").getTime();
+    const done = matchAt(start, { id: "done", status: "done" });
+    done.rounds = done.rounds.map((round) => ({
+      games: round.games.map((g) => ({ ...g, homePins: 180, awayPins: 160 })),
+    }));
+    const open = matchAt(start, { id: "open" });
+    const base = pickLiveBoardMatch([done, open], players, now);
+    expect(base.status).toBe("live");
+    if (base.status !== "idle") expect(base.match.id).toBe("open");
+
+    const held = withFinalScoreHold(base, [done, open], players, now, null, "done");
+    expect(held.pick.status).toBe("live");
+    if (held.pick.status !== "idle") expect(held.pick.match.id).toBe("done");
+    expect(held.hold?.matchId).toBe("done");
+    expect(held.hold?.until).toBe(now + FINAL_SCORE_HOLD_MS);
+
+    const after = withFinalScoreHold(
+      base,
+      [done, open],
+      players,
+      now + FINAL_SCORE_HOLD_MS,
+      held.hold,
+      "done",
+    );
+    expect(after.pick.status).toBe("live");
+    if (after.pick.status !== "idle") expect(after.pick.match.id).toBe("open");
+    expect(after.hold).toBeNull();
   });
 });
 

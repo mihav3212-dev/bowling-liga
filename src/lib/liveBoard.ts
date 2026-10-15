@@ -49,6 +49,11 @@ function nameFor(players: Player[], id: string, side: "home" | "away", slot: num
   return player?.name || slotLabel(side, slot);
 }
 
+/** Koliko časa po zapolnitvi vseh kegljev še držimo TV na »Končne točke«, preden preklopimo. */
+export const FINAL_SCORE_HOLD_MS = 2 * 60 * 1000;
+
+export type LiveBoardHold = { matchId: string; until: number };
+
 /**
  * Tekme v trenutnem terminu: najprej nedokončana (ne preklaplja, dokler ni končana),
  * sicer prva v terminu. Če ni ničesar v terminu → naslednja, sicer idle.
@@ -68,6 +73,48 @@ export function pickLiveBoardMatch(matches: Match[], players: Player[], now: num
   }
 
   return { status: "idle" };
+}
+
+/**
+ * Ko se tekma, ki jo TV trenutno kaže, zapolni (vsi keglji), je `complete` — a še zadržimo
+ * prikaz končnih točk, preden gre na drugo tekmo v istem terminu.
+ */
+export function withFinalScoreHold(
+  pick: LiveBoardPick,
+  matches: Match[],
+  players: Player[],
+  now: number,
+  hold: LiveBoardHold | null,
+  previouslyShownId: string | null,
+): { pick: LiveBoardPick; hold: LiveBoardHold | null } {
+  if (hold && now < hold.until) {
+    const held = matches.find((m) => m.id === hold.matchId);
+    if (held && matchTotals(held, players).complete) {
+      return {
+        pick: { status: "live", match: held, siblings: 1, index: 0 },
+        hold,
+      };
+    }
+  }
+
+  // Potekel hold za isto tekmo ne zaženemo znova (sicer bi ostali na končnih točkah).
+  const expiredSame = Boolean(hold && now >= hold.until && hold.matchId === previouslyShownId);
+
+  if (previouslyShownId && !expiredSame) {
+    const prev = matches.find((m) => m.id === previouslyShownId);
+    if (prev && matchTotals(prev, players).complete) {
+      const leaving = pick.status === "idle" || pick.match.id !== previouslyShownId;
+      if (leaving) {
+        const nextHold = { matchId: previouslyShownId, until: now + FINAL_SCORE_HOLD_MS };
+        return {
+          pick: { status: "live", match: prev, siblings: 1, index: 0 },
+          hold: nextHold,
+        };
+      }
+    }
+  }
+
+  return { pick, hold: null };
 }
 
 export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchView {

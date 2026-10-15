@@ -3,6 +3,8 @@ import { fetchLeague } from "../lib/leagueApi";
 import {
   buildLiveMatchView,
   pickLiveBoardMatch,
+  withFinalScoreHold,
+  type LiveBoardHold,
   type LiveMatchView,
 } from "../lib/liveBoard";
 import { useStore } from "../lib/store";
@@ -697,6 +699,8 @@ export function LiveMatchBoard() {
   const [now, setNow] = useState(() => Date.now());
   const [booting, setBooting] = useState(true);
   const [error, setError] = useState(false);
+  const holdRef = useRef<LiveBoardHold | null>(null);
+  const lastShownRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -759,8 +763,22 @@ export function LiveMatchBoard() {
     );
   }
 
-  const pick = pickLiveBoardMatch(state.matches, state.players, now);
-  if (pick.status === "idle") return <LiveIdleScreen />;
+  const basePick = pickLiveBoardMatch(state.matches, state.players, now);
+  const held = withFinalScoreHold(
+    basePick,
+    state.matches,
+    state.players,
+    now,
+    holdRef.current,
+    lastShownRef.current,
+  );
+  holdRef.current = held.hold;
+  const pick = held.pick;
+  if (pick.status === "idle") {
+    lastShownRef.current = null;
+    return <LiveIdleScreen />;
+  }
+  lastShownRef.current = pick.match.id;
 
   const view = buildLiveMatchView(state, pick.match);
   const badge =
