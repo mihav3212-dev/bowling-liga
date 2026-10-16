@@ -8,6 +8,7 @@ import {
   adjustedPins,
   bonusPoints,
   lineupLocked,
+  matchPlayerStats,
   matchTotals,
   scoreDuel,
   scoreForfeit,
@@ -32,6 +33,43 @@ describe("zaklep sestave", () => {
     const scored = [{ games: [{ homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: 180, awayPins: null }] }];
     expect(lineupLocked(empty)).toBe(false);
     expect(lineupLocked(scored)).toBe(true);
+  });
+});
+
+describe("matchPlayerStats", () => {
+  it("sešteje male točke, keglje in povprečje na tekmo", () => {
+    const players = [
+      player({ id: "h1", name: "HOME", gender: "F" }),
+      player({ id: "a1", name: "AWAY", gender: "M" }),
+    ];
+    const match: Match = {
+      id: "m",
+      round: 1,
+      homeTeamId: "th",
+      awayTeamId: "ta",
+      homeStarters: ["h1"],
+      awayStarters: ["a1"],
+      homeBench: [],
+      awayBench: [],
+      status: "scheduled",
+      rounds: [
+        {
+          games: [
+            { homePlayerId: "h1", awayPlayerId: "a1", lane: 1, homePins: 200, awayPins: 180 },
+            { homePlayerId: "h1", awayPlayerId: "a1", lane: 2, homePins: 160, awayPins: 170 },
+          ],
+        },
+      ],
+    };
+    const rows = matchPlayerStats(match, players);
+    const home = rows.find((r) => r.playerId === "h1");
+    const away = rows.find((r) => r.playerId === "a1");
+    expect(home?.pins).toBe(208 + 168); // +8 ženska
+    expect(home?.games).toBe(2);
+    expect(home?.average).toBe((208 + 168) / 2);
+    expect(home?.small).toBeGreaterThan(0);
+    expect(away?.pins).toBe(180 + 170);
+    expect(away?.games).toBe(2);
   });
 });
 

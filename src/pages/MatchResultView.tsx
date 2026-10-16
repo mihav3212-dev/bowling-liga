@@ -1,6 +1,11 @@
+import { Fragment } from "react";
 import type { LiveMatchView } from "../lib/liveBoard";
+import type { MatchPlayerStat } from "../lib/scoring";
+import { exportMatchPdf } from "../lib/exportPdf";
+import { useStore } from "../lib/store";
+import { PdfButton } from "./PdfButton";
 
-/** Predogled vertikalnega pregleda končane tekme (zavihek Rezultati). */
+/** Predogled / ogled končane tekme (zavihek Rezultati). */
 
 const PREVIEW: LiveMatchView = {
   complete: true,
@@ -91,35 +96,65 @@ function duelLead(home: number | null, away: number | null): "home" | "away" | "
   return "tie";
 }
 
+function fmtAvg(n: number | null) {
+  return n != null
+    ? n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : "—";
+}
+
 type Props = {
   view?: LiveMatchView;
   preview?: boolean;
   onBack?: () => void;
+  onEdit?: () => void;
+  playerStats?: MatchPlayerStat[];
+  matchId?: string;
 };
 
-export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Props) {
+export function MatchResultView({
+  view = PREVIEW,
+  preview = false,
+  onBack,
+  onEdit,
+  playerStats = [],
+  matchId,
+}: Props) {
+  const { state } = useStore();
   const m = view;
   const homeWins = (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
+  const tied = m.complete && (m.homeMatch ?? 0) === (m.awayMatch ?? 0);
 
   return (
     <div className="result-view">
       <div className="result-view-glow" aria-hidden />
 
-      {(onBack || preview) && (
+      {(onBack || preview || onEdit) && (
         <div className="result-view-toolbar">
           {onBack ? (
             <button type="button" className="ghost result-view-back" onClick={onBack}>
               ← Nazaj na rezultate
             </button>
-          ) : (
+          ) : preview ? (
             <span className="result-view-preview-tag">Predogled · zavihek Rezultati</span>
+          ) : (
+            <span />
           )}
-          {preview && (
-            <span className="result-view-preview-note">
-              <code>?display=result-preview</code> · samo ogled, brez urejanja
-            </span>
-          )}
+          <div className="result-view-toolbar-actions">
+            {preview && (
+              <span className="result-view-preview-note">
+                <code>?display=result-preview</code>
+              </span>
+            )}
+            {matchId && !preview && (
+              <PdfButton label="PDF" onExport={() => exportMatchPdf(state, matchId)} />
+            )}
+            {onEdit && (
+              <button type="button" className="primary result-view-edit" onClick={onEdit}>
+                Popravi
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -133,19 +168,21 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
         </div>
         <div className="result-view-meta">
           <span className="result-view-final-mark" aria-hidden />
-          <span className="result-view-final">Končano</span>
+          <span className="result-view-final">{m.complete ? "Končano" : "V teku"}</span>
           <span className="result-view-when">{m.startsAtLabel}</span>
         </div>
       </header>
 
       <section className="result-view-scoreboard">
         <div className={`result-view-side is-home${homeWins ? " is-winner" : ""}`}>
-          <div className="result-view-side-label">{homeWins ? "Zmaga" : "Domači"}</div>
+          <div className="result-view-side-label">
+            {homeWins ? "Zmaga" : tied ? "Neodločeno" : "Domači"}
+          </div>
           <h1 className="result-view-team">{m.homeName}</h1>
         </div>
 
         <div className="result-view-center">
-          <div className="result-view-score-label">KONČNI REZULTAT</div>
+          <div className="result-view-score-label">Končne točke</div>
           <div className="result-view-score">
             <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
             <span className="result-view-score-sep">:</span>
@@ -153,9 +190,15 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
           </div>
           <div className="result-view-stats-featured">
             <div className="result-view-stat-block">
-              <span className="result-view-stat-label">Velike točke</span>
+              <span className="result-view-stat-label">Velike</span>
               <strong>
                 {m.homeBig}:{m.awayBig}
+              </strong>
+            </div>
+            <div className="result-view-stat-block">
+              <span className="result-view-stat-label">Male</span>
+              <strong>
+                {m.homeSmall}:{m.awaySmall}
               </strong>
             </div>
             <div className="result-view-stat-block">
@@ -165,13 +208,12 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
               </strong>
             </div>
           </div>
-          <div className="result-view-stats-minor">
-            Male točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
-          </div>
         </div>
 
         <div className={`result-view-side is-away${awayWins ? " is-winner" : ""}`}>
-          <div className="result-view-side-label">{awayWins ? "Zmaga" : "Gostje"}</div>
+          <div className="result-view-side-label">
+            {awayWins ? "Zmaga" : tied ? "Neodločeno" : "Gostje"}
+          </div>
           <h1 className="result-view-team">{m.awayName}</h1>
         </div>
       </section>
@@ -201,6 +243,11 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
                       {r.awaySmall ?? "·"}
                     </span>
                   </div>
+                  {r.homeBig != null && r.awayBig != null && (
+                    <div className="result-view-round-big">
+                      Velike {r.homeBig}:{r.awayBig}
+                    </div>
+                  )}
                   <div className="result-view-round-pins">
                     {r.homePins ?? "—"}:{r.awayPins ?? "—"} kegljev
                   </div>
@@ -210,18 +257,26 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
                     const dLead = duelLead(d.homePins, d.awayPins);
                     return (
                       <div key={d.lane} className="result-view-duel">
-                        <span className="result-view-lane">Steza {d.lane}</span>
-                        <span className={`result-view-duel-name is-home${dLead === "home" ? " is-lead" : ""}`}>
+                        <span className="result-view-lane">S{d.lane}</span>
+                        <span
+                          className={`result-view-duel-name is-home${dLead === "home" ? " is-lead" : ""}`}
+                        >
                           {d.homeName}
                         </span>
-                        <span className={`result-view-duel-pins is-home${dLead === "home" ? " is-lead" : ""}`}>
+                        <span
+                          className={`result-view-duel-pins is-home${dLead === "home" ? " is-lead" : ""}`}
+                        >
                           {pinsLabel(d.homePins)}
                         </span>
                         <span className="result-view-duel-sep">–</span>
-                        <span className={`result-view-duel-pins is-away${dLead === "away" ? " is-lead" : ""}`}>
+                        <span
+                          className={`result-view-duel-pins is-away${dLead === "away" ? " is-lead" : ""}`}
+                        >
                           {pinsLabel(d.awayPins)}
                         </span>
-                        <span className={`result-view-duel-name is-away${dLead === "away" ? " is-lead" : ""}`}>
+                        <span
+                          className={`result-view-duel-name is-away${dLead === "away" ? " is-lead" : ""}`}
+                        >
                           {d.awayName}
                         </span>
                       </div>
@@ -233,6 +288,50 @@ export function MatchResultView({ view = PREVIEW, preview = false, onBack }: Pro
           })}
         </div>
       </section>
+
+      {playerStats.length > 0 && (
+        <section className="result-view-players">
+          <h2 className="result-view-rounds-title">Po igralcih</h2>
+          <div className="result-view-players-table-wrap">
+            <table className="result-view-players-table">
+              <thead>
+                <tr>
+                  <th>Igralec</th>
+                  <th>Male</th>
+                  <th>Keglji</th>
+                  <th>Povp.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    { side: "home" as const, label: m.homeName },
+                    { side: "away" as const, label: m.awayName },
+                  ] as const
+                ).map((group) => {
+                  const rows = playerStats.filter((r) => r.side === group.side);
+                  if (!rows.length) return null;
+                  return (
+                    <Fragment key={group.side}>
+                      <tr className="result-view-player-team">
+                        <td colSpan={4}>{group.label}</td>
+                      </tr>
+                      {rows.map((row) => (
+                        <tr key={`${row.side}-${row.playerId}`}>
+                          <td>{row.name}</td>
+                          <td className="mono">{row.small}</td>
+                          <td className="mono">{row.pins}</td>
+                          <td className="mono">{fmtAvg(row.average)}</td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

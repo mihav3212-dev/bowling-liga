@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { canEnterPins, teamPerms } from "../lib/access";
 import { lineupsRevealed, teamMatchSide } from "../lib/lineup";
-import { lineupLocked, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
+import { lineupLocked, matchPlayerStats, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
 import type { Player } from "../lib/types";
@@ -220,6 +220,9 @@ export function MatchEntry({
   }
   const homeAvg = homeGames ? totals.homePins / homeGames : null;
   const awayAvg = awayGames ? totals.awayPins / awayGames : null;
+  const playerStats = matchPlayerStats(match, state.players);
+  const fmtAvg = (n: number | null) =>
+    n != null ? n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
   const playersLocked = (readOnly && !teamLineup) || lineupLocked(match.rounds);
   const homeEditable = lineupTeamId
     ? ownSide === "home" && perms.lineup && !playersLocked
@@ -505,7 +508,7 @@ export function MatchEntry({
                 <td className="team-cell">{row.name}</td>
                 <td className="sum-box mono">{row.pins}</td>
                 <td className="sum-box mono">
-                  {row.avg != null ? row.avg.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"}
+                  {fmtAvg(row.avg)}
                 </td>
                 <td className="points-box mono">{row.velike}</td>
                 <td className={`result-box mono${row.win ? " is-win" : ""}`}>{row.rezultat}</td>
@@ -514,6 +517,48 @@ export function MatchEntry({
           </tbody>
         </table>
       </div>}
+
+      {!hideScores && playerStats.length > 0 && (
+        <div className="scorecard match-summary match-player-stats">
+          <h3>Po igralcih</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Igralec</th>
+                <th>Male</th>
+                <th>Keglji</th>
+                <th>Povp.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(
+                [
+                  { side: "home" as const, label: home?.name ?? "Domači" },
+                  { side: "away" as const, label: away?.name ?? "Gostje" },
+                ] as const
+              ).map((group) => {
+                const rows = playerStats.filter((r) => r.side === group.side);
+                if (!rows.length) return null;
+                return (
+                  <Fragment key={group.side}>
+                    <tr className="match-player-team-row">
+                      <td colSpan={4}>{group.label}</td>
+                    </tr>
+                    {rows.map((row) => (
+                      <tr key={`${row.side}-${row.playerId}`}>
+                        <td className="team-cell">{row.name}</td>
+                        <td className="points-box mono">{row.small}</td>
+                        <td className="sum-box mono">{row.pins}</td>
+                        <td className="sum-box mono">{fmtAvg(row.average)}</td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="match-actions">
         {!hideScores && (

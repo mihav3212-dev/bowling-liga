@@ -15,6 +15,7 @@ import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
 import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
 import { MatchResultView } from "./pages/MatchResultView";
+import { MatchResultPage } from "./pages/MatchResultPage";
 import { NewSeasonDialog } from "./pages/NewSeasonDialog";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
@@ -109,6 +110,8 @@ function LeagueApp() {
     syncFromRemote,
   } = useStore();
   const [newSeasonOpen, setNewSeasonOpen] = useState(false);
+  /** Iz rezultatov: ogled → po potrditvi urejanje. */
+  const [resultsEditing, setResultsEditing] = useState(false);
   const canEdit = admin && !archived;
   const loginTeam = state.teams.find((team) => team.id === loginTeamId);
   const teamCaps = teamPerms(loginTeam);
@@ -170,8 +173,13 @@ function LeagueApp() {
   };
 
   const openMatch = (id: string) => {
+    setResultsEditing(false);
     commitNav({ ...navRef.current, matchId: id, detailTeamId: null }, "push");
   };
+
+  useEffect(() => {
+    if (page !== "results" || !matchId) setResultsEditing(false);
+  }, [page, matchId]);
 
   const openTeam = (id: string) => {
     commitNav({ ...navRef.current, page: "teams", detailTeamId: id, matchId: null }, "push");
@@ -396,7 +404,7 @@ function LeagueApp() {
             <PdfButton label="Izvozi PDF rezultatov" onExport={() => exportResultsPdf(state)} />
           </>
         )}
-        {(page === "schedule" || page === "results") && matchId && (
+        {page === "schedule" && matchId && (
           <MatchEntry
             matchId={matchId}
             onBack={() =>
@@ -404,6 +412,28 @@ function LeagueApp() {
             }
             readOnly={!canEdit && !loginTeamId}
             lineupTeamId={canEdit ? null : loginTeamId}
+          />
+        )}
+        {page === "results" && matchId && !resultsEditing && (
+          <MatchResultPage
+            matchId={matchId}
+            canEdit={canEdit}
+            onBack={() =>
+              navigateBack(() => commitNav({ ...navRef.current, matchId: null }, "replace"))
+            }
+            onEdit={() => {
+              if (window.confirm("Res želiš popraviti rezultat te tekme?")) {
+                setResultsEditing(true);
+              }
+            }}
+          />
+        )}
+        {page === "results" && matchId && resultsEditing && (
+          <MatchEntry
+            matchId={matchId}
+            onBack={() => setResultsEditing(false)}
+            readOnly={false}
+            lineupTeamId={null}
           />
         )}
         {page === "standings" && (

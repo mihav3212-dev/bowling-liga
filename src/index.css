@@ -539,6 +539,30 @@ select {
   overflow-x: auto;
 }
 
+.match-player-stats {
+  margin-top: 18px;
+}
+
+.match-player-stats h3 {
+  margin: 0 0 8px;
+}
+
+.match-player-stats .match-player-team-row td {
+  padding-top: 14px;
+  padding-bottom: 6px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+
+.match-player-stats .match-player-team-row:first-child td {
+  padding-top: 4px;
+}
+
 .match-summary table {
   width: 100%;
   border-collapse: collapse;
@@ -3117,6 +3141,20 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   margin-bottom: 18px;
 }
 
+.result-view-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.result-view-edit {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .result-view-back {
   color: var(--rv-ink) !important;
   border-color: var(--rv-line) !important;
@@ -3386,11 +3424,75 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   color: var(--rv-lead);
 }
 
+.result-view-round-big {
+  color: var(--rv-accent);
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(0.85rem, 1.2vw, 1rem);
+}
+
 .result-view-round-pins {
   margin-left: auto;
   color: var(--rv-muted);
   font-family: "IBM Plex Mono", monospace;
   font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+}
+
+.result-view-players {
+  margin-top: clamp(22px, 4vh, 36px);
+}
+
+.result-view-players-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rv-line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.result-view-players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.result-view-players-table th {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--rv-muted);
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rv-line);
+}
+
+.result-view-players-table th:not(:first-child),
+.result-view-players-table td:not(:first-child) {
+  text-align: center;
+}
+
+.result-view-players-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.result-view-players-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.result-view-player-team td {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  color: var(--rv-accent);
+  background: rgba(232, 160, 106, 0.08);
+  padding-top: 12px;
+  padding-bottom: 8px;
+  text-align: left !important;
 }
 
 .result-view-duels {
@@ -3466,6 +3568,12 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     align-items: flex-start;
     gap: 6px;
     margin-bottom: 12px;
+  }
+
+  .result-view-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .result-view-preview-note {

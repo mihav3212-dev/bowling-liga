@@ -244,6 +244,76 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
   };
 }
 
+export type MatchPlayerStat = {
+  playerId: string;
+  name: string;
+  side: "home" | "away";
+  games: number;
+  pins: number;
+  small: number;
+  average: number | null;
+};
+
+/** Po igralcu v eni tekmi: male točke, keglji (s +8/−8), povprečje. */
+export function matchPlayerStats(match: Match, players: Player[]): MatchPlayerStat[] {
+  type Acc = { name: string; side: "home" | "away"; games: number; pins: number; small: number };
+  const rows = new Map<string, Acc>();
+
+  const bump = (
+    playerId: string,
+    side: "home" | "away",
+    pins: number | null,
+    small: number | null,
+  ) => {
+    if (!playerId || pins == null) return;
+    const player = playerById(players, playerId);
+    const key = `${side}:${playerId}`;
+    const cur = rows.get(key) ?? {
+      name: player?.name ?? "—",
+      side,
+      games: 0,
+      pins: 0,
+      small: 0,
+    };
+    cur.games += 1;
+    cur.pins += pins;
+    if (small != null) cur.small += small;
+    rows.set(key, cur);
+  };
+
+  for (const round of match.rounds ?? []) {
+    for (const game of round.games ?? []) {
+      const homeP = playerById(players, game.homePlayerId);
+      const awayP = playerById(players, game.awayPlayerId);
+      const hp =
+        game.homePins == null ? null : game.homePins === 0 ? 0 : scoredPins(game.homePins, homeP);
+      const ap =
+        game.awayPins == null ? null : game.awayPins === 0 ? 0 : scoredPins(game.awayPins, awayP);
+      const duel = scoreGame(game, players);
+      bump(game.homePlayerId, "home", hp, duel?.homeTotal ?? null);
+      bump(game.awayPlayerId, "away", ap, duel?.awayTotal ?? null);
+    }
+  }
+
+  return [...rows.entries()]
+    .map(([key, row]) => {
+      const playerId = key.slice(key.indexOf(":") + 1);
+      return {
+        playerId,
+        name: row.name,
+        side: row.side,
+        games: row.games,
+        pins: row.pins,
+        small: row.small,
+        average: row.games ? row.pins / row.games : null,
+      };
+    })
+    .sort((a, b) => {
+      if (a.side !== b.side) return a.side === "home" ? -1 : 1;
+      return b.pins - a.pins || a.name.localeCompare(b.name, "sl");
+    });
+}
+
 /** Ko so v 1. krogu vneseni keglji, sestave ni več mogoče spreminjati. */
 export function lineupLocked(rounds: MatchRound[] | undefined): boolean {
   return Boolean(
