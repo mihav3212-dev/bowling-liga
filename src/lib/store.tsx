@@ -21,6 +21,7 @@ import {
 import {
   archiveLeague,
   createLeague,
+  createLeagueFromSource,
   deleteLeague,
   fetchLeague,
   renameLeague,
@@ -53,6 +54,7 @@ import {
 import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpen } from "./access";
 import { applyLineup, rosterIdsForTeam, sanitizeLineup, teamMatchSide } from "./lineup";
 import { useAuth } from "./auth";
+import { cloneTeamsAndPlayers } from "./cloneRoster";
 import { uid } from "./ids";
 import { hashPassword } from "./passwords";
 import {
@@ -109,6 +111,17 @@ type Store = {
   resetDemo: () => void;
   loadSeason2025: () => Promise<void>;
   newEmptySeason: (title: string) => Promise<void>;
+  /** Nova sezona z izbranimi ekipami (in igralci) iz druge sezone. */
+  newSeasonFromRoster: (
+    title: string,
+    opts: {
+      sourceSeasonId: string;
+      teams: Team[];
+      players: Player[];
+      teamIds: string[];
+      includePlayers: boolean;
+    },
+  ) => Promise<void>;
   openTrainingSeason: () => Promise<void>;
   startNewTraining: () => Promise<string>;
   newTrainingSession: (teamId?: string) => string;
@@ -577,6 +590,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           seasonTitle: title,
           teams: [],
           players: [],
+          matches: [],
+        });
+      },
+      newSeasonFromRoster: async (title, opts) => {
+        if (remoteRef.current) {
+          applyRemote(
+            await createLeagueFromSource(
+              title,
+              opts.sourceSeasonId,
+              opts.teamIds,
+              opts.includePlayers,
+            ),
+          );
+          return;
+        }
+        const cloned = cloneTeamsAndPlayers(
+          opts.teams,
+          opts.players,
+          opts.teamIds,
+          opts.includePlayers,
+        );
+        await openSeason(title, {
+          seasonTitle: title,
+          teams: cloned.teams,
+          players: cloned.players,
           matches: [],
         });
       },

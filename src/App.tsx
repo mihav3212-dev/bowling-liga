@@ -15,6 +15,7 @@ import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
 import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
 import { MatchResultView } from "./pages/MatchResultView";
+import { NewSeasonDialog } from "./pages/NewSeasonDialog";
 import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
@@ -102,12 +103,12 @@ function LeagueApp() {
     state,
     remote,
     archived,
-    newEmptySeason,
     seasons,
     seasonId,
     loadSeason,
     syncFromRemote,
   } = useStore();
+  const [newSeasonOpen, setNewSeasonOpen] = useState(false);
   const canEdit = admin && !archived;
   const loginTeam = state.teams.find((team) => team.id === loginTeamId);
   const teamCaps = teamPerms(loginTeam);
@@ -212,14 +213,6 @@ function LeagueApp() {
       .catch(() => setSetupNeeded(false));
   }, []);
 
-  const startNewSeason = async () => {
-    const title = window.prompt("Ime nove sezone (npr. 2027/2028)", "");
-    if (title == null) return;
-    const name = title.trim() || "Nova sezona";
-    await newEmptySeason(name);
-    go("teams");
-  };
-
   useEffect(() => {
     if (!authReady) return;
     const cur = navRef.current;
@@ -286,7 +279,7 @@ function LeagueApp() {
           {admin && (
             <AdminMenu
               canEdit={canEdit}
-              onNewSeason={() => void startNewSeason()}
+              onNewSeason={() => setNewSeasonOpen(true)}
               onAccess={() => go("access")}
             />
           )}
@@ -298,6 +291,12 @@ function LeagueApp() {
           <ThemePicker />
         </div>
       </header>
+
+      <NewSeasonDialog
+        open={newSeasonOpen}
+        onClose={() => setNewSeasonOpen(false)}
+        onCreated={() => go("teams")}
+      />
 
       <div className={page === "players" ? "app-shell is-wide" : "app-shell"}>
         <h1 className="page-title">Bowling liga Lenart.</h1>

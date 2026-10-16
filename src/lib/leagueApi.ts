@@ -63,6 +63,28 @@ export async function createLeague(label: string, data?: LeagueState): Promise<L
   return (await res.json()) as LeaguePayload;
 }
 
+export async function createLeagueFromSource(
+  label: string,
+  sourceId: string,
+  teamIds: string[],
+  includePlayers: boolean,
+): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "createFromSource",
+      label,
+      sourceId,
+      teamIds,
+      includePlayers,
+    }),
+  });
+  if (!res.ok) throw new Error("createFromSource");
+  return (await res.json()) as LeaguePayload;
+}
+
 export async function replaceLeague(id: string, data: LeagueState, label?: string): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",

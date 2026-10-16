@@ -10,6 +10,7 @@ import {
   inviteStillOpen,
   newInviteToken,
 } from "./passwords.mjs";
+import { cloneTeamsAndPlayers } from "./cloneRoster.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
 import { setAdminPassword } from "./session.mjs";
 
@@ -522,4 +523,23 @@ export async function createSeason(pool, label, data) {
   if (!payload.seasonTitle) payload.seasonTitle = label;
   await exec(pool, "INSERT INTO seasons (id, label, data) VALUES (?, ?, ?)", [id, label, dump(payload)]);
   return getSeason(pool, id);
+}
+
+/** Nova sezona z izbranimi ekipami iz obstoječe (vključno z gesli). */
+export async function createSeasonFromSource(pool, label, sourceId, teamIds, includePlayers) {
+  const source = await getSeason(pool, sourceId);
+  if (!source || source.training) return null;
+  const name = String(label || "").trim() || "Nova sezona";
+  const cloned = cloneTeamsAndPlayers(
+    source.data.teams ?? [],
+    source.data.players ?? [],
+    Array.isArray(teamIds) ? teamIds : [],
+    Boolean(includePlayers),
+  );
+  return createSeason(pool, name, {
+    seasonTitle: name,
+    teams: cloned.teams,
+    players: cloned.players,
+    matches: [],
+  });
 }

@@ -3,6 +3,7 @@ import { sanitizeState } from "./sanitize.mjs";
 import {
   archiveCurrent,
   createSeason,
+  createSeasonFromSource,
   deleteSeason,
   renameSeason,
   replaceSeason,
@@ -255,6 +256,25 @@ export async function handleLeague(req, res) {
       }
       if (body.action === "create") {
         const current = await createSeason(sql, body.label || "Nova sezona", body.data);
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: true }),
+        });
+        return;
+      }
+      if (body.action === "createFromSource") {
+        const current = await createSeasonFromSource(
+          sql,
+          body.label || "Nova sezona",
+          body.sourceId,
+          body.teamIds,
+          body.includePlayers !== false,
+        );
+        if (!current) {
+          json(res, 404, { ok: false });
+          return;
+        }
         json(res, 200, {
           storage: "db",
           current: presentSeason(current, viewer),
