@@ -1,9 +1,48 @@
-import { Fragment } from "react";
+import { Fragment, useLayoutEffect, useRef } from "react";
 import type { LiveMatchView } from "../lib/liveBoard";
 import type { MatchPlayerStat } from "../lib/scoring";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
+
+/** Skrči ime ekipe, da ostane znotraj stolpca (brez prekrivanja rezultata). */
+function FitTeamName({ name, className }: { name: string; className?: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.parentElement;
+    if (!el || !box) return;
+
+    const fit = () => {
+      const maxPx = Math.min(54, Math.max(22, box.clientWidth * 0.22));
+      const minPx = 13;
+      el.style.fontSize = `${maxPx}px`;
+      let size = maxPx;
+      // Najprej širina (ena dolga beseda), nato višina (več vrstic).
+      while (size > minPx && el.scrollWidth > box.clientWidth + 1) {
+        size -= 0.5;
+        el.style.fontSize = `${size}px`;
+      }
+      const maxH = Math.max(box.clientWidth * 0.55, 72);
+      while (size > minPx && el.scrollHeight > maxH) {
+        size -= 0.5;
+        el.style.fontSize = `${size}px`;
+      }
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(box);
+    return () => ro.disconnect();
+  }, [name]);
+
+  return (
+    <h1 ref={ref} className={className}>
+      {name}
+    </h1>
+  );
+}
 
 /** Predogled / ogled končane tekme (zavihek Rezultati). */
 
@@ -178,7 +217,7 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {homeWins ? "Zmaga" : tied ? "Neodločeno" : "Domači"}
           </div>
-          <h1 className="result-view-team">{m.homeName}</h1>
+          <FitTeamName name={m.homeName} className="result-view-team" />
         </div>
 
         <div className="result-view-center">
@@ -214,7 +253,7 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {awayWins ? "Zmaga" : tied ? "Neodločeno" : "Gostje"}
           </div>
-          <h1 className="result-view-team">{m.awayName}</h1>
+          <FitTeamName name={m.awayName} className="result-view-team" />
         </div>
       </section>
 

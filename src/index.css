@@ -3108,7 +3108,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   margin: 0 auto;
   box-sizing: border-box;
   width: 100%;
-  padding: clamp(14px, 3vw, 28px) clamp(12px, 4vw, 28px) 40px;
+  padding: clamp(6px, 1.5vw, 14px) clamp(12px, 4vw, 28px) 40px;
   padding-left: max(12px, env(safe-area-inset-left));
   padding-right: max(12px, env(safe-area-inset-right));
   background: var(--rv-bg);
@@ -3138,7 +3138,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .result-view-toolbar-actions {
@@ -3155,9 +3155,16 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   text-transform: uppercase;
 }
 
+.result-view-toolbar .ghost,
 .result-view-back {
+  background: rgba(255, 255, 255, 0.08) !important;
   color: var(--rv-ink) !important;
-  border-color: var(--rv-line) !important;
+  border: 1px solid var(--rv-line) !important;
+}
+
+.result-view-toolbar .ghost:hover,
+.result-view-back:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
 }
 
 .result-view-preview-tag {
@@ -3248,7 +3255,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .result-view-scoreboard {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: clamp(10px, 2vw, 28px);
   margin-bottom: clamp(22px, 4vh, 36px);
@@ -3258,6 +3265,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .result-view-side {
   min-width: 0;
+  overflow: hidden;
 }
 
 .result-view-side.is-away {
@@ -3277,13 +3285,17 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .result-view-team {
+  margin: 0;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
-  font-size: clamp(1.8rem, 5vw, 3.4rem);
+  font-size: clamp(1.15rem, 4.2vw, 2.5rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   text-wrap: balance;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .result-view-side.is-winner .result-view-team {
@@ -3293,6 +3305,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .result-view-center {
   text-align: center;
   padding: 0 6px;
+  position: relative;
+  z-index: 1;
 }
 
 .result-view-score-label {
@@ -3558,7 +3572,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 @media (max-width: 720px) {
   .result-view {
     max-width: none;
-    padding: 12px 12px 28px;
+    padding: 6px 12px 28px;
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
   }
