@@ -1,5 +1,5 @@
-import { readSession, readToken } from "./session.mjs";
-import { ensureSchema, getCurrentSeason, getSql } from "./db.mjs";
+import { readSession, readToken } from "./_lib/session.mjs";
+import { ensureSchema, getCurrentSeason, getSql } from "./_lib/db.mjs";
 
 export async function handleMe(req, res) {
   const sql = getSql();

@@ -1,4 +1,4 @@
-import { clearCookieHeader, isSecureRequest } from "./session.mjs";
+import { clearCookieHeader, isSecureRequest } from "./_lib/session.mjs";
 
 export default function handler(req, res) {
   res.setHeader("Set-Cookie", clearCookieHeader(isSecureRequest(req)));

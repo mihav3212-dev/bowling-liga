@@ -1,6 +1,6 @@
-import { cookieHeader, isSecureRequest, passwordOk, signToken } from "./session.mjs";
-import { verifyPassword } from "./passwords.mjs";
-import { ensureSchema, getCurrentSeason, getSql } from "./db.mjs";
+import { cookieHeader, isSecureRequest, passwordOk, signToken } from "./_lib/session.mjs";
+import { verifyPassword } from "./_lib/passwords.mjs";
+import { ensureSchema, getCurrentSeason, getSql } from "./_lib/db.mjs";
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;

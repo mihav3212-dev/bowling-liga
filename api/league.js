@@ -1,5 +1,5 @@
-import { readSession, readToken } from "./session.mjs";
-import { sanitizeState } from "./sanitize.mjs";
+import { readSession, readToken } from "./_lib/session.mjs";
+import { sanitizeState } from "./_lib/sanitize.mjs";
 import {
   archiveCurrent,
   createSeason,
@@ -22,8 +22,8 @@ import {
   createTeamInvite,
   previewTeamInvite,
   claimTeamInvite,
-} from "./db.mjs";
-import { teamPerms } from "./access.mjs";
+} from "./_lib/db.mjs";
+import { teamPerms } from "./_lib/access.mjs";
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;

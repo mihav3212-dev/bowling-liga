@@ -20,7 +20,7 @@ function adminApi(): Plugin {
           next();
           return;
         }
-        const { clearCookieHeader, isSecureRequest } = await import("./api/session.mjs");
+        const { clearCookieHeader, isSecureRequest } = await import("./api/_lib/session.mjs");
         try {
           if (url === "/api/league") {
             const { handleLeague } = await import("./api/league.js");

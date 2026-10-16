@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { handleLeague } from "./api/league.js";
 import { handleLogin } from "./api/login.js";
 import { handleMe } from "./api/me.js";
-import { clearCookieHeader, isSecureRequest } from "./api/session.mjs";
+import { clearCookieHeader, isSecureRequest } from "./api/_lib/session.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const dist = resolve(root, "dist");

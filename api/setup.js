@@ -1,7 +1,7 @@
 import mysql from "mysql2/promise";
-import { isConfigured, saveFileConfig } from "./config.mjs";
-import { ensureSchema, getSql, resetSql } from "./db.mjs";
-import { setAdminPassword } from "./session.mjs";
+import { isConfigured, saveFileConfig } from "./_lib/config.mjs";
+import { ensureSchema, getSql, resetSql } from "./_lib/db.mjs";
+import { setAdminPassword } from "./_lib/session.mjs";
 
 async function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
