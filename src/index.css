@@ -3434,37 +3434,45 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .result-view-round-stats {
-  /* Poravnava z imeni igralcev (stolpec S1–S4 + razmak). */
   margin: 0 0 12px;
   padding-bottom: 12px;
-  padding-left: calc(var(--rv-lane-track) + var(--rv-lane-gap));
   border-bottom: 1px solid var(--rv-line);
   display: grid;
   gap: 4px;
 }
 
 .result-view-round-stat {
-  display: grid;
-  grid-template-columns: minmax(7.5rem, 10rem) auto;
-  align-items: baseline;
-  gap: 10px 16px;
+  /* Oznaka ostane levo; številke poravnane z imeni igralcev. */
+  position: relative;
+  display: block;
+  padding-left: calc(var(--rv-lane-track) + var(--rv-lane-gap));
+  min-height: 1.35em;
   font-size: clamp(0.9rem, 1.3vw, 1.05rem);
 }
 
 .result-view-round-stat dt {
+  position: absolute;
+  left: 0;
+  top: 0;
   margin: 0;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--rv-muted);
+  white-space: nowrap;
 }
 
 .result-view-round-stat dd {
   margin: 0;
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   color: var(--rv-ink);
+  position: relative;
+  width: max-content;
+  background: var(--rv-bg);
+  box-shadow: -8px 0 10px 2px var(--rv-bg);
 }
 
 .result-view-round-stat dd .is-lead {
@@ -3696,13 +3704,21 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     font-size: 1.05rem;
   }
 
-  .result-view-round-stats {
+  .result-view-round-stat {
     padding-left: 0;
+    display: grid;
+    grid-template-columns: minmax(6.5rem, 8rem) auto;
+    column-gap: 12px;
+    font-size: 0.88rem;
   }
 
-  .result-view-round-stat {
-    grid-template-columns: minmax(6.5rem, 8rem) auto;
-    font-size: 0.88rem;
+  .result-view-round-stat dt {
+    position: static;
+  }
+
+  .result-view-round-stat dd {
+    box-shadow: none;
+    background: transparent;
   }
 
   .result-view-duels {
