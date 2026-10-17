@@ -247,8 +247,9 @@ a {
 }
 
 .scorecard {
-  background: var(--paper);
-  color: var(--ink);
+  /* Vpis rezultatov: svetla kartica za berljivost na temni strani. */
+  background: #f1f2f3;
+  color: #111;
   border-radius: 8px;
   padding: 18px;
 }
@@ -372,11 +373,21 @@ select {
 .scorecard input,
 .scorecard select {
   background: #fff;
-  color: var(--ink);
+  color: #111;
   border-color: #c5cbe8;
   width: 100%;
   min-width: 72px;
   max-width: 220px;
+}
+
+.scorecard .pin-adj,
+.scorecard .muted,
+.scorecard .round-title {
+  color: #5a5a5a;
+}
+
+.scorecard .slot-tag {
+  color: #5a64a0;
 }
 
 .pin-entry {
