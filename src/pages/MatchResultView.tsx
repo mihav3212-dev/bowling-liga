@@ -5,9 +5,10 @@ import { exportMatchPdf } from "../lib/exportPdf";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
 
-/** Skrči ime ekipe, da ostane znotraj stolpca (brez prekrivanja rezultata). */
+/** Vsaka beseda v svoji vrstici; velikost se prilagodi najdaljši besedi (brez lomljenja sredi besede). */
 function FitTeamName({ name, className }: { name: string; className?: string }) {
   const ref = useRef<HTMLHeadingElement>(null);
+  const words = name.trim().split(/\s+/).filter(Boolean);
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -15,17 +16,11 @@ function FitTeamName({ name, className }: { name: string; className?: string }) 
     if (!el || !box) return;
 
     const fit = () => {
-      const maxPx = Math.min(54, Math.max(22, box.clientWidth * 0.22));
-      const minPx = 13;
-      el.style.fontSize = `${maxPx}px`;
+      const maxPx = Math.min(52, Math.max(20, box.clientWidth * 0.28));
+      const minPx = 12;
       let size = maxPx;
-      // Najprej širina (ena dolga beseda), nato višina (več vrstic).
+      el.style.fontSize = `${size}px`;
       while (size > minPx && el.scrollWidth > box.clientWidth + 1) {
-        size -= 0.5;
-        el.style.fontSize = `${size}px`;
-      }
-      const maxH = Math.max(box.clientWidth * 0.55, 72);
-      while (size > minPx && el.scrollHeight > maxH) {
         size -= 0.5;
         el.style.fontSize = `${size}px`;
       }
@@ -39,7 +34,12 @@ function FitTeamName({ name, className }: { name: string; className?: string }) 
 
   return (
     <h1 ref={ref} className={className}>
-      {name}
+      {words.map((word, i) => (
+        <Fragment key={`${i}-${word}`}>
+          {i > 0 ? <br /> : null}
+          <span className="result-view-team-word">{word}</span>
+        </Fragment>
+      ))}
     </h1>
   );
 }
@@ -206,8 +206,7 @@ export function MatchResultView({
           </div>
         </div>
         <div className="result-view-meta">
-          <span className="result-view-final-mark" aria-hidden />
-          <span className="result-view-final">{m.complete ? "Končano" : "V teku"}</span>
+          {!m.complete && <span className="result-view-final">V teku</span>}
           <span className="result-view-when">{m.startsAtLabel}</span>
         </div>
       </header>
