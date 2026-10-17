@@ -3690,6 +3690,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   .result-view-round {
+    --rv-label-col: unset;
+    --rv-lane-gap: 6px;
     padding: 12px 0;
   }
 
@@ -3697,33 +3699,52 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     font-size: 1.05rem;
   }
 
-  .result-view-round {
-    --rv-label-col: 8.25rem;
-    --rv-lane-gap: 10px;
-  }
-
+  /* Na telefonu brez skupne poravnave z imeni — kompaktno in berljivo. */
   .result-view-round-stat {
+    grid-template-columns: max-content auto;
+    column-gap: 10px;
     font-size: 0.88rem;
   }
 
   .result-view-duels {
-    gap: 6px;
+    gap: 10px;
   }
 
   .result-view-duel {
-    font-size: 0.88rem;
+    grid-template-columns:
+      1.6rem
+      minmax(0, 1fr)
+      auto
+      auto
+      auto
+      minmax(0, 1fr);
+    column-gap: 5px;
+    row-gap: 2px;
+    font-size: 0.82rem;
+  }
+
+  .result-view-lane {
+    font-size: 0.75rem;
+  }
+
+  .result-view-duel-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.15;
+    font-size: 0.78rem;
   }
 
   .result-view-duel-mid {
-    min-width: 2.6rem;
+    min-width: 0;
   }
 
   .result-view-duel-small {
-    font-size: 0.8em;
+    font-size: 0.72rem;
   }
 
   .result-view-duel-pins {
-    font-size: 1em;
-    min-width: 1.6em;
+    font-size: 0.9em;
+    min-width: 1.5em;
   }
 }
