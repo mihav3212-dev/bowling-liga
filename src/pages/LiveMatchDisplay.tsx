@@ -110,6 +110,8 @@ const emptyDuels = (names: [string, string][]): DuelRow[] =>
     awayName,
     homePins: null,
     awayPins: null,
+    homeSmall: null,
+    awaySmall: null,
   }));
 
 const LINEUPS: [string, string][][] = [
@@ -164,10 +166,10 @@ const PREVIEW_LIVE: LiveMatchView = {
       homePins: 312,
       awayPins: 278,
       duels: [
-        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 187, awayPins: 162 },
-        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: 201, awayPins: 178 },
-        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 168, awayPins: 155 },
-        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: 156, awayPins: 183 },
+        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 187, awayPins: 162, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: 201, awayPins: 178, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 168, awayPins: 155, homeSmall: 2, awaySmall: 0 },
+        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: 156, awayPins: 183, homeSmall: 0, awaySmall: 2 },
       ],
     },
     {
@@ -179,10 +181,10 @@ const PREVIEW_LIVE: LiveMatchView = {
       homePins: 300,
       awayPins: 270,
       duels: [
-        { lane: 1, homeName: "Tomaž Kralj", awayName: "Andrej Kovač", homePins: 172, awayPins: 160 },
-        { lane: 2, homeName: "Simon Breznik", awayName: "Matej Hribar", homePins: 145, awayPins: 158 },
-        { lane: 3, homeName: "Miha Novak", awayName: "Luka Vidmar", homePins: 190, awayPins: null },
-        { lane: 4, homeName: "Janez Horvat", awayName: "Peter Zupan", homePins: null, awayPins: null },
+        { lane: 1, homeName: "Tomaž Kralj", awayName: "Andrej Kovač", homePins: 172, awayPins: 160, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Simon Breznik", awayName: "Matej Hribar", homePins: 145, awayPins: 158, homeSmall: 0, awaySmall: 2 },
+        { lane: 3, homeName: "Miha Novak", awayName: "Luka Vidmar", homePins: 190, awayPins: null, homeSmall: null, awaySmall: null },
+        { lane: 4, homeName: "Janez Horvat", awayName: "Peter Zupan", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
       ],
     },
     {
@@ -232,10 +234,10 @@ const PREVIEW_FINAL: LiveMatchView = {
       homePins: 312,
       awayPins: 278,
       duels: [
-        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 187, awayPins: 162 },
-        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: 201, awayPins: 178 },
-        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 168, awayPins: 155 },
-        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: 156, awayPins: 183 },
+        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 187, awayPins: 162, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: 201, awayPins: 178, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 168, awayPins: 155, homeSmall: 2, awaySmall: 0 },
+        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: 156, awayPins: 183, homeSmall: 0, awaySmall: 2 },
       ],
     },
     {
@@ -247,10 +249,10 @@ const PREVIEW_FINAL: LiveMatchView = {
       homePins: 300,
       awayPins: 270,
       duels: [
-        { lane: 1, homeName: "Tomaž Kralj", awayName: "Andrej Kovač", homePins: 172, awayPins: 160 },
-        { lane: 2, homeName: "Simon Breznik", awayName: "Matej Hribar", homePins: 145, awayPins: 158 },
-        { lane: 3, homeName: "Miha Novak", awayName: "Luka Vidmar", homePins: 190, awayPins: 171 },
-        { lane: 4, homeName: "Janez Horvat", awayName: "Peter Zupan", homePins: 193, awayPins: 181 },
+        { lane: 1, homeName: "Tomaž Kralj", awayName: "Andrej Kovač", homePins: 172, awayPins: 160, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Simon Breznik", awayName: "Matej Hribar", homePins: 145, awayPins: 158, homeSmall: 0, awaySmall: 2 },
+        { lane: 3, homeName: "Miha Novak", awayName: "Luka Vidmar", homePins: 190, awayPins: 171, homeSmall: 2, awaySmall: 0 },
+        { lane: 4, homeName: "Janez Horvat", awayName: "Peter Zupan", homePins: 193, awayPins: 181, homeSmall: 2, awaySmall: 0 },
       ],
     },
     {
@@ -262,10 +264,10 @@ const PREVIEW_FINAL: LiveMatchView = {
       homePins: 293,
       awayPins: 269,
       duels: [
-        { lane: 1, homeName: "Janez Horvat", awayName: "Matej Hribar", homePins: 178, awayPins: 166 },
-        { lane: 2, homeName: "Miha Novak", awayName: "Andrej Kovač", homePins: 185, awayPins: 149 },
-        { lane: 3, homeName: "Simon Breznik", awayName: "Peter Zupan", homePins: 152, awayPins: 170 },
-        { lane: 4, homeName: "Tomaž Kralj", awayName: "Luka Vidmar", homePins: 178, awayPins: 184 },
+        { lane: 1, homeName: "Janez Horvat", awayName: "Matej Hribar", homePins: 178, awayPins: 166, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Miha Novak", awayName: "Andrej Kovač", homePins: 185, awayPins: 149, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "Simon Breznik", awayName: "Peter Zupan", homePins: 152, awayPins: 170, homeSmall: 0, awaySmall: 2 },
+        { lane: 4, homeName: "Tomaž Kralj", awayName: "Luka Vidmar", homePins: 178, awayPins: 184, homeSmall: 0, awaySmall: 2 },
       ],
     },
     {
@@ -277,10 +279,10 @@ const PREVIEW_FINAL: LiveMatchView = {
       homePins: 343,
       awayPins: 279,
       duels: [
-        { lane: 1, homeName: "Simon Breznik", awayName: "Luka Vidmar", homePins: 178, awayPins: 165 },
-        { lane: 2, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 192, awayPins: 171 },
-        { lane: 3, homeName: "Janez Horvat", awayName: "Andrej Kovač", homePins: 168, awayPins: 184 },
-        { lane: 4, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 205, awayPins: 159 },
+        { lane: 1, homeName: "Simon Breznik", awayName: "Luka Vidmar", homePins: 178, awayPins: 165, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 192, awayPins: 171, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "Janez Horvat", awayName: "Andrej Kovač", homePins: 168, awayPins: 184, homeSmall: 0, awaySmall: 2 },
+        { lane: 4, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 205, awayPins: 159, homeSmall: 2, awaySmall: 0 },
       ],
     },
   ],

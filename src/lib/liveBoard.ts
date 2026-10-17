@@ -1,6 +1,6 @@
 import { formatMatchWhen } from "./labels";
 import { matchesInPlay, nextSlotMatches } from "./live";
-import { matchTotals, playerById, scoredPins } from "./scoring";
+import { matchTotals, playerById, scoreGame, scoredPins } from "./scoring";
 import { pairingTemplate, slotLabel } from "./pairings";
 import type { LeagueState, Match, Player } from "./types";
 
@@ -17,6 +17,9 @@ export type LiveDuelRow = {
   awayName: string;
   homePins: number | null;
   awayPins: number | null;
+  /** Male točke iz tega dvoboja (duel + bonus). */
+  homeSmall: number | null;
+  awaySmall: number | null;
 };
 
 export type LiveRoundSummary = {
@@ -135,12 +138,15 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
     const rt = totals.rounds[ri];
     const duels: LiveDuelRow[] = (round.games ?? []).map((game, gi) => {
       const pair = templates[ri]?.[gi];
+      const scored = scoreGame(game, state.players);
       return {
         lane: game.lane || pair?.lane || gi + 1,
         homeName: nameFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi),
         awayName: nameFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi),
         homePins: displayPins(game.homePins, game.homePlayerId, state.players),
         awayPins: displayPins(game.awayPins, game.awayPlayerId, state.players),
+        homeSmall: scored?.homeTotal ?? null,
+        awaySmall: scored?.awayTotal ?? null,
       };
     });
     const hasPins = duels.some((d) => d.homePins != null || d.awayPins != null);
@@ -173,6 +179,8 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
         awayName: slotLabel("away", lane - 1),
         homePins: null,
         awayPins: null,
+        homeSmall: null,
+        awaySmall: null,
       })),
     });
   }

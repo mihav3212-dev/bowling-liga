@@ -70,10 +70,10 @@ const PREVIEW: LiveMatchView = {
       homePins: 312,
       awayPins: 278,
       duels: [
-        { lane: 1, homeName: "M. Novak", awayName: "P. Zupan", homePins: 187, awayPins: 162 },
-        { lane: 2, homeName: "J. Horvat", awayName: "L. Vidmar", homePins: 201, awayPins: 178 },
-        { lane: 3, homeName: "T. Kralj", awayName: "M. Hribar", homePins: 168, awayPins: 155 },
-        { lane: 4, homeName: "S. Breznik", awayName: "A. Kovač", homePins: 156, awayPins: 183 },
+        { lane: 1, homeName: "M. Novak", awayName: "P. Zupan", homePins: 187, awayPins: 162, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "J. Horvat", awayName: "L. Vidmar", homePins: 201, awayPins: 178, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "T. Kralj", awayName: "M. Hribar", homePins: 168, awayPins: 155, homeSmall: 2, awaySmall: 0 },
+        { lane: 4, homeName: "S. Breznik", awayName: "A. Kovač", homePins: 156, awayPins: 183, homeSmall: 0, awaySmall: 2 },
       ],
     },
     {
@@ -85,10 +85,10 @@ const PREVIEW: LiveMatchView = {
       homePins: 300,
       awayPins: 270,
       duels: [
-        { lane: 1, homeName: "T. Kralj", awayName: "A. Kovač", homePins: 172, awayPins: 160 },
-        { lane: 2, homeName: "S. Breznik", awayName: "M. Hribar", homePins: 145, awayPins: 158 },
-        { lane: 3, homeName: "M. Novak", awayName: "L. Vidmar", homePins: 190, awayPins: 171 },
-        { lane: 4, homeName: "J. Horvat", awayName: "P. Zupan", homePins: 193, awayPins: 181 },
+        { lane: 1, homeName: "T. Kralj", awayName: "A. Kovač", homePins: 172, awayPins: 160, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "S. Breznik", awayName: "M. Hribar", homePins: 145, awayPins: 158, homeSmall: 0, awaySmall: 2 },
+        { lane: 3, homeName: "M. Novak", awayName: "L. Vidmar", homePins: 190, awayPins: 171, homeSmall: 2, awaySmall: 0 },
+        { lane: 4, homeName: "J. Horvat", awayName: "P. Zupan", homePins: 193, awayPins: 181, homeSmall: 2, awaySmall: 0 },
       ],
     },
     {
@@ -100,10 +100,10 @@ const PREVIEW: LiveMatchView = {
       homePins: 293,
       awayPins: 269,
       duels: [
-        { lane: 1, homeName: "J. Horvat", awayName: "M. Hribar", homePins: 178, awayPins: 166 },
-        { lane: 2, homeName: "M. Novak", awayName: "A. Kovač", homePins: 185, awayPins: 149 },
-        { lane: 3, homeName: "S. Breznik", awayName: "P. Zupan", homePins: 152, awayPins: 170 },
-        { lane: 4, homeName: "T. Kralj", awayName: "L. Vidmar", homePins: 178, awayPins: 184 },
+        { lane: 1, homeName: "J. Horvat", awayName: "M. Hribar", homePins: 178, awayPins: 166, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "M. Novak", awayName: "A. Kovač", homePins: 185, awayPins: 149, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "S. Breznik", awayName: "P. Zupan", homePins: 152, awayPins: 170, homeSmall: 0, awaySmall: 2 },
+        { lane: 4, homeName: "T. Kralj", awayName: "L. Vidmar", homePins: 178, awayPins: 184, homeSmall: 0, awaySmall: 2 },
       ],
     },
     {
@@ -115,10 +115,10 @@ const PREVIEW: LiveMatchView = {
       homePins: 343,
       awayPins: 279,
       duels: [
-        { lane: 1, homeName: "S. Breznik", awayName: "L. Vidmar", homePins: 178, awayPins: 165 },
-        { lane: 2, homeName: "T. Kralj", awayName: "M. Hribar", homePins: 192, awayPins: 171 },
-        { lane: 3, homeName: "J. Horvat", awayName: "A. Kovač", homePins: 168, awayPins: 184 },
-        { lane: 4, homeName: "M. Novak", awayName: "P. Zupan", homePins: 205, awayPins: 159 },
+        { lane: 1, homeName: "S. Breznik", awayName: "L. Vidmar", homePins: 178, awayPins: 165, homeSmall: 2, awaySmall: 0 },
+        { lane: 2, homeName: "T. Kralj", awayName: "M. Hribar", homePins: 192, awayPins: 171, homeSmall: 2, awaySmall: 0 },
+        { lane: 3, homeName: "J. Horvat", awayName: "A. Kovač", homePins: 168, awayPins: 184, homeSmall: 0, awaySmall: 2 },
+        { lane: 4, homeName: "M. Novak", awayName: "P. Zupan", homePins: 205, awayPins: 159, homeSmall: 2, awaySmall: 0 },
       ],
     },
   ],
@@ -198,17 +198,9 @@ export function MatchResultView({
       )}
 
       <header className="result-view-top">
-        <div className="result-view-brand">
-          <img src="/logo-bowling-lenart.png" alt="" className="result-view-logo" />
-          <div>
-            <div className="result-view-brand-name">Bowling Lenart</div>
-            <div className="result-view-brand-sub">Liga · {m.round}. kolo</div>
-          </div>
-        </div>
-        <div className="result-view-meta">
-          {!m.complete && <span className="result-view-final">V teku</span>}
-          <span className="result-view-when">{m.startsAtLabel}</span>
-        </div>
+        <div className="result-view-kolo">Liga · {m.round}. kolo</div>
+        <div className="result-view-when">{m.startsAtLabel}</div>
+        {!m.complete && <div className="result-view-final">V teku</div>}
       </header>
 
       <section className="result-view-scoreboard">
@@ -260,7 +252,7 @@ export function MatchResultView({
         <h2 className="result-view-rounds-title">Po krogih</h2>
         <div className="result-view-rounds-stack">
           {m.roundSummaries.map((r) => {
-            const lead =
+            const smallLead =
               r.homeSmall == null || r.awaySmall == null
                 ? "open"
                 : r.homeSmall === r.awaySmall
@@ -270,29 +262,48 @@ export function MatchResultView({
                     : "away";
             return (
               <article key={r.round} className="result-view-round">
-                <div className="result-view-round-head">
-                  <div className="result-view-round-num">{r.round}. krog</div>
-                  <div className="result-view-round-score">
-                    <span className={lead === "home" ? "is-lead" : undefined}>
-                      {r.homeSmall ?? "·"}
-                    </span>
-                    <span className="result-view-score-sep">:</span>
-                    <span className={lead === "away" ? "is-lead" : undefined}>
-                      {r.awaySmall ?? "·"}
-                    </span>
+                <div className="result-view-round-num">{r.round}. krog</div>
+                <dl className="result-view-round-stats">
+                  <div className="result-view-round-stat">
+                    <dt>Male točke</dt>
+                    <dd>
+                      <span className={smallLead === "home" ? "is-lead" : undefined}>
+                        {r.homeSmall ?? "·"}
+                      </span>
+                      <span className="result-view-score-sep">:</span>
+                      <span className={smallLead === "away" ? "is-lead" : undefined}>
+                        {r.awaySmall ?? "·"}
+                      </span>
+                    </dd>
                   </div>
-                  {r.homeBig != null && r.awayBig != null && (
-                    <div className="result-view-round-big">
-                      Velike {r.homeBig}:{r.awayBig}
-                    </div>
-                  )}
-                  <div className="result-view-round-pins">
-                    {r.homePins ?? "—"}:{r.awayPins ?? "—"} kegljev
+                  <div className="result-view-round-stat">
+                    <dt>Velike točke</dt>
+                    <dd>
+                      {r.homeBig != null && r.awayBig != null ? (
+                        <>
+                          {r.homeBig}:{r.awayBig}
+                        </>
+                      ) : (
+                        "·:·"
+                      )}
+                    </dd>
                   </div>
-                </div>
+                  <div className="result-view-round-stat">
+                    <dt>Keglji</dt>
+                    <dd>
+                      {r.homePins != null && r.awayPins != null
+                        ? `${r.homePins}:${r.awayPins}`
+                        : "—:—"}
+                    </dd>
+                  </div>
+                </dl>
                 <div className="result-view-duels">
                   {r.duels.map((d) => {
                     const dLead = duelLead(d.homePins, d.awayPins);
+                    const small =
+                      d.homeSmall != null && d.awaySmall != null
+                        ? `(${d.homeSmall}:${d.awaySmall})`
+                        : null;
                     return (
                       <div key={d.lane} className="result-view-duel">
                         <span className="result-view-lane">S{d.lane}</span>
@@ -306,7 +317,13 @@ export function MatchResultView({
                         >
                           {pinsLabel(d.homePins)}
                         </span>
-                        <span className="result-view-duel-sep">–</span>
+                        <span className="result-view-duel-mid">
+                          {small ? (
+                            <span className="result-view-duel-small">{small}</span>
+                          ) : (
+                            <span className="result-view-duel-sep">–</span>
+                          )}
+                        </span>
                         <span
                           className={`result-view-duel-pins is-away${dLead === "away" ? " is-lead" : ""}`}
                         >
