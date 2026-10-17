@@ -437,16 +437,22 @@ function LeagueApp() {
           />
         )}
         {page === "standings" && (
-          <>
+          <div className="board-view">
+            <div className="board-view-glow" aria-hidden />
+            <div className="board-view-toolbar">
+              <PdfButton label="PDF lestvice" onExport={() => exportStandingsPdf(state)} />
+            </div>
             <Standings />
-            <PdfButton label="Izvozi PDF lestvice" onExport={() => exportStandingsPdf(state)} />
-          </>
+          </div>
         )}
         {page === "players" && (
-          <>
+          <div className="board-view">
+            <div className="board-view-glow" aria-hidden />
+            <div className="board-view-toolbar">
+              <PdfButton label="PDF igralcev" onExport={() => exportPlayersPdf(state)} />
+            </div>
             <PlayerStandings />
-            <PdfButton label="Izvozi PDF igralcev" onExport={() => exportPlayersPdf(state)} />
-          </>
+          </div>
         )}
         {page === "access" && canEdit && <TeamAccess />}
         {(canEdit || teamCaps.season) && page === "teams" && !detailTeamId && (

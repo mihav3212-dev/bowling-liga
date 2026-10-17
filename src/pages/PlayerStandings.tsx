@@ -8,16 +8,16 @@ export function PlayerStandings() {
   const colSpan = 5 + roundCount;
 
   return (
-    <section className="panel">
-      <div>
-        <h2 className="round-title">Lestvica igralcev</h2>
-        <p className="muted">
-          Keglji na tekmo, skupaj, odigrane igre in povprečje. Razvrstitev po povprečju.
-        </p>
-        <p className="muted players-scroll-hint">Podrsaj vodoravno za kola.</p>
-      </div>
-      <div className="table-scroll players-scroll">
-        <table className="standings players">
+    <>
+      <header className="board-view-top">
+        <h2 className="board-view-title">Lestvica igralcev</h2>
+        <p className="board-view-sub">Razvrstitev po povprečju kegljev</p>
+        <p className="board-view-note">Keglji na tekmo, skupaj, odigrane igre in povprečje.</p>
+        <p className="board-view-note board-view-scroll-hint">Podrsaj vodoravno za kola.</p>
+      </header>
+
+      <div className="board-view-table-wrap players-scroll">
+        <table className="board-standings players">
           <thead>
             <tr>
               <th>#</th>
@@ -36,16 +36,16 @@ export function PlayerStandings() {
           <tbody>
             {players.length === 0 && (
               <tr>
-                <td colSpan={colSpan} className="muted" style={{ textAlign: "left" }}>
+                <td colSpan={colSpan} className="board-empty">
                   Še ni odigranih iger.
                 </td>
               </tr>
             )}
             {players.map((row, i) => (
-              <tr key={row.player.id}>
-                <td className="mono">{i + 1}</td>
-                <td>{row.player.name}</td>
-                <td>{row.teamName}</td>
+              <tr key={row.player.id} className={i === 0 ? "is-lead" : undefined}>
+                <td className="mono board-rank">{i + 1}</td>
+                <td className="board-name">{row.player.name}</td>
+                <td className="board-team">{row.teamName}</td>
                 {row.byRound.map((games, ri) => {
                   const pins = games.reduce((sum, n) => sum + n, 0);
                   return (
@@ -56,12 +56,12 @@ export function PlayerStandings() {
                 })}
                 <td className="mono">{row.pins}</td>
                 <td className="mono">{row.games}</td>
-                <td className="mono">{row.avg.toFixed(1)}</td>
+                <td className="mono board-points">{row.avg.toFixed(1)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-    </section>
+    </>
   );
 }
