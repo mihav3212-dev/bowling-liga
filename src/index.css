@@ -3108,7 +3108,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   max-width: none;
   margin: 0;
   padding-top: 0;
-  padding-bottom: 40px;
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
   padding-left: 0;
   padding-right: 0;
   background: var(--rv-bg);
@@ -3117,14 +3117,24 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   border: 0;
   border-radius: 0;
   box-shadow: none;
+  min-height: calc(100dvh - 11rem);
 }
 
-/* Razširi temno ploščo čez padding app-shella — brez vertikalnih robov. */
+/* Temna plošča čez celotno širino/višino — brez sivega roba okoli. */
+body:has(.result-view),
+body:has(.board-view) {
+  background: #0c0b0b;
+}
+
 .app-shell:has(> .result-view),
 .app-shell:has(> .board-view) {
-  max-width: none;
+  max-width: none !important;
+  width: 100%;
+  margin: 0;
   padding-left: 0;
   padding-right: 0;
+  padding-bottom: 0;
+  background: #0c0b0b;
 }
 
 .app-shell:has(> .result-view) > :not(.result-view),
@@ -3764,10 +3774,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   box-sizing: border-box;
   width: 100%;
   margin: 0;
-  padding: 0 0 40px;
+  padding: 0 0 max(32px, env(safe-area-inset-bottom));
   background: var(--rv-bg);
   color: var(--rv-ink);
   overflow-x: hidden;
+  min-height: calc(100dvh - 11rem);
 }
 
 .board-view-glow {
@@ -3995,8 +4006,20 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 @media (max-width: 720px) {
+  .app-shell:has(> .result-view),
+  .app-shell:has(> .board-view) {
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 0;
+  }
+
   .board-view-scroll-hint {
     display: block;
+  }
+
+  .board-view,
+  .result-view {
+    min-height: calc(100dvh - 9.5rem);
   }
 
   .board-standings th,
