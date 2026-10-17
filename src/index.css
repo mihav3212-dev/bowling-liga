@@ -3157,27 +3157,24 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .result-view-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 8px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 8px;
   padding-top: clamp(6px, 1.5vw, 12px);
 }
 
-.result-view-toolbar:not(.has-edit) {
-  grid-template-columns: minmax(0, 1fr) auto;
+.result-view-toolbar-spacer {
+  flex: 1;
 }
 
 .result-view-toolbar-actions {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 8px;
-}
-
-.result-view-back-short {
-  display: none;
+  flex-shrink: 0;
 }
 
 .result-view-edit {
@@ -3185,7 +3182,6 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  justify-self: end;
 }
 
 .result-view-toolbar .ghost,
@@ -3323,9 +3319,10 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   color: var(--rv-accent);
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(0.8rem, 1.3vw, 1rem);
-  letter-spacing: 0.18em;
-  margin-bottom: 2px;
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
 .result-view-score {
@@ -3602,27 +3599,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   .result-view-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
     margin-bottom: 12px;
-  }
-
-  .result-view-toolbar.has-edit .result-view-edit {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    width: 100%;
-  }
-
-  .result-view-back-full {
-    display: none;
-  }
-
-  .result-view-back-short {
-    display: inline;
-  }
-
-  .result-view-toolbar-actions {
-    margin-left: 0;
   }
 
   .result-view-preview-note {
@@ -3667,8 +3645,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   .result-view-score-label {
-    font-size: 0.65rem;
-    letter-spacing: 0.12em;
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
   }
 
   .result-view-score {

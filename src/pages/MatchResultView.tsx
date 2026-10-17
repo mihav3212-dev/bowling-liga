@@ -169,16 +169,15 @@ export function MatchResultView({
       <div className="result-view-glow" aria-hidden />
 
       {(onBack || preview || onEdit) && (
-        <div className={`result-view-toolbar${onEdit ? " has-edit" : ""}`}>
+        <div className="result-view-toolbar">
           {onBack ? (
             <button type="button" className="ghost result-view-back" onClick={onBack}>
-              <span className="result-view-back-full">← Nazaj na rezultate</span>
-              <span className="result-view-back-short">← Nazaj</span>
+              ← Nazaj na rezultate
             </button>
           ) : preview ? (
             <span className="result-view-preview-tag">Predogled · zavihek Rezultati</span>
           ) : (
-            <span />
+            <span className="result-view-toolbar-spacer" />
           )}
           <div className="result-view-toolbar-actions">
             {preview && (
@@ -189,12 +188,12 @@ export function MatchResultView({
             {matchId && !preview && (
               <PdfButton label="PDF" onExport={() => exportMatchPdf(state, matchId)} />
             )}
+            {onEdit && (
+              <button type="button" className="primary result-view-edit" onClick={onEdit}>
+                Popravi
+              </button>
+            )}
           </div>
-          {onEdit && (
-            <button type="button" className="primary result-view-edit" onClick={onEdit}>
-              Popravi
-            </button>
-          )}
         </div>
       )}
 
