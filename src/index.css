@@ -3173,8 +3173,12 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 4px;
   flex-shrink: 0;
+}
+
+.result-view-toolbar-actions .page-export {
+  margin: 0;
 }
 
 .result-view-edit {
@@ -3405,6 +3409,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .result-view-round {
+  --rv-lane-track: 2.5rem;
+  --rv-lane-gap: 8px;
   border: 0;
   border-top: 1px solid var(--rv-line);
   border-radius: 0;
@@ -3428,8 +3434,10 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .result-view-round-stats {
+  /* Poravnava z imeni igralcev (stolpec S1–S4 + razmak). */
   margin: 0 0 12px;
   padding-bottom: 12px;
+  padding-left: calc(var(--rv-lane-track) + var(--rv-lane-gap));
   border-bottom: 1px solid var(--rv-line);
   display: grid;
   gap: 4px;
@@ -3527,14 +3535,15 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .result-view-duel {
   display: grid;
   grid-template-columns:
-    minmax(36px, 0.4fr)
+    var(--rv-lane-track, 2.5rem)
     minmax(0, 1.4fr)
     auto
     minmax(3.2rem, auto)
     auto
     minmax(0, 1.4fr);
   align-items: baseline;
-  gap: 6px 8px;
+  column-gap: var(--rv-lane-gap, 8px);
+  row-gap: 6px;
   font-size: clamp(0.95rem, 1.6vw, 1.15rem);
 }
 
@@ -3685,6 +3694,10 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
   .result-view-round-num {
     font-size: 1.05rem;
+  }
+
+  .result-view-round-stats {
+    padding-left: 0;
   }
 
   .result-view-round-stat {
