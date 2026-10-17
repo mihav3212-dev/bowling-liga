@@ -14,16 +14,17 @@ html[data-theme="dark"] {
   --input-bg: #161515;
   --input-fg: #f4f2ef;
   --surface: #111;
-  --copper: #e8a06a;
-  --copper-2: #b04fc4;
-  --accent: #e8a06a;
-  --round: #e8a06a;
+  /* Oranžna ↔ vijolična (razen na lestvicah / ogledu tekme — glej .board-view / .result-view). */
+  --copper: #b04fc4;
+  --copper-2: #e8a06a;
+  --accent: #b04fc4;
+  --round: #b04fc4;
   --green: #7cffb2;
   --line: rgba(255, 255, 255, 0.1);
   --card: #141312;
   --row-alt: rgba(255, 255, 255, 0.03);
   --table-head: #161515;
-  --score: #b04fc4;
+  --score: #e8a06a;
 }
 
 html[data-theme="light"] {
@@ -3153,6 +3154,12 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   --rv-accent: #e8a06a;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
+  /* Lestvice / rezultat tekme: oranžna in vijolična ostanejo kot doslej. */
+  --copper: #e8a06a;
+  --copper-2: #b04fc4;
+  --accent: #e8a06a;
+  --round: #e8a06a;
+  --score: #b04fc4;
   position: relative;
   isolation: isolate;
   box-sizing: border-box;
@@ -3821,6 +3828,12 @@ body:has(.board-view) {
   --rv-accent: #e8a06a;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
+  /* Lestvice: oranžna in vijolična ostanejo kot doslej. */
+  --copper: #e8a06a;
+  --copper-2: #b04fc4;
+  --accent: #e8a06a;
+  --round: #e8a06a;
+  --score: #b04fc4;
   position: relative;
   isolation: isolate;
   box-sizing: border-box;
