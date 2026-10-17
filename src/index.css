@@ -1,29 +1,29 @@
 :root,
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #2a2929;
-  --bg-2: #1f1e1e;
-  --paper: #f1f2f3;
-  --ink: #111;
-  --muted: #b8b6b4;
-  --title: #dddada;
-  --fg: #fff;
+  --bg: #0c0b0b;
+  --bg-2: #141312;
+  --paper: rgba(255, 255, 255, 0.08);
+  --ink: #f4f2ef;
+  --muted: #9a9690;
+  --title: #f4f2ef;
+  --fg: #f4f2ef;
   --header-bg: #000;
   --header-fg: #ddd;
-  --header-line: #444;
-  --input-bg: #141414;
-  --input-fg: #fff;
+  --header-line: #333;
+  --input-bg: #161515;
+  --input-fg: #f4f2ef;
   --surface: #111;
-  --copper: #0006ff;
-  --copper-2: #cc3366;
-  --accent: #af4b2f;
-  --round: #595dff;
+  --copper: #e8a06a;
+  --copper-2: #b04fc4;
+  --accent: #e8a06a;
+  --round: #e8a06a;
   --green: #7cffb2;
-  --line: rgba(255, 255, 255, 0.12);
-  --card: #353433;
-  --row-alt: rgba(89, 93, 255, 0.14);
-  --table-head: #2a2d6b;
-  --score: #c83d8e;
+  --line: rgba(255, 255, 255, 0.1);
+  --card: #141312;
+  --row-alt: rgba(255, 255, 255, 0.03);
+  --table-head: #161515;
+  --score: #b04fc4;
 }
 
 html[data-theme="light"] {
@@ -192,22 +192,28 @@ a {
   top: 0;
   z-index: 8;
   background: var(--bg);
+  border-bottom: 1px solid var(--line);
 }
 
 .liga-tabs button {
-  background: var(--paper);
-  color: #000;
-  border: 0;
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
   border-radius: 50px;
   padding: 12px 22px;
   min-height: 44px;
   cursor: pointer;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .liga-tabs button.active,
 .liga-tabs button:hover {
   background: var(--copper);
-  color: #fff;
+  border-color: var(--copper);
+  color: #0c0b0b;
 }
 
 .perm-table th {
@@ -329,13 +335,14 @@ button.danger {
 
 button.primary {
   background: var(--copper);
-  color: #fff;
-  font-weight: 500;
+  color: #0c0b0b;
+  font-weight: 600;
 }
 
 button.ghost {
-  background: var(--paper);
-  color: #000;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--fg);
+  border: 1px solid var(--line);
 }
 
 button.danger {
@@ -470,19 +477,22 @@ select {
 }
 
 .stat-block {
-  margin-top: 16px;
+  margin-top: 18px;
   margin-bottom: 8px;
-  padding: 12px 14px 8px;
-  border-radius: 10px;
-  background: var(--card);
-  border-left: 4px solid var(--copper-2);
+  padding: 14px 0 4px;
+  border-radius: 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 
 .stat-block h3 {
-  font-size: 13px;
-  color: var(--round);
-  margin: 0 0 10px;
-  letter-spacing: 0.03em;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 12px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -492,23 +502,65 @@ select {
   list-style: none;
 }
 
-.stat-block li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+.stat-block li,
+.board-top-line {
+  display: grid;
+  grid-template-columns: 2rem minmax(2.5rem, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px 12px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
   font-size: 15px;
   line-height: 1.4;
 }
 
-.stat-block .mono {
-  color: var(--score);
-  font-weight: 650;
+.stat-block li:last-child,
+.board-top-line:last-child {
+  border-bottom: 0;
 }
 
-.stat-block li span:first-child {
+.board-top-rank {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.board-top-value,
+.stat-block .mono {
+  color: var(--score);
+  font-weight: 700;
+}
+
+.board-top-who {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   overflow-wrap: anywhere;
+}
+
+.board-highlights {
+  margin-top: 28px;
+  padding-top: 8px;
+}
+
+.board-highlights-title {
+  text-align: left;
+  font-size: clamp(1.25rem, 2.6vw, 1.7rem);
+  margin-bottom: 14px;
+}
+
+.board-highlights .recap-head {
+  background: transparent;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 12px 0;
+  margin: 0;
+}
+
+.board-highlights .recap-head-value .mono {
+  color: var(--score);
 }
 
 .lineup-list {
@@ -3857,6 +3909,33 @@ body:has(.board-view) {
   border-top: 1px solid var(--rv-line);
   border-bottom: 1px solid var(--rv-line);
   margin-bottom: 20px;
+}
+
+/* Drsnik vedno viden v okvirju tabele (ne šele na dnu dolge tabele). */
+.board-view-table-wrap.players-scroll {
+  max-height: calc(100dvh - 13rem);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.06);
+}
+
+.board-view-table-wrap.players-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.board-view-table-wrap.players-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.board-view-table-wrap.players-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+}
+
+.board-view-table-wrap.players-scroll::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .board-standings {

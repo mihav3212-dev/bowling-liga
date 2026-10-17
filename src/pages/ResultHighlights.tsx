@@ -8,10 +8,13 @@ function sliceRound(state: LeagueState, round: number): LeagueState {
 
 function Line({ line }: { line: RecapLine }) {
   return (
-    <li>
-      <span>
-        {line.showRank && line.rank != null ? `${line.rank}. ` : ""}
-        <span className="mono">{line.value}</span> {line.name}
+    <li className="board-top-line">
+      <span className="board-top-rank">
+        {line.showRank && line.rank != null ? `${line.rank}.` : ""}
+      </span>
+      <span className="mono board-top-value">{line.value}</span>
+      <span className="board-top-who">
+        {line.name}
         {line.team ? ` (${line.team})` : ""}
       </span>
     </li>
@@ -92,8 +95,10 @@ export function ResultHighlights({
       : "Najboljši rezultati sezone";
 
   return (
-    <section className={`standings-extras${scope === "round" ? " round-highlights" : " panel"}`}>
-      {scope === "season" && <h2 className="round-title">{title}</h2>}
+    <section
+      className={`standings-extras board-highlights${scope === "round" ? " round-highlights" : ""}`}
+    >
+      {scope === "season" && <h2 className="board-view-title board-highlights-title">{title}</h2>}
       {scope === "round" && <h3 className="recap-title">{title}</h3>}
       <RecapBody state={data} />
     </section>

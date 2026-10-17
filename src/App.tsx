@@ -9,7 +9,6 @@ import { Teams } from "./pages/Teams";
 import { Training } from "./pages/Training";
 import { ClaimInvite } from "./pages/ClaimInvite";
 import { Login } from "./pages/Login";
-import { ThemePicker } from "./pages/ThemePicker";
 import { AdminMenu } from "./pages/AdminMenu";
 import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
@@ -268,9 +267,6 @@ function LeagueApp() {
           <a href="https://bowlinglenart.si/" aria-label="Bowling Lenart">
             <img className="logo" src="/logo-bowling-lenart.png" alt="Bowling Lenart" />
           </a>
-          <div className="header-actions">
-            <ThemePicker />
-          </div>
         </header>
         <Setup onDone={() => window.location.reload()} onSkip={() => setSetupNeeded(false)} />
       </div>
@@ -296,7 +292,6 @@ function LeagueApp() {
               setInviteToken(token);
             }}
           />
-          <ThemePicker />
         </div>
       </header>
 
