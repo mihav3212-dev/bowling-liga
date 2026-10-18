@@ -457,6 +457,12 @@ function LeagueApp() {
             canManage={canEdit}
             canRoster={canEdit || canTeam(loginTeam, "roster")}
             showTraining={canEdit || detailTeamId === loginTeamId}
+            onOpenMatch={(id) => {
+              commitNav(
+                { ...navRef.current, page: "results", matchId: id, detailTeamId: null },
+                "push",
+              );
+            }}
           />
         )}
         {Boolean(loginTeamId) && !teamCaps.season && !canEdit && page === "teams" && (
@@ -466,6 +472,12 @@ function LeagueApp() {
             backLabel="← Razpored"
             canManage={false}
             canRoster={canTeam(loginTeam, "roster")}
+            onOpenMatch={(id) => {
+              commitNav(
+                { ...navRef.current, page: "results", matchId: id, detailTeamId: null },
+                "push",
+              );
+            }}
           />
         )}
           </>

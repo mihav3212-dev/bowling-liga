@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
+import { computePlayerDetailStats } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { formatInviteCode, formatInviteUntil, inviteStillOpen } from "../lib/invite";
+import { PlayerDetail } from "./PlayerDetail";
 import { Training } from "./Training";
 
 export function TeamDetail({
@@ -13,6 +15,7 @@ export function TeamDetail({
   canManage = true,
   canRoster = true,
   showTraining = true,
+  onOpenMatch,
 }: {
   teamId: string;
   onBack: () => void;
@@ -20,6 +23,7 @@ export function TeamDetail({
   canManage?: boolean;
   canRoster?: boolean;
   showTraining?: boolean;
+  onOpenMatch?: (matchId: string) => void;
 }) {
   const {
     state,
@@ -48,9 +52,11 @@ export function TeamDetail({
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveNote, setSaveNote] = useState("");
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
+  const [detailPlayerId, setDetailPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     setTrainingSessionId(null);
+    setDetailPlayerId(null);
     setInviteUrl("");
     setInviteCode("");
     setInviteUntil("");
@@ -61,6 +67,16 @@ export function TeamDetail({
   if (!team) return <p>Ekipa ne obstaja.</p>;
   const rosterOpen = teamRosterWindowOpen(state.matches);
   const editRoster = canRoster && (canManage || rosterOpen);
+
+  if (detailPlayerId) {
+    return (
+      <PlayerDetail
+        playerId={detailPlayerId}
+        onBack={() => setDetailPlayerId(null)}
+        onOpenMatch={onOpenMatch}
+      />
+    );
+  }
 
   return (
     <>
@@ -289,7 +305,13 @@ export function TeamDetail({
       </form>
       )}
       <div className="list roster-list" style={{ marginTop: 16 }}>
-        {players.map((p) => (
+        {players.map((p) => {
+          const stats = computePlayerDetailStats(state, p.id);
+          const summary =
+            stats && stats.games > 0
+              ? `${stats.games} iger · povp. ${stats.avg.toFixed(1)} · skupaj ${stats.pins}`
+              : "Še ni iger";
+          return (
           <div key={p.id} className={editRoster ? "form-row roster-player-row" : "roster-player-block"}>
             {editRoster ? (
               <>
@@ -321,6 +343,9 @@ export function TeamDetail({
                   />{" "}
                   BZS
                 </label>
+                <button className="ghost" type="button" onClick={() => setDetailPlayerId(p.id)}>
+                  Podrobnosti
+                </button>
                 <button className="danger" type="button" onClick={() => removePlayer(p.id)}>
                   Odstrani
                 </button>
@@ -332,10 +357,19 @@ export function TeamDetail({
                   {p.gender === "F" ? "ženska" : "moški"}
                   {p.bzsMember ? " · BZS" : ""}
                 </span>
+                <span className="muted roster-player-stats">{summary}</span>
+                <button
+                  className="ghost roster-player-detail-btn"
+                  type="button"
+                  onClick={() => setDetailPlayerId(p.id)}
+                >
+                  Ogled podrobnosti
+                </button>
               </>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
       {(editRoster || canManage) && (
         <div className="row-actions" style={{ marginTop: 16 }}>

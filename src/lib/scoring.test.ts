@@ -14,7 +14,7 @@ import {
   scoreForfeit,
   scoreGame,
 } from "./scoring";
-import { computePlayerStandings, topGames } from "./standings";
+import { computePlayerDetailStats, computePlayerStandings, topGames } from "./standings";
 import type { LeagueState, Match, Player } from "./types";
 
 function player(over: Partial<Player> & { id: string }): Player {
@@ -379,5 +379,51 @@ describe("lestvica igralcev", () => {
     expect(rows[1].byRound[0]).toEqual([150]);
     expect(topGames(state, 2).map((g) => g.pins)).toEqual([200, 150]);
     expect(topGames({ ...state, matches: [] }, 2)).toEqual([]);
+  });
+});
+
+describe("computePlayerDetailStats", () => {
+  it("zbere igre po tekmah in stezah", () => {
+    const players = [
+      player({ id: "h1", teamId: "th", name: "HOME", gender: "F" }),
+      player({ id: "a1", teamId: "ta", name: "AWAY", gender: "M" }),
+    ];
+    const state: LeagueState = {
+      teams: [
+        { id: "th", name: "Home Team" },
+        { id: "ta", name: "Away Team" },
+      ],
+      players,
+      matches: [
+        {
+          id: "m1",
+          round: 2,
+          homeTeamId: "th",
+          awayTeamId: "ta",
+          homeStarters: ["h1"],
+          awayStarters: ["a1"],
+          homeBench: [],
+          awayBench: [],
+          status: "done",
+          rounds: [
+            {
+              games: [
+                { homePlayerId: "h1", awayPlayerId: "a1", lane: 1, homePins: 200, awayPins: 180 },
+                { homePlayerId: "h1", awayPlayerId: "a1", lane: 3, homePins: 160, awayPins: 170 },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const stats = computePlayerDetailStats(state, "h1");
+    expect(stats?.games).toBe(2);
+    expect(stats?.pins).toBe(208 + 168);
+    expect(stats?.matches).toHaveLength(1);
+    expect(stats?.matches[0].opponentTeamName).toBe("Away Team");
+    expect(stats?.matches[0].games.map((g) => g.lane)).toEqual([1, 3]);
+    expect(stats?.lanes.map((l) => l.lane)).toEqual([1, 3]);
+    expect(stats?.lanes[0].avg).toBe(208);
+    expect(stats?.best).toBe(208);
   });
 });

@@ -288,6 +288,166 @@ export function lastCompletedRound(state: LeagueState): number {
   return round;
 }
 
+/** Ena igra (steza) igralca v sezoni. */
+export type PlayerGameLine = {
+  matchId: string;
+  seasonRound: number;
+  matchRound: number;
+  lane: number;
+  pins: number;
+  opponentPlayerId: string;
+  home: boolean;
+};
+
+/** Serija na eni tekmi (vsi krogovi / steze). */
+export type PlayerMatchSeries = {
+  matchId: string;
+  seasonRound: number;
+  opponentTeamId: string;
+  opponentTeamName: string;
+  home: boolean;
+  games: PlayerGameLine[];
+  pins: number;
+  avg: number;
+  small: number;
+};
+
+export type PlayerLaneAgg = {
+  lane: number;
+  games: number;
+  pins: number;
+  avg: number;
+  best: number;
+};
+
+export type PlayerDetailStats = {
+  player: Player;
+  teamName: string;
+  games: number;
+  pins: number;
+  avg: number;
+  best: number;
+  small: number;
+  over200: number;
+  over220: number;
+  over240: number;
+  matches: PlayerMatchSeries[];
+  lanes: PlayerLaneAgg[];
+};
+
+function adjustedGamePins(raw: number | null, player: Player | undefined): number | null {
+  if (raw == null) return null;
+  if (raw === 0) return 0;
+  return scoredPins(raw, player);
+}
+
+/** Statistika enega igralca: po tekmah in po stezah. */
+export function computePlayerDetailStats(
+  state: LeagueState,
+  playerId: string,
+): PlayerDetailStats | null {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return null;
+
+  const teams = new Map(state.teams.map((t) => [t.id, t.name]));
+  const matchMap = new Map<string, PlayerMatchSeries>();
+  const laneMap = new Map<number, PlayerLaneAgg>();
+
+  let games = 0;
+  let pins = 0;
+  let best = 0;
+  let small = 0;
+  const highs = { over200: 0, over220: 0, over240: 0 };
+
+  const bumpLane = (lane: number, value: number) => {
+    const cur = laneMap.get(lane) ?? { lane, games: 0, pins: 0, avg: 0, best: 0 };
+    cur.games += 1;
+    cur.pins += value;
+    cur.best = Math.max(cur.best, value);
+    laneMap.set(lane, cur);
+  };
+
+  for (const match of state.matches) {
+    const home = match.homeTeamId === player.teamId;
+    const away = match.awayTeamId === player.teamId;
+    if (!home && !away) continue;
+
+    for (const [ri, round] of match.rounds.entries()) {
+      for (const game of round.games) {
+        const isHome = game.homePlayerId === playerId;
+        const isAway = game.awayPlayerId === playerId;
+        if (!isHome && !isAway) continue;
+
+        const raw = isHome ? game.homePins : game.awayPins;
+        const value = adjustedGamePins(raw, player);
+        if (value == null) continue;
+
+        const duel = scoreGame(game, state.players);
+        const smallPts = duel ? (isHome ? duel.homeTotal : duel.awayTotal) : 0;
+        const line: PlayerGameLine = {
+          matchId: match.id,
+          seasonRound: match.round,
+          matchRound: ri + 1,
+          lane: game.lane,
+          pins: value,
+          opponentPlayerId: isHome ? game.awayPlayerId : game.homePlayerId,
+          home: isHome,
+        };
+
+        games += 1;
+        pins += value;
+        best = Math.max(best, value);
+        small += smallPts;
+        bumpHighs(highs, value);
+        bumpLane(game.lane, value);
+
+        let series = matchMap.get(match.id);
+        if (!series) {
+          const opponentTeamId = isHome ? match.awayTeamId : match.homeTeamId;
+          series = {
+            matchId: match.id,
+            seasonRound: match.round,
+            opponentTeamId,
+            opponentTeamName: teams.get(opponentTeamId) ?? "—",
+            home: isHome,
+            games: [],
+            pins: 0,
+            avg: 0,
+            small: 0,
+          };
+          matchMap.set(match.id, series);
+        }
+        series.games.push(line);
+        series.pins += value;
+        series.small += smallPts;
+      }
+    }
+  }
+
+  const matches = [...matchMap.values()]
+    .map((m) => ({ ...m, avg: m.games.length ? m.pins / m.games.length : 0 }))
+    .sort((a, b) => a.seasonRound - b.seasonRound || a.matchId.localeCompare(b.matchId));
+
+  const lanes = [...laneMap.values()]
+    .map((l) => ({ ...l, avg: l.games ? l.pins / l.games : 0 }))
+    .sort((a, b) => a.lane - b.lane);
+
+  return {
+    player,
+    teamName: teams.get(player.teamId) ?? "",
+    games,
+    pins,
+    avg: games ? pins / games : 0,
+    best,
+    small,
+    over200: highs.over200,
+    over220: highs.over220,
+    over240: highs.over240,
+    matches,
+    lanes,
+  };
+}
+
 export function seasonLabel(date = new Date()): string {
   const year = date.getMonth() >= 7 ? date.getFullYear() : date.getFullYear() - 1;
   return `${year}/${String(year + 1).slice(-2)}`;
