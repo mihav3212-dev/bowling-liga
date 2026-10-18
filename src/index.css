@@ -4182,10 +4182,10 @@ body:has(.board-view) {
     min-height: calc(100dvh - 9.5rem);
   }
 
-  .board-view-table-wrap.players-scroll,
-  .board-view-table-wrap.teams-scroll {
+  .board-view > .board-view-table-wrap.players-scroll,
+  .board-view > .board-view-table-wrap.teams-scroll {
     max-height: min(58vh, calc(100dvh - 16rem));
-    /* Polna širina zaslona — brez praznega roba / odrezanih številk. */
+    /* Polna širina — premaga padding na .board-view > *. */
     margin-left: calc(-1 * max(22px, env(safe-area-inset-left)));
     margin-right: calc(-1 * max(22px, env(safe-area-inset-right)));
     width: auto;
