@@ -169,6 +169,7 @@ function LeagueApp() {
       },
       mode,
     );
+    window.scrollTo(0, 0);
   };
 
   const openMatch = (id: string) => {
