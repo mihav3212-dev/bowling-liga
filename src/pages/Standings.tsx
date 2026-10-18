@@ -27,7 +27,7 @@ export function Standings() {
         </p>
       </header>
 
-      <div className="board-view-table-wrap">
+      <div className="board-view-table-wrap teams-scroll">
         <table className="board-standings teams">
           <thead>
             <tr>

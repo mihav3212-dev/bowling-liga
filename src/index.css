@@ -3938,51 +3938,54 @@ body:has(.board-view) {
 }
 
 .board-view-table-wrap {
-  overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border-top: 1px solid var(--rv-line);
   border-bottom: 1px solid var(--rv-line);
   margin-bottom: 20px;
   width: 100%;
   max-width: 100%;
-}
-
-/* Drsnik vedno viden v okvirju tabele (ne šele na dnu dolge tabele). */
-.board-view-table-wrap.players-scroll {
-  max-height: calc(100dvh - 13rem);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.06);
 }
 
-.board-view-table-wrap.players-scroll::-webkit-scrollbar {
+/* Okvir z omejeno višino → vodoravni drsnik je vedno pri roki, ne šele na dnu seznama. */
+.board-view-table-wrap.players-scroll,
+.board-view-table-wrap.teams-scroll {
+  max-height: min(62vh, calc(100dvh - 14rem));
+  overflow: scroll;
+}
+
+.board-view-table-wrap::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-.board-view-table-wrap.players-scroll::-webkit-scrollbar-track {
+.board-view-table-wrap::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.06);
 }
 
-.board-view-table-wrap.players-scroll::-webkit-scrollbar-thumb {
+.board-view-table-wrap::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.35);
   border-radius: 6px;
 }
 
-.board-view-table-wrap.players-scroll::-webkit-scrollbar-corner {
+.board-view-table-wrap::-webkit-scrollbar-corner {
   background: rgba(255, 255, 255, 0.06);
 }
 
 .board-standings {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   color: var(--rv-ink);
   table-layout: auto;
 }
 
 .board-standings.teams {
-  width: 100%;
-  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
 }
 
 .board-standings th,
@@ -3991,6 +3994,13 @@ body:has(.board-view) {
   border-bottom: 1px solid var(--rv-line);
   text-align: right;
   vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.board-standings.teams th:nth-child(2),
+.board-standings.teams td:nth-child(2) {
+  white-space: normal;
+  min-width: 9rem;
 }
 
 /* Lestvica ekip: # in Ekipa levo */
@@ -4087,28 +4097,33 @@ body:has(.board-view) {
   text-align: right;
 }
 
-.board-standings.players th:nth-child(1),
-.board-standings.players td:nth-child(1) {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 2.2rem;
-  background: var(--rv-bg);
-}
+/* Sticky samo na širših zaslonih — na telefonu povzroča prekrivanje pri vodoravnem drsenju. */
+@media (min-width: 721px) {
+  .board-standings.players th:nth-child(1),
+  .board-standings.players td:nth-child(1) {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 2.2rem;
+    background: var(--rv-bg);
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.35);
+  }
 
-.board-standings.players th:nth-child(2),
-.board-standings.players td:nth-child(2) {
-  position: sticky;
-  left: 2.2rem;
-  z-index: 1;
-  min-width: 9rem;
-  max-width: 11rem;
-  background: var(--rv-bg);
-}
+  .board-standings.players th:nth-child(2),
+  .board-standings.players td:nth-child(2) {
+    position: sticky;
+    left: 2.2rem;
+    z-index: 2;
+    min-width: 9rem;
+    max-width: 11rem;
+    background: var(--rv-bg);
+    box-shadow: 4px 0 8px rgba(0, 0, 0, 0.35);
+  }
 
-.board-standings.players thead th:nth-child(1),
-.board-standings.players thead th:nth-child(2) {
-  z-index: 3;
+  .board-standings.players thead th:nth-child(1),
+  .board-standings.players thead th:nth-child(2) {
+    z-index: 3;
+  }
 }
 
 .board-standings .board-empty {
@@ -4167,9 +4182,21 @@ body:has(.board-view) {
     min-height: calc(100dvh - 9.5rem);
   }
 
+  .board-view-table-wrap.players-scroll,
+  .board-view-table-wrap.teams-scroll {
+    max-height: min(58vh, calc(100dvh - 16rem));
+    /* Polna širina zaslona — brez praznega roba / odrezanih številk. */
+    margin-left: calc(-1 * max(22px, env(safe-area-inset-left)));
+    margin-right: calc(-1 * max(22px, env(safe-area-inset-right)));
+    width: auto;
+    max-width: none;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
   .board-standings th,
   .board-standings td {
-    padding: 9px 6px;
+    padding: 9px 8px;
     font-size: 0.85rem;
   }
 
@@ -4177,9 +4204,29 @@ body:has(.board-view) {
     font-size: 0.95rem;
   }
 
+  .board-standings.players th:nth-child(1),
+  .board-standings.players td:nth-child(1) {
+    min-width: 2rem;
+  }
+
   .board-standings.players th:nth-child(2),
   .board-standings.players td:nth-child(2) {
-    min-width: 7.5rem;
-    max-width: 9rem;
+    min-width: 8rem;
+    max-width: none;
+  }
+
+  .board-standings.players th:nth-child(3),
+  .board-standings.players td:nth-child(3) {
+    min-width: 6.5rem;
+  }
+
+  .board-standings.teams th:nth-child(n + 3),
+  .board-standings.teams td:nth-child(n + 3) {
+    min-width: 3.2rem;
+  }
+
+  .board-standings.teams th:nth-child(2),
+  .board-standings.teams td:nth-child(2) {
+    min-width: 8rem;
   }
 }
