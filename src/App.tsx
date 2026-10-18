@@ -16,7 +16,7 @@ import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
 import { MatchResultView } from "./pages/MatchResultView";
 import { MatchResultPage } from "./pages/MatchResultPage";
 import { NewSeasonDialog } from "./pages/NewSeasonDialog";
-import { exportPlayersPdf, exportResultsPdf, exportStandingsPdf } from "./lib/exportPdf";
+import { exportResultsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
 import { publicSeasonId } from "./lib/storage";
 import { canOpenTeamMatch, canTeam, teamPerms } from "./lib/access";
@@ -435,18 +435,12 @@ function LeagueApp() {
         {page === "standings" && (
           <div className="board-view">
             <div className="board-view-glow" aria-hidden />
-            <div className="board-view-toolbar">
-              <PdfButton label="PDF lestvice" onExport={() => exportStandingsPdf(state)} />
-            </div>
             <Standings />
           </div>
         )}
         {page === "players" && (
           <div className="board-view">
             <div className="board-view-glow" aria-hidden />
-            <div className="board-view-toolbar">
-              <PdfButton label="PDF igralcev" onExport={() => exportPlayersPdf(state)} />
-            </div>
             <PlayerStandings />
           </div>
         )}

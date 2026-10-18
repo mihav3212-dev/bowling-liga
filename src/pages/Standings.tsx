@@ -1,6 +1,8 @@
+import { exportStandingsPdf } from "../lib/exportPdf";
 import { leagueSeasonTitle } from "../lib/fixtures";
 import { computeStandings, lastCompletedRound } from "../lib/standings";
 import { useStore } from "../lib/store";
+import { PdfButton } from "./PdfButton";
 import { ResultHighlights } from "./ResultHighlights";
 
 export function Standings() {
@@ -11,7 +13,10 @@ export function Standings() {
   return (
     <>
       <header className="board-view-top">
-        <h2 className="board-view-title">Lestvica ekip</h2>
+        <div className="board-view-heading">
+          <h2 className="board-view-title">Lestvica ekip</h2>
+          <PdfButton label="PDF lestvice" onExport={() => exportStandingsPdf(state)} />
+        </div>
         <p className="board-view-sub">
           {round > 0
             ? `${leagueSeasonTitle(state)} · po ${round}. kolu`

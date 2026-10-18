@@ -3882,26 +3882,29 @@ body:has(.board-view) {
   margin-bottom: 0;
 }
 
-.board-view-toolbar {
-  display: flex;
-  justify-content: flex-start;
-  padding-top: 12px;
-  margin-bottom: 4px;
-}
-
-.board-view-toolbar .page-export {
-  margin: 0;
-}
-
-.board-view-toolbar .ghost {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: var(--rv-ink) !important;
-  border: 1px solid var(--rv-line) !important;
-}
-
 .board-view-top {
   text-align: left;
   margin-bottom: 14px;
+  padding-top: 12px;
+}
+
+.board-view-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.board-view-heading .page-export {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.board-view-heading .ghost {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--rv-ink) !important;
+  border: 1px solid var(--rv-line) !important;
 }
 
 .board-view-title {

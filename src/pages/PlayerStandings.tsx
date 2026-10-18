@@ -1,5 +1,7 @@
+import { exportPlayersPdf } from "../lib/exportPdf";
 import { computePlayerStandings, playersByAverage, seasonRoundCount } from "../lib/standings";
 import { useStore } from "../lib/store";
+import { PdfButton } from "./PdfButton";
 
 export function PlayerStandings() {
   const { state } = useStore();
@@ -10,7 +12,10 @@ export function PlayerStandings() {
   return (
     <>
       <header className="board-view-top">
-        <h2 className="board-view-title">Lestvica igralcev</h2>
+        <div className="board-view-heading">
+          <h2 className="board-view-title">Lestvica igralcev</h2>
+          <PdfButton label="PDF igralcev" onExport={() => exportPlayersPdf(state)} />
+        </div>
         <p className="board-view-sub">Razvrstitev po povprečju kegljev</p>
         <p className="board-view-note">Keglji na tekmo, skupaj, odigrane igre in povprečje.</p>
         <p className="board-view-note board-view-scroll-hint">Podrsaj vodoravno za kola.</p>
