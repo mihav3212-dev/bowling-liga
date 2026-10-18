@@ -29,8 +29,6 @@ export function PlayerDetail({
     );
   }
 
-  const opponentName = (id: string) => state.players.find((p) => p.id === id)?.name ?? "—";
-
   return (
     <section className="panel player-detail">
       <button className="ghost" type="button" onClick={onBack}>
@@ -144,34 +142,6 @@ export function PlayerDetail({
                     <td className="mono">{l.best}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          <h3 style={{ marginTop: 28 }}>Vse igre</h3>
-          <div className="table-scroll">
-            <table className="player-detail-table">
-              <thead>
-                <tr>
-                  <th>Kolo</th>
-                  <th>Krog</th>
-                  <th>Steza</th>
-                  <th>Keglji</th>
-                  <th>Proti igralcu</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.matches.flatMap((m) =>
-                  m.games.map((g, i) => (
-                    <tr key={`${g.matchId}-${g.matchRound}-${g.lane}-${i}`}>
-                      <td className="mono">{g.seasonRound}.</td>
-                      <td className="mono">{g.matchRound}.</td>
-                      <td className="mono">S{g.lane}</td>
-                      <td className="mono">{g.pins}</td>
-                      <td>{opponentName(g.opponentPlayerId)}</td>
-                    </tr>
-                  )),
-                )}
               </tbody>
             </table>
           </div>
