@@ -3871,15 +3871,22 @@ body:has(.board-view) {
 .board-view > *:not(.board-view-glow) {
   position: relative;
   z-index: 1;
-  padding-left: max(18px, env(safe-area-inset-left));
-  padding-right: max(18px, env(safe-area-inset-right));
+  padding-left: max(22px, env(safe-area-inset-left));
+  padding-right: max(22px, env(safe-area-inset-right));
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* Takoj pod vmesno črto zavihkov, kot razpored/rezultati. */
+.app-shell:has(> .board-view) .liga-tabs {
+  margin-bottom: 0;
 }
 
 .board-view-toolbar {
   display: flex;
-  justify-content: flex-end;
-  padding-top: clamp(6px, 1.5vw, 12px);
-  margin-bottom: 8px;
+  justify-content: flex-start;
+  padding-top: 12px;
+  margin-bottom: 4px;
 }
 
 .board-view-toolbar .page-export {
@@ -3893,8 +3900,8 @@ body:has(.board-view) {
 }
 
 .board-view-top {
-  text-align: center;
-  margin-bottom: clamp(16px, 3vh, 28px);
+  text-align: left;
+  margin-bottom: 14px;
 }
 
 .board-view-title {
@@ -3933,13 +3940,14 @@ body:has(.board-view) {
   border-top: 1px solid var(--rv-line);
   border-bottom: 1px solid var(--rv-line);
   margin-bottom: 20px;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Drsnik vedno viden v okvirju tabele (ne šele na dnu dolge tabele). */
 .board-view-table-wrap.players-scroll {
   max-height: calc(100dvh - 13rem);
   overflow: auto;
-  scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.06);
 }
@@ -3966,6 +3974,12 @@ body:has(.board-view) {
   width: 100%;
   border-collapse: collapse;
   color: var(--rv-ink);
+  table-layout: auto;
+}
+
+.board-standings.teams {
+  width: 100%;
+  table-layout: fixed;
 }
 
 .board-standings th,
@@ -3974,6 +3988,14 @@ body:has(.board-view) {
   border-bottom: 1px solid var(--rv-line);
   text-align: right;
   vertical-align: baseline;
+}
+
+/* Lestvica ekip: # in Ekipa levo */
+.board-standings.teams th:nth-child(1),
+.board-standings.teams th:nth-child(2),
+.board-standings.teams td:nth-child(1),
+.board-standings.teams td:nth-child(2) {
+  text-align: left;
 }
 
 .board-standings thead th {
@@ -4037,12 +4059,29 @@ body:has(.board-view) {
   font-size: 0.9rem;
 }
 
+/* #, Igralec, Ekipa — levo */
+.board-standings.players th:nth-child(1),
+.board-standings.players th:nth-child(2),
+.board-standings.players th:nth-child(3),
+.board-standings.players td:nth-child(1),
+.board-standings.players td:nth-child(2),
+.board-standings.players td:nth-child(3) {
+  text-align: left;
+}
+
+/* Keglji po kolih — sredina */
 .board-standings.players th.kolo,
 .board-standings.players td.kolo {
   text-align: center;
   min-width: 2.6rem;
   padding-left: 4px;
   padding-right: 4px;
+}
+
+/* Skupni keglji, igre, povp. — desno */
+.board-standings.players th:nth-last-child(-n + 3),
+.board-standings.players td:nth-last-child(-n + 3) {
+  text-align: right;
 }
 
 .board-standings.players th:nth-child(1),
