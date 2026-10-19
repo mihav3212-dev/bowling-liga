@@ -54,11 +54,13 @@ export function TeamDetail({
   const [trainingSessionId, setTrainingSessionId] = useState<string | null>(null);
   const [detailPlayerId, setDetailPlayerId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     setTrainingSessionId(null);
     setDetailPlayerId(null);
     setSettingsOpen(false);
+    setContactOpen(false);
     setInviteUrl("");
     setInviteCode("");
     setInviteUntil("");
@@ -107,27 +109,39 @@ export function TeamDetail({
           )}
         </div>
 
-        {canManage && (
-          <div className="form-row" style={{ marginTop: 12 }}>
-            <input
-              value={team.captain ?? ""}
-              onChange={(e) => updateTeam(team.id, { captain: e.target.value })}
-              placeholder="Vodja ekipe"
-              aria-label="Vodja ekipe"
-            />
-            <input
-              value={team.phone ?? ""}
-              onChange={(e) => updateTeam(team.id, { phone: e.target.value })}
-              placeholder="Tel. številka"
-              aria-label="Tel. številka"
-            />
-            <input
-              value={team.email ?? ""}
-              onChange={(e) => updateTeam(team.id, { email: e.target.value })}
-              placeholder="E-pošta"
-              type="email"
-              aria-label="E-pošta"
-            />
+        {canManage ? (
+          <button
+            type="button"
+            className="team-contact-card is-editable"
+            onClick={() => setContactOpen(true)}
+          >
+            <span className="team-contact-row">
+              <span className="muted">Vodja ekipe</span>
+              <strong>{team.captain?.trim() || "—"}</strong>
+            </span>
+            <span className="team-contact-row">
+              <span className="muted">Tel. št.</span>
+              <strong>{team.phone?.trim() || "—"}</strong>
+            </span>
+            <span className="team-contact-row">
+              <span className="muted">E-pošta</span>
+              <strong>{team.email?.trim() || "—"}</strong>
+            </span>
+          </button>
+        ) : (
+          <div className="team-contact-card">
+            <div className="team-contact-row">
+              <span className="muted">Vodja ekipe</span>
+              <strong>{team.captain?.trim() || "—"}</strong>
+            </div>
+            <div className="team-contact-row">
+              <span className="muted">Tel. št.</span>
+              <strong>{team.phone?.trim() || "—"}</strong>
+            </div>
+            <div className="team-contact-row">
+              <span className="muted">E-pošta</span>
+              <strong>{team.email?.trim() || "—"}</strong>
+            </div>
           </div>
         )}
 
@@ -168,6 +182,55 @@ export function TeamDetail({
         </div>
       </section>
 
+      {contactOpen && canManage && (
+        <div
+          className="dialog-overlay"
+          role="presentation"
+          onClick={() => setContactOpen(false)}
+        >
+          <div
+            className="dialog-panel"
+            role="dialog"
+            aria-labelledby="team-contact-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="team-contact-title">Vodja ekipe</h2>
+            <p className="muted">Vpiši kontaktne podatke vodje.</p>
+            <label className="dialog-field">
+              Ime in priimek
+              <input
+                value={team.captain ?? ""}
+                onChange={(e) => updateTeam(team.id, { captain: e.target.value })}
+                placeholder="Vodja ekipe"
+                autoFocus
+              />
+            </label>
+            <label className="dialog-field">
+              Tel. št.
+              <input
+                value={team.phone ?? ""}
+                onChange={(e) => updateTeam(team.id, { phone: e.target.value })}
+                placeholder="Tel. številka"
+              />
+            </label>
+            <label className="dialog-field">
+              E-pošta
+              <input
+                value={team.email ?? ""}
+                onChange={(e) => updateTeam(team.id, { email: e.target.value })}
+                placeholder="E-pošta"
+                type="email"
+              />
+            </label>
+            <div className="dialog-actions">
+              <button className="primary" type="button" onClick={() => setContactOpen(false)}>
+                Shrani
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {settingsOpen && (
         <div
           className="dialog-overlay"
@@ -195,6 +258,35 @@ export function TeamDetail({
                     value={team.name}
                     onChange={(e) => renameTeam(team.id, e.target.value)}
                     aria-label="Ime ekipe"
+                  />
+                </label>
+
+                <h3 className="team-settings-section" style={{ marginTop: 8 }}>
+                  Vodja ekipe
+                </h3>
+                <label className="dialog-field">
+                  Ime in priimek
+                  <input
+                    value={team.captain ?? ""}
+                    onChange={(e) => updateTeam(team.id, { captain: e.target.value })}
+                    placeholder="Vodja ekipe"
+                  />
+                </label>
+                <label className="dialog-field">
+                  Tel. št.
+                  <input
+                    value={team.phone ?? ""}
+                    onChange={(e) => updateTeam(team.id, { phone: e.target.value })}
+                    placeholder="Tel. številka"
+                  />
+                </label>
+                <label className="dialog-field">
+                  E-pošta
+                  <input
+                    value={team.email ?? ""}
+                    onChange={(e) => updateTeam(team.id, { email: e.target.value })}
+                    placeholder="E-pošta"
+                    type="email"
                   />
                 </label>
 

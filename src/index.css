@@ -1187,6 +1187,43 @@ html[data-theme="light"] .live-now .list button.row:hover {
   min-height: 44px;
 }
 
+.team-contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  width: 100%;
+}
+
+.team-contact-card.is-editable {
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.team-contact-card.is-editable:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.team-contact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.team-contact-row strong {
+  font-weight: 600;
+  word-break: break-word;
+}
+
 .team-detail-head {
   display: flex;
   align-items: center;
