@@ -81,7 +81,7 @@ export function PlayerDetail({
               <thead>
                 <tr>
                   <th>Kolo</th>
-                  <th>Proti</th>
+                  <th>Nasprotnik</th>
                   <th>Steze</th>
                   <th>Skupaj</th>
                   <th>Povp.</th>
@@ -92,9 +92,7 @@ export function PlayerDetail({
                 {stats.matches.map((m) => (
                   <tr key={m.matchId}>
                     <td className="mono">{m.seasonRound}.</td>
-                    <td>
-                      {m.home ? "proti" : "@"} {m.opponentTeamName}
-                    </td>
+                    <td>{m.opponentTeamName}</td>
                     <td className="mono player-detail-lanes">
                       {m.games
                         .map((g) => `S${g.lane}:${g.pins}`)
