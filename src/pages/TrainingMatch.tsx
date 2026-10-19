@@ -3,7 +3,7 @@ import { playerTag } from "../lib/labels";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
-import { formatTrainingDate, trainingMatchTitle } from "../lib/training";
+import { formatTrainingDate, trainingAsMatch, trainingMatchTitle } from "../lib/training";
 import type { Gender, Player, TrainingSession } from "../lib/types";
 import { LineupEditor, LineupReadout, PinField } from "./MatchEntry";
 
@@ -74,18 +74,7 @@ export function TrainingMatch({
     state.teams.find((t) => t.id === packed.awayTeamId)?.name || packed.awayName || "Gostje";
   const homeRoster = state.players.filter((p) => p.teamId === packed.homeTeamId);
   const awayRoster = state.players.filter((p) => p.teamId === packed.awayTeamId);
-  const asMatch = {
-    id: session.id,
-    round: 1,
-    homeTeamId: packed.homeTeamId ?? "",
-    awayTeamId: packed.awayTeamId ?? "",
-    homeStarters: packed.homeStarters,
-    awayStarters: packed.awayStarters,
-    homeBench: packed.homeBench,
-    awayBench: packed.awayBench,
-    rounds: packed.rounds,
-    status: "scheduled" as const,
-  };
+  const asMatch = trainingAsMatch(session.id, packed);
   const totals = matchTotals(asMatch, state.players);
   const homeNom = nominatedIds(packed.homeStarters, packed.homeBench);
   const awayNom = nominatedIds(packed.awayStarters, packed.awayBench);

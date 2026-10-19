@@ -13,7 +13,7 @@ import { Login } from "./pages/Login";
 import { AdminMenu } from "./pages/AdminMenu";
 import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
-import { LiveMatchBoard, LiveMatchDisplay } from "./pages/LiveMatchDisplay";
+import { LiveMatchBoard, LiveMatchDisplay, TrainingLiveBoard } from "./pages/LiveMatchDisplay";
 import { MatchResultView } from "./pages/MatchResultView";
 import { MatchResultPage } from "./pages/MatchResultPage";
 import { NewSeasonDialog } from "./pages/NewSeasonDialog";
@@ -80,9 +80,14 @@ function writeNavToUrl(nav: NavState, mode: "push" | "replace") {
 }
 
 export function App() {
-  const displayMode = new URLSearchParams(window.location.search).get("display");
+  const params = new URLSearchParams(window.location.search);
+  const displayMode = params.get("display");
   if (displayMode === "live") {
     return <LiveMatchBoard />;
+  }
+  if (displayMode === "training") {
+    const id = params.get("id");
+    if (id) return <TrainingLiveBoard sessionId={id} />;
   }
   if (displayMode === "result-preview") {
     return <MatchResultView preview />;

@@ -7,6 +7,7 @@ import {
   type LiveBoardHold,
   type LiveMatchView,
 } from "../lib/liveBoard";
+import { findTrainingSession, formatTrainingDate, trainingAsMatch } from "../lib/training";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
 
@@ -433,9 +434,19 @@ type ScreenProps = {
   rotateLabel?: string | null;
   layout: LiveTvLayout;
   onLayoutChange: (next: LiveTvLayout) => void;
+  /** Npr. „Trening“ namesto „Liga · n. kolo“. */
+  brandSub?: string;
 };
 
-function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }: ScreenProps) {
+function LiveMatchScreen({
+  view: m,
+  badge,
+  rotateLabel,
+  layout,
+  onLayoutChange,
+  brandSub,
+}: ScreenProps) {
+  const sub = brandSub ?? `Liga · ${m.round}. kolo`;
   const rootRef = useRef<HTMLDivElement>(null);
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
   const complete = m.complete || badge === "final";
@@ -484,7 +495,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
             <img src="/logo-bowling-lenart.png" alt="" className="live-tv-logo" />
             <div>
               <div className="live-tv-brand-name">Bowling Lenart</div>
-              <div className="live-tv-brand-sub">Liga · {m.round}. kolo</div>
+              <div className="live-tv-brand-sub">{sub}</div>
             </div>
           </div>
           {meta}
@@ -571,7 +582,7 @@ function LiveMatchScreen({ view: m, badge, rotateLabel, layout, onLayoutChange }
           <img src="/logo-bowling-lenart.png" alt="" className="live-tv-logo" />
           <div>
             <div className="live-tv-brand-name">Bowling Lenart</div>
-            <div className="live-tv-brand-sub">Liga · {m.round}. kolo</div>
+            <div className="live-tv-brand-sub">{sub}</div>
           </div>
         </div>
         {meta}
@@ -803,6 +814,83 @@ type PreviewProps = {
   preview?: boolean;
   previewPhase?: "live" | "final";
 };
+
+/** TV za admin trening: `?display=training&id=<sessionId>`. */
+export function TrainingLiveBoard({ sessionId }: { sessionId: string }) {
+  const { state: storeState } = useStore();
+  const [layout, setLayout] = useLiveLayout();
+  const [polled, setPolled] = useState<LeagueState | null>(null);
+  const [fromDb, setFromDb] = useState(false);
+  const [booting, setBooting] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const payload = await fetchLeague();
+        if (cancelled) return;
+        if (payload.current?.data) {
+          setPolled(payload.current.data);
+          setFromDb(payload.storage === "db");
+        } else {
+          setFromDb(false);
+        }
+      } catch {
+        /* ostane store */
+      } finally {
+        if (!cancelled) setBooting(false);
+      }
+    }
+    void load();
+    const poll = window.setInterval(() => void load(), POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, []);
+
+  const state = fromDb && polled ? polled : (polled ?? storeState);
+  const session = findTrainingSession(state, sessionId);
+
+  if (booting && !session) {
+    return (
+      <div className="live-tv">
+        <div className="live-tv-idle">
+          <p className="live-tv-idle-title">Nalaganje…</p>
+          <p className="live-tv-idle-sub">Trening TV</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session?.match) {
+    return (
+      <div className="live-tv">
+        <div className="live-tv-idle">
+          <p className="live-tv-idle-title">Trening ni najden</p>
+          <p className="live-tv-idle-sub">Preveri, da je seja odprta in shranjena.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const match = trainingAsMatch(session.id, session.match);
+  const view: LiveMatchView = {
+    ...buildLiveMatchView(state, match),
+    startsAtLabel: formatTrainingDate(session.date),
+  };
+  const badge = view.complete ? "final" : "live";
+
+  return (
+    <LiveMatchScreen
+      view={view}
+      badge={badge}
+      layout={layout}
+      onLayoutChange={setLayout}
+      brandSub="Trening"
+    />
+  );
+}
 
 /** Predogled layouta z mock podatki (`?display=preview`). */
 export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: PreviewProps) {

@@ -66,9 +66,10 @@ import {
   padGames,
   setTeamSessions,
   todayDate,
+  trainingAsMatch,
   TRAINING_TEAM_ID,
 } from "./training";
-import type { Gender, LeagueState, Match, Player, SeasonInfo, Team, TeamPerms, TrainingMatch } from "./types";
+import type { Gender, LeagueState, Player, SeasonInfo, Team, TeamPerms } from "./types";
 
 type Store = {
   state: LeagueState;
@@ -196,21 +197,6 @@ type Store = {
 };
 
 const Ctx = createContext<Store | null>(null);
-
-function asMatch(id: string, match: TrainingMatch): Match {
-  return {
-    id,
-    round: 1,
-    homeTeamId: match.homeTeamId ?? "",
-    awayTeamId: match.awayTeamId ?? "",
-    homeStarters: match.homeStarters,
-    awayStarters: match.awayStarters,
-    homeBench: match.homeBench,
-    awayBench: match.awayBench,
-    rounds: match.rounds,
-    status: "scheduled",
-  };
-}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const { admin, ready, teamId: viewerTeamId } = useAuth();
@@ -747,7 +733,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getTeamSessions(s, teamId).map((session) => {
               if (session.id !== sessionId || !session.match) return session;
               if (lineupLocked(session.match.rounds)) return session;
-              const next = applyLineup(asMatch(session.id, session.match), side, starters, bench);
+              const next = applyLineup(trainingAsMatch(session.id, session.match), side, starters, bench);
               return {
                 ...session,
                 match: {

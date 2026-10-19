@@ -1,6 +1,43 @@
 import { emptyRounds } from "./pairings";
-import type { LeagueState, Player, TrainingMatch, TrainingScore, TrainingSession } from "./types";
+import type {
+  LeagueState,
+  Match,
+  Player,
+  TrainingMatch,
+  TrainingScore,
+  TrainingSession,
+} from "./types";
 import { scoredPins } from "./scoring";
+
+/** TrainingMatch → Match (za točkovanje / TV). */
+export function trainingAsMatch(id: string, match: TrainingMatch): Match {
+  return {
+    id,
+    round: 1,
+    homeTeamId: match.homeTeamId ?? "",
+    awayTeamId: match.awayTeamId ?? "",
+    homeStarters: match.homeStarters,
+    awayStarters: match.awayStarters,
+    homeBench: match.homeBench,
+    awayBench: match.awayBench,
+    rounds: match.rounds,
+    status: "scheduled",
+  };
+}
+
+/** Poišči trening sejo po id (admin global ali teamTrainings). */
+export function findTrainingSession(
+  state: LeagueState,
+  sessionId: string,
+): TrainingSession | null {
+  const global = state.trainingSessions?.find((s) => s.id === sessionId);
+  if (global) return global;
+  for (const list of Object.values(state.teamTrainings ?? {})) {
+    const hit = list.find((s) => s.id === sessionId);
+    if (hit) return hit;
+  }
+  return null;
+}
 
 export const TRAINING_TEAM_ID = "train-pool";
 

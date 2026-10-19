@@ -38,6 +38,19 @@ export function AdminTraining({
         <TrainingMatch session={session} ownerTeamId={null} onBack={onBack} />
         <div className="row-actions" style={{ marginTop: 12 }}>
           <button
+            className="ghost"
+            type="button"
+            onClick={() => {
+              window.open(
+                `/?display=training&id=${encodeURIComponent(session.id)}`,
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+          >
+            TV pogled
+          </button>
+          <button
             className="primary"
             type="button"
             disabled={saveBusy}
