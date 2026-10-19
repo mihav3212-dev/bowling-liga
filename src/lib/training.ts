@@ -125,6 +125,101 @@ export function getTeamSessions(state: LeagueState, teamId?: string | null): Tra
   return state.teamTrainings?.[teamId] ?? [];
 }
 
+export type PlayerTrainingSessionRow = {
+  sessionId: string;
+  date: string;
+  kind: "solo" | "match";
+  games: number;
+  pins: number;
+  avg: number;
+  best: number;
+};
+
+export type PlayerTrainingStats = {
+  games: number;
+  pins: number;
+  avg: number;
+  best: number;
+  sessions: PlayerTrainingSessionRow[];
+};
+
+function adjustedTrainingPins(raw: number | null, player: Player): number | null {
+  if (raw == null) return null;
+  if (raw === 0) return 0;
+  return scoredPins(raw, player);
+}
+
+/** Statistika igralca na treningih ekipe (solo + trening tekme). */
+export function computePlayerTrainingStats(
+  state: LeagueState,
+  playerId: string,
+): PlayerTrainingStats | null {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return null;
+
+  const sessions = getTeamSessions(state, player.teamId);
+  const rows: PlayerTrainingSessionRow[] = [];
+  let games = 0;
+  let pins = 0;
+  let best = 0;
+
+  for (const session of sessions) {
+    let sGames = 0;
+    let sPins = 0;
+    let sBest = 0;
+
+    if (session.kind === "match" && session.match) {
+      for (const round of session.match.rounds ?? []) {
+        for (const game of round.games ?? []) {
+          const isHome = game.homePlayerId === playerId;
+          const isAway = game.awayPlayerId === playerId;
+          if (!isHome && !isAway) continue;
+          const value = adjustedTrainingPins(isHome ? game.homePins : game.awayPins, player);
+          if (value == null) continue;
+          sGames += 1;
+          sPins += value;
+          sBest = Math.max(sBest, value);
+        }
+      }
+    } else {
+      const row = session.scores.find((s) => s.playerId === playerId);
+      if (row) {
+        for (const raw of row.games ?? []) {
+          const value = adjustedTrainingPins(raw, player);
+          if (value == null) continue;
+          sGames += 1;
+          sPins += value;
+          sBest = Math.max(sBest, value);
+        }
+      }
+    }
+
+    if (sGames === 0) continue;
+    games += sGames;
+    pins += sPins;
+    best = Math.max(best, sBest);
+    rows.push({
+      sessionId: session.id,
+      date: session.date,
+      kind: session.kind === "match" ? "match" : "solo",
+      games: sGames,
+      pins: sPins,
+      avg: sPins / sGames,
+      best: sBest,
+    });
+  }
+
+  rows.sort((a, b) => a.date.localeCompare(b.date) || a.sessionId.localeCompare(b.sessionId));
+
+  return {
+    games,
+    pins,
+    avg: games ? pins / games : 0,
+    best,
+    sessions: rows,
+  };
+}
+
 export function setTeamSessions(
   state: LeagueState,
   teamId: string | undefined | null,

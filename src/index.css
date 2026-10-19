@@ -1496,6 +1496,23 @@ button.linkish {
   font-size: 0.85rem;
 }
 
+.player-compare-line {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  line-height: 1.45;
+}
+
+.player-compare-line .is-up {
+  color: var(--green, #3d9a6a);
+}
+
+.player-compare-line .is-down {
+  color: #d97757;
+}
+
 .player-detail-table {
   width: 100%;
   border-collapse: collapse;
