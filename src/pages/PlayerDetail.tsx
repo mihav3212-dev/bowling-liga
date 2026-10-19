@@ -1,5 +1,6 @@
 import { computePlayerDetailStats } from "../lib/standings";
 import { useStore } from "../lib/store";
+import { PlayerMatchAvgChart } from "./PlayerMatchAvgChart";
 
 function fmtAvg(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -73,6 +74,10 @@ export function PlayerDetail({
               </strong>
             </div>
           </div>
+
+          <h3 style={{ marginTop: 28 }}>Povprečje po tekmah</h3>
+          <p className="muted">Trend sezone — povprečje kegljev na vsaki tekmi.</p>
+          <PlayerMatchAvgChart matches={stats.matches} />
 
           <h3 style={{ marginTop: 28 }}>Po tekmah</h3>
           <p className="muted">Serija na tekmo (keglji po stezah) in povprečje.</p>
