@@ -1329,6 +1329,38 @@ html[data-theme="light"] .live-now .list button.row:hover {
   line-height: 1.2;
 }
 
+.roster-player-row-view {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+}
+
+.roster-player-row-view:last-child {
+  border-bottom: 0;
+}
+
+.roster-player-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 10rem;
+}
+
+.roster-player-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  text-align: right;
+  flex: 0 1 auto;
+  margin-left: auto;
+}
+
 .roster-player-name {
   display: block;
 }
@@ -1374,13 +1406,18 @@ button.linkish {
 
 .roster-player-stats {
   display: block;
-  margin-top: 4px;
   font-size: 0.9rem;
+  line-height: 1.3;
 }
 
 .roster-player-detail-btn {
-  margin-top: 8px;
-  align-self: flex-start;
+  margin-top: 0;
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
+.roster-player-side .roster-player-detail-btn {
+  align-self: flex-end;
 }
 
 .player-detail-summary {

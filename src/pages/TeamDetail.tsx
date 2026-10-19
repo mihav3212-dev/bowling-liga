@@ -162,20 +162,24 @@ export function TeamDetail({
                 ? `${stats.games} iger · povp. ${stats.avg.toFixed(1)} · skupaj ${stats.pins}`
                 : "Še ni iger";
             return (
-              <div key={p.id} className="roster-player-block">
-                <strong className="roster-player-name">{p.name}</strong>
-                <span className="muted roster-player-gender">
-                  {p.gender === "F" ? "ženska" : "moški"}
-                  {p.bzsMember ? " · BZS" : ""}
-                </span>
-                <span className="muted roster-player-stats">{summary}</span>
-                <button
-                  className="ghost roster-player-detail-btn"
-                  type="button"
-                  onClick={() => setDetailPlayerId(p.id)}
-                >
-                  Ogled podrobnosti
-                </button>
+              <div key={p.id} className="roster-player-row-view">
+                <div className="roster-player-main">
+                  <strong className="roster-player-name">{p.name}</strong>
+                  <span className="muted roster-player-gender">
+                    {p.gender === "F" ? "ženska" : "moški"}
+                    {p.bzsMember ? " · BZS" : ""}
+                  </span>
+                </div>
+                <div className="roster-player-side">
+                  <span className="muted roster-player-stats">{summary}</span>
+                  <button
+                    className="ghost roster-player-detail-btn"
+                    type="button"
+                    onClick={() => setDetailPlayerId(p.id)}
+                  >
+                    Ogled podrobnosti
+                  </button>
+                </div>
               </div>
             );
           })}
