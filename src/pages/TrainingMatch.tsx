@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { playerTag } from "../lib/labels";
-import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
+import { lineupSize, nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { formatTrainingDate, trainingAsMatch, trainingMatchTitle } from "../lib/training";
@@ -69,16 +69,38 @@ export function TrainingMatch({
 
   const owner = ownerTeamId ?? undefined;
   const homeName =
-    state.teams.find((t) => t.id === packed.homeTeamId)?.name || packed.homeName || "Domači";
+    state.teams.find((t) => t.id === packed.homeTeamId)?.name || packed.homeName || "Skupina A";
   const awayName =
-    state.teams.find((t) => t.id === packed.awayTeamId)?.name || packed.awayName || "Gostje";
-  const homeRoster = state.players.filter((p) => p.teamId === packed.homeTeamId);
-  const awayRoster = state.players.filter((p) => p.teamId === packed.awayTeamId);
+    state.teams.find((t) => t.id === packed.awayTeamId)?.name || packed.awayName || "Skupina B";
+
+  /** Vsi igralci sezone — lahko mečejo iz različnih ekip. */
+  const allRoster = useMemo(
+    () => [...state.players].sort((a, b) => a.name.localeCompare(b.name, "sl")),
+    [state.players],
+  );
+  const teamNameOf = (p: Player) => state.teams.find((t) => t.id === p.teamId)?.name ?? "";
+  const formatPlayer = (p: Player) => {
+    const team = teamNameOf(p);
+    return team ? `${playerTag(p)} · ${team}` : playerTag(p);
+  };
+
+  const filledHome = packed.homeStarters.filter(Boolean).length;
+  const filledAway = packed.awayStarters.filter(Boolean).length;
+  const initialSlots = Math.min(
+    4,
+    Math.max(2, Math.max(filledHome, filledAway, 2)),
+  );
+  const [starterCount, setStarterCount] = useState(initialSlots);
+
   const asMatch = trainingAsMatch(session.id, packed);
   const totals = matchTotals(asMatch, state.players);
   const homeNom = nominatedIds(packed.homeStarters, packed.homeBench);
   const awayNom = nominatedIds(packed.awayStarters, packed.awayBench);
   const playersLocked = lineupLocked(packed.rounds);
+  const nominated = useMemo(
+    () => allRoster.filter((p) => homeNom.includes(p.id) || awayNom.includes(p.id)),
+    [allRoster, homeNom, awayNom],
+  );
 
   return (
     <section>
@@ -98,7 +120,33 @@ export function TrainingMatch({
           }}
         />
       </label>
-      <p className="muted">{formatTrainingDate(session.date)} · trening kot tekma</p>
+      <p className="muted">
+        {formatTrainingDate(session.date)} · trening kot tekma · igralci iz poljubnih ekip
+      </p>
+      {!playersLocked && (
+        <label className="training-date" style={{ marginTop: 8 }}>
+          Število mest na stran (2–4)
+          <select
+            value={starterCount}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              setStarterCount(n);
+              const trim = (side: "home" | "away", starters: string[], bench: string[]) => {
+                const next = [...starters];
+                while (next.length < 4) next.push("");
+                for (let i = n; i < 4; i++) next[i] = "";
+                setTrainingMatchLineup(session.id, side, next.slice(0, 4), bench, owner);
+              };
+              trim("home", packed.homeStarters, packed.homeBench);
+              trim("away", packed.awayStarters, packed.awayBench);
+            }}
+          >
+            <option value={2}>2</option>
+            <option value={3}>3</option>
+            <option value={4}>4</option>
+          </select>
+        </label>
+      )}
       {playersLocked && (
         <p className="muted">
           Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
@@ -111,7 +159,7 @@ export function TrainingMatch({
           {playersLocked ? (
             <LineupReadout
               label={`${homeName} (A)`}
-              roster={homeRoster}
+              roster={allRoster}
               starters={packed.homeStarters}
               bench={packed.homeBench}
             />
@@ -119,10 +167,17 @@ export function TrainingMatch({
             <LineupEditor
               label={`${homeName} (A)`}
               side="home"
-              roster={homeRoster}
+              roster={allRoster}
               starters={packed.homeStarters}
               bench={packed.homeBench}
-              onChange={(starters, bench) => setTrainingMatchLineup(session.id, "home", starters, bench, owner)}
+              starterCount={starterCount}
+              showBench={starterCount >= 4}
+              hint={`Izberi ${starterCount} igralce (lahko iz različnih ekip).`}
+              formatPlayer={formatPlayer}
+              searchIn={teamNameOf}
+              onChange={(starters, bench) =>
+                setTrainingMatchLineup(session.id, "home", starters, bench, owner)
+              }
             />
           )}
           <AddPlayerForm
@@ -135,7 +190,7 @@ export function TrainingMatch({
           {playersLocked ? (
             <LineupReadout
               label={`${awayName} (B)`}
-              roster={awayRoster}
+              roster={allRoster}
               starters={packed.awayStarters}
               bench={packed.awayBench}
             />
@@ -143,10 +198,17 @@ export function TrainingMatch({
             <LineupEditor
               label={`${awayName} (B)`}
               side="away"
-              roster={awayRoster}
+              roster={allRoster}
               starters={packed.awayStarters}
               bench={packed.awayBench}
-              onChange={(starters, bench) => setTrainingMatchLineup(session.id, "away", starters, bench, owner)}
+              starterCount={starterCount}
+              showBench={starterCount >= 4}
+              hint={`Izberi ${starterCount} igralce (lahko iz različnih ekip).`}
+              formatPlayer={formatPlayer}
+              searchIn={teamNameOf}
+              onChange={(starters, bench) =>
+                setTrainingMatchLineup(session.id, "away", starters, bench, owner)
+              }
             />
           )}
           <AddPlayerForm
@@ -167,9 +229,22 @@ export function TrainingMatch({
       </div>
 
       {packed.rounds.map((round, ri) => {
-        const pair = pairingTemplate()[ri] ?? [];
+        const size = lineupSize(packed.homeStarters, packed.awayStarters);
+        const pair = pairingTemplate(size)[ri] ?? [];
         const roundTot = totals.rounds[ri];
         const lockRoundPlayers = ri === 0 && playersLocked;
+        const visibleGames = round.games
+          .map((game, gi) => ({ game, gi }))
+          .filter(({ game, gi }) => {
+            const slots = pair[gi];
+            if (!slots) return Boolean(game.homePlayerId && game.awayPlayerId);
+            const homeId = packed.homeStarters[slots.homeSlot];
+            const awayId = packed.awayStarters[slots.awaySlot];
+            return Boolean(
+              (homeId && awayId) || (game.homePlayerId && game.awayPlayerId),
+            );
+          });
+        if (visibleGames.length === 0) return null;
         return (
           <div className="scorecard" key={ri} style={{ marginBottom: 16 }}>
             <h3>{ri + 1}. krog</h3>
@@ -186,10 +261,10 @@ export function TrainingMatch({
                 </tr>
               </thead>
               <tbody>
-                {round.games.map((game, gi) => {
+                {visibleGames.map(({ game, gi }) => {
                   const duel = scoreGame(game, state.players);
-                  const homePlayers = homeRoster.filter((p) => homeNom.includes(p.id));
-                  const awayPlayers = awayRoster.filter((p) => awayNom.includes(p.id));
+                  const homePlayers = nominated.filter((p) => homeNom.includes(p.id));
+                  const awayPlayers = nominated.filter((p) => awayNom.includes(p.id));
                   const slots = pair[gi];
                   return (
                     <tr key={gi}>
@@ -198,7 +273,7 @@ export function TrainingMatch({
                         <span className="player-pick">
                           <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
                           {lockRoundPlayers ? (
-                            playerName(homeRoster, game.homePlayerId)
+                            playerName(allRoster, game.homePlayerId)
                           ) : (
                             <select
                               value={game.homePlayerId}
@@ -209,7 +284,7 @@ export function TrainingMatch({
                               <option value="">—</option>
                               {homePlayers.map((p) => (
                                 <option key={p.id} value={p.id}>
-                                  {playerTag(p)}
+                                  {formatPlayer(p)}
                                 </option>
                               ))}
                             </select>
@@ -219,7 +294,7 @@ export function TrainingMatch({
                       <td className="mono">
                         <PinField
                           raw={game.homePins}
-                          player={homeRoster.find((p) => p.id === game.homePlayerId)}
+                          player={allRoster.find((p) => p.id === game.homePlayerId)}
                           readOnly={false}
                           onChange={(pins) => setTrainingMatchPins(session.id, ri, gi, "home", pins, owner)}
                         />
@@ -229,7 +304,7 @@ export function TrainingMatch({
                       <td className="mono">
                         <PinField
                           raw={game.awayPins}
-                          player={awayRoster.find((p) => p.id === game.awayPlayerId)}
+                          player={allRoster.find((p) => p.id === game.awayPlayerId)}
                           readOnly={false}
                           onChange={(pins) => setTrainingMatchPins(session.id, ri, gi, "away", pins, owner)}
                         />
@@ -238,7 +313,7 @@ export function TrainingMatch({
                         <span className="player-pick">
                           <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
                           {lockRoundPlayers ? (
-                            playerName(awayRoster, game.awayPlayerId)
+                            playerName(allRoster, game.awayPlayerId)
                           ) : (
                             <select
                               value={game.awayPlayerId}
@@ -249,7 +324,7 @@ export function TrainingMatch({
                               <option value="">—</option>
                               {awayPlayers.map((p) => (
                                 <option key={p.id} value={p.id}>
-                                  {playerTag(p)}
+                                  {formatPlayer(p)}
                                 </option>
                               ))}
                             </select>

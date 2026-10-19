@@ -87,6 +87,11 @@ export function LineupEditor({
   starters,
   bench,
   onChange,
+  starterCount = 4,
+  showBench = true,
+  hint,
+  formatPlayer,
+  searchIn,
 }: {
   label: string;
   side: "home" | "away";
@@ -94,15 +99,27 @@ export function LineupEditor({
   starters: string[];
   bench: string[];
   onChange: (starters: string[], bench: string[]) => void;
+  /** Koliko mest A1… (2–4). Ostala mesta ostanejo prazna. */
+  starterCount?: number;
+  showBench?: boolean;
+  hint?: string;
+  formatPlayer?: (p: Player) => string;
+  /** Dodatno iskanje (npr. ime ekipe). */
+  searchIn?: (p: Player) => string;
 }) {
   const [query, setQuery] = useState("");
+  const slots = Math.min(4, Math.max(2, starterCount));
   const used = new Set([...starters, ...bench].filter(Boolean));
+  const labelOf = formatPlayer ?? playerTag;
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = [...roster].sort((a, b) => a.name.localeCompare(b.name, "sl"));
     if (!q) return list;
-    return list.filter((p) => p.name.toLowerCase().includes(q));
-  }, [roster, query]);
+    return list.filter((p) => {
+      const hay = `${p.name} ${searchIn?.(p) ?? ""}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [roster, query, searchIn]);
   const options = (current: string) => {
     const pool = filtered.filter((p) => p.id === current || !used.has(p.id));
     if (current && !pool.some((p) => p.id === current)) {
@@ -111,52 +128,61 @@ export function LineupEditor({
     }
     return pool;
   };
+  const padStarters = (next: string[]) => {
+    const out = [...next];
+    while (out.length < 4) out.push("");
+    return out.slice(0, 4);
+  };
 
   return (
     <div>
       <h3>{label}</h3>
-      <p className="muted">Izberi 4 + do 2 menjavi iz {roster.length} članov.</p>
+      <p className="muted">
+        {hint ?? `Izberi ${slots} + do 2 menjavi iz ${roster.length} igralcev.`}
+      </p>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Išči igralca"
       />
-      {[0, 1, 2, 3].map((i) => (
+      {Array.from({ length: slots }, (_, i) => (
         <select
           key={`s${i}`}
           value={starters[i] ?? ""}
           onChange={(e) => {
-            const next = [...starters];
+            const next = padStarters(starters);
             next[i] = e.target.value;
+            for (let j = slots; j < 4; j++) next[j] = "";
             onChange(next, bench);
           }}
         >
           <option value="">{slotLabel(side, i)}</option>
           {options(starters[i] ?? "").map((p) => (
             <option key={p.id} value={p.id}>
-              {playerTag(p)}
+              {labelOf(p)}
             </option>
           ))}
         </select>
       ))}
-      {[0, 1].map((i) => (
-        <select
-          key={`b${i}`}
-          value={bench[i] ?? ""}
-          onChange={(e) => {
-            const next = [...bench];
-            next[i] = e.target.value;
-            onChange(starters, next.filter(Boolean));
-          }}
-        >
-          <option value="">{slotLabel(side, i + 4)}</option>
-          {options(bench[i] ?? "").map((p) => (
-            <option key={p.id} value={p.id}>
-              {playerTag(p)}
-            </option>
-          ))}
-        </select>
-      ))}
+      {showBench &&
+        [0, 1].map((i) => (
+          <select
+            key={`b${i}`}
+            value={bench[i] ?? ""}
+            onChange={(e) => {
+              const next = [...bench];
+              next[i] = e.target.value;
+              onChange(padStarters(starters), next.filter(Boolean));
+            }}
+          >
+            <option value="">{slotLabel(side, i + 4)}</option>
+            {options(bench[i] ?? "").map((p) => (
+              <option key={p.id} value={p.id}>
+                {labelOf(p)}
+              </option>
+            ))}
+          </select>
+        ))}
     </div>
   );
 }

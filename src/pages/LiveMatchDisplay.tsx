@@ -874,9 +874,14 @@ export function TrainingLiveBoard({ sessionId }: { sessionId: string }) {
     );
   }
 
-  const match = trainingAsMatch(session.id, session.match);
+  const packed = session.match;
+  const match = trainingAsMatch(session.id, packed);
+  const homeLabel =
+    state.teams.find((t) => t.id === packed.homeTeamId)?.name || packed.homeName || "Skupina A";
+  const awayLabel =
+    state.teams.find((t) => t.id === packed.awayTeamId)?.name || packed.awayName || "Skupina B";
   const view: LiveMatchView = {
-    ...buildLiveMatchView(state, match),
+    ...buildLiveMatchView(state, match, { homeName: homeLabel, awayName: awayLabel }),
     startsAtLabel: formatTrainingDate(session.date),
   };
   const badge = view.complete ? "final" : "live";

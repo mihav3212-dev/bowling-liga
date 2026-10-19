@@ -131,9 +131,9 @@ type Store = {
   startNewTraining: () => Promise<string>;
   newTrainingSession: (teamId?: string) => string;
   newTrainingMatch: (
-    teamId: string | undefined,
+    home: { teamId?: string; name?: string },
     away: { teamId?: string; name?: string },
-    /** global = trainingSessions (admin zavihek); team = teamTrainings[teamId] */
+    /** global = trainingSessions (admin zavihek); team = teamTrainings[home.teamId] */
     scope?: "team" | "global",
   ) => string;
   setTrainingMatchLineup: (
@@ -699,15 +699,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         );
         return id;
       },
-      newTrainingMatch: (teamId, away, scope = "team") => {
+      newTrainingMatch: (home, away, scope = "team") => {
         const id = uid("tr");
         update((s) => {
-          const homeId = teamId || s.teams[0]?.id;
+          const homeId = home.teamId || uid("tp");
           const awayId = away.teamId || uid("tp");
-          const homeName = s.teams.find((t) => t.id === homeId)?.name;
+          const homeName = home.teamId
+            ? s.teams.find((t) => t.id === home.teamId)?.name
+            : home.name?.trim() || "Skupina A";
           const awayName = away.teamId
             ? s.teams.find((t) => t.id === away.teamId)?.name
-            : away.name?.trim();
+            : away.name?.trim() || "Skupina B";
           const session = {
             id,
             date: todayDate(),
@@ -721,7 +723,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               trainingSessions: [session, ...(s.trainingSessions ?? [])],
             };
           }
-          return setTeamSessions(s, teamId, [session, ...getTeamSessions(s, teamId)]);
+          return setTeamSessions(s, home.teamId, [
+            session,
+            ...getTeamSessions(s, home.teamId),
+          ]);
         });
         return id;
       },

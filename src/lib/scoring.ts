@@ -143,6 +143,10 @@ export function scoreGame(
   return scoreRawDuel(game.homePins, game.awayPins);
 }
 
+function gameIsActive(game: { homePlayerId: string; awayPlayerId: string }): boolean {
+  return Boolean(game.homePlayerId && game.awayPlayerId);
+}
+
 export function matchTotals(match: Match, players: Player[]): MatchTotals {
   let homeSmall = 0;
   let awaySmall = 0;
@@ -151,7 +155,12 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
   let homeBig = 0;
   let awayBig = 0;
   let scored = 0;
-  const expected = ROUNDS * PLAYERS_ON_LANE;
+  /** Trening 2–4: štej samo dvoboje z obema igralcema; sicer uradnih 16. */
+  const activeCount = match.rounds.reduce(
+    (n, round) => n + round.games.filter(gameIsActive).length,
+    0,
+  );
+  const expected = activeCount > 0 ? activeCount : ROUNDS * PLAYERS_ON_LANE;
   const rounds: MatchTotals["rounds"] = [];
 
   for (const round of match.rounds) {
@@ -160,6 +169,9 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     let rph = 0;
     let rpa = 0;
     let rscored = 0;
+    const activeInRound = round.games.filter(gameIsActive);
+    const roundExpected =
+      activeInRound.length > 0 ? activeInRound.length : PLAYERS_ON_LANE;
     for (const game of round.games) {
       // Pri odsotnosti (0) ne štej ženskega +8 — ostane 0 kegljev.
       const homeP = playerById(players, game.homePlayerId);
@@ -189,7 +201,7 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
       rh += duel.homeTotal;
       ra += duel.awayTotal;
     }
-    const roundDone = rscored === PLAYERS_ON_LANE;
+    const roundDone = rscored === roundExpected && roundExpected > 0;
     let rbh = 0;
     let rba = 0;
     if (roundDone) {
@@ -213,7 +225,7 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     });
   }
 
-  const complete = scored === expected;
+  const complete = scored === expected && expected > 0;
   if (complete) {
     if (homePins > awayPins) homeBig += 2;
     else if (awayPins > homePins) awayBig += 2;

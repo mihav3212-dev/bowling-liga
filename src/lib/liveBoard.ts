@@ -1,7 +1,7 @@
 import { formatMatchWhen } from "./labels";
 import { matchesInPlay, nextSlotMatches } from "./live";
 import { matchTotals, playerById, scoreGame, scoredPins } from "./scoring";
-import { pairingTemplate, slotLabel } from "./pairings";
+import { lineupSize, pairingTemplate, slotLabel } from "./pairings";
 import type { LeagueState, Match, Player } from "./types";
 
 /** Na TV: končni keglji s +8/−8; odsotnost (0) ostane 0. */
@@ -127,28 +127,37 @@ export function withFinalScoreHold(
   return { pick, hold: null };
 }
 
-export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchView {
+export function buildLiveMatchView(
+  state: LeagueState,
+  match: Match,
+  labels?: { homeName?: string; awayName?: string },
+): LiveMatchView {
   const home = state.teams.find((t) => t.id === match.homeTeamId);
   const away = state.teams.find((t) => t.id === match.awayTeamId);
   const totals = matchTotals(match, state.players);
   const rounds = match.rounds ?? [];
+  const size = lineupSize(match.homeStarters, match.awayStarters);
 
-  const templates = pairingTemplate();
+  const templates = pairingTemplate(size);
   const roundSummaries: LiveRoundSummary[] = rounds.map((round, ri) => {
     const rt = totals.rounds[ri];
-    const duels: LiveDuelRow[] = (round.games ?? []).map((game, gi) => {
-      const pair = templates[ri]?.[gi];
-      const scored = scoreGame(game, state.players);
-      return {
-        lane: game.lane || pair?.lane || gi + 1,
-        homeName: nameFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi),
-        awayName: nameFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi),
-        homePins: displayPins(game.homePins, game.homePlayerId, state.players),
-        awayPins: displayPins(game.awayPins, game.awayPlayerId, state.players),
-        homeSmall: scored?.homeTotal ?? null,
-        awaySmall: scored?.awayTotal ?? null,
-      };
-    });
+    const duels: LiveDuelRow[] = (round.games ?? [])
+      .map((game, gi) => {
+        const pair = templates[ri]?.[gi];
+        const scored = scoreGame(game, state.players);
+        return {
+          lane: game.lane || pair?.lane || gi + 1,
+          homeName: nameFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi),
+          awayName: nameFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi),
+          homePins: displayPins(game.homePins, game.homePlayerId, state.players),
+          awayPins: displayPins(game.awayPins, game.awayPlayerId, state.players),
+          homeSmall: scored?.homeTotal ?? null,
+          awaySmall: scored?.awayTotal ?? null,
+          active: Boolean(game.homePlayerId && game.awayPlayerId),
+        };
+      })
+      .filter((d) => d.active || d.homePins != null || d.awayPins != null)
+      .map(({ active: _a, ...row }) => row);
     const hasPins = duels.some((d) => d.homePins != null || d.awayPins != null);
     const roundDone = Boolean(rt?.complete);
     return {
@@ -173,10 +182,10 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
       awayBig: null,
       homePins: null,
       awayPins: null,
-      duels: [1, 2, 3, 4].map((lane) => ({
-        lane,
-        homeName: slotLabel("home", lane - 1),
-        awayName: slotLabel("away", lane - 1),
+      duels: Array.from({ length: size }, (_, i) => ({
+        lane: i + 1,
+        homeName: slotLabel("home", i),
+        awayName: slotLabel("away", i),
         homePins: null,
         awayPins: null,
         homeSmall: null,
@@ -188,8 +197,8 @@ export function buildLiveMatchView(state: LeagueState, match: Match): LiveMatchV
   return {
     complete: totals.complete,
     round: match.round,
-    homeName: home?.name ?? "Domači",
-    awayName: away?.name ?? "Gostje",
+    homeName: labels?.homeName || home?.name || "Domači",
+    awayName: labels?.awayName || away?.name || "Gostje",
     homeMatch: totals.complete ? totals.homeMatch : null,
     awayMatch: totals.complete ? totals.awayMatch : null,
     homeBig: totals.homeBig,
