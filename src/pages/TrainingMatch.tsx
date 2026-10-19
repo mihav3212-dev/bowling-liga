@@ -3,8 +3,13 @@ import { playerTag } from "../lib/labels";
 import { lineupSize, nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
-import { formatTrainingDate, trainingAsMatch, trainingMatchTitle } from "../lib/training";
-import type { Gender, Player, TrainingSession } from "../lib/types";
+import {
+  formatTrainingDate,
+  TRAINING_TEAM_ID,
+  trainingAsMatch,
+  trainingMatchTitle,
+} from "../lib/training";
+import type { Gender, Player, Team, TrainingSession } from "../lib/types";
 import { LineupEditor, LineupReadout, PinField } from "./MatchEntry";
 
 function playerName(roster: Player[], id: string): string {
@@ -12,27 +17,39 @@ function playerName(roster: Player[], id: string): string {
   return player ? playerTag(player) : "—";
 }
 
+/** Nov igralec gre v izbrano ekipo sezone (ali gost), ne v skupino A/B. */
 function AddPlayerForm({
+  teams,
   onAdd,
 }: {
-  onAdd: (name: string, gender: Gender, bzs: boolean) => void;
+  teams: Team[];
+  onAdd: (name: string, gender: Gender, bzs: boolean, teamId: string) => void;
 }) {
   const [name, setName] = useState("");
   const [gender, setGender] = useState<Gender>("M");
   const [bzs, setBzs] = useState(false);
+  const [teamId, setTeamId] = useState(teams[0]?.id ?? TRAINING_TEAM_ID);
   return (
     <form
       className="form-row"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!name.trim()) return;
-        onAdd(name, gender, bzs);
+        if (!name.trim() || !teamId) return;
+        onAdd(name, gender, bzs, teamId);
         setName("");
         setGender("M");
         setBzs(false);
       }}
     >
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ime igralca" />
+      <select value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+        {teams.map((t) => (
+          <option key={t.id} value={t.id}>
+            {t.name}
+          </option>
+        ))}
+        <option value={TRAINING_TEAM_ID}>Gost (samo trening)</option>
+      </select>
       <select value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
         <option value="M">Moški</option>
         <option value="F">Ženska (+8)</option>
@@ -41,7 +58,7 @@ function AddPlayerForm({
         <input type="checkbox" checked={bzs} onChange={(e) => setBzs(e.target.checked)} /> član BZS (−8)
       </label>
       <button className="ghost" type="submit">
-        Vnesi igralca
+        Dodaj v sezono
       </button>
     </form>
   );
@@ -78,7 +95,10 @@ export function TrainingMatch({
     () => [...state.players].sort((a, b) => a.name.localeCompare(b.name, "sl")),
     [state.players],
   );
-  const teamNameOf = (p: Player) => state.teams.find((t) => t.id === p.teamId)?.name ?? "";
+  const teamNameOf = (p: Player) =>
+    p.teamId === TRAINING_TEAM_ID
+      ? "Gost"
+      : (state.teams.find((t) => t.id === p.teamId)?.name ?? "");
   const formatPlayer = (p: Player) => {
     const team = teamNameOf(p);
     return team ? `${playerTag(p)} · ${team}` : playerTag(p);
@@ -180,11 +200,6 @@ export function TrainingMatch({
               }
             />
           )}
-          <AddPlayerForm
-            onAdd={(name, gender, bzs) =>
-              addTrainingPlayer(session.id, name, gender, bzs, owner, packed.homeTeamId)
-            }
-          />
         </div>
         <div className="panel">
           {playersLocked ? (
@@ -211,13 +226,24 @@ export function TrainingMatch({
               }
             />
           )}
+        </div>
+      </div>
+
+      {!playersLocked && (
+        <div className="panel" style={{ marginBottom: 16 }}>
+          <h3>Nov igralec</h3>
+          <p className="muted">
+            Sestava A/B je samo strani treninga — igralce izbereš zgoraj iz poljubnih ekip. Če ga še ni v
+            sezoni, ga dodaj z izbiro prave ekipe (ali gost).
+          </p>
           <AddPlayerForm
-            onAdd={(name, gender, bzs) =>
-              addTrainingPlayer(session.id, name, gender, bzs, owner, packed.awayTeamId)
+            teams={state.teams}
+            onAdd={(name, gender, bzs, teamId) =>
+              addTrainingPlayer(session.id, name, gender, bzs, owner, teamId)
             }
           />
         </div>
-      </div>
+      )}
 
       <div className="panel" style={{ marginBottom: 16 }}>
         <div className="muted">Rezultat (TOČKE)</div>

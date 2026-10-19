@@ -827,7 +827,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const sessions = getTeamSessions(s, teamId);
           const session = sessions.find((item) => item.id === sessionId);
           if (!session) return s;
-          const rosterId = playerTeamId || teamId;
+          // Pri trening tekmi: samo prava ekipa sezone ali gost — nikoli ID skupine A/B.
+          const rosterId =
+            session.kind === "match"
+              ? playerTeamId === TRAINING_TEAM_ID || s.teams.some((t) => t.id === playerTeamId)
+                ? playerTeamId
+                : undefined
+              : playerTeamId || teamId;
+          if (session.kind === "match" && !rosterId) return s;
           const existing = s.players.find(
             (p) => p.name.toLowerCase() === trimmed.toLowerCase() && (!rosterId || p.teamId === rosterId),
           );
