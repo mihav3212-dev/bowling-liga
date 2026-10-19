@@ -129,7 +129,12 @@ type Store = {
   openTrainingSeason: () => Promise<void>;
   startNewTraining: () => Promise<string>;
   newTrainingSession: (teamId?: string) => string;
-  newTrainingMatch: (teamId: string | undefined, away: { teamId?: string; name?: string }) => string;
+  newTrainingMatch: (
+    teamId: string | undefined,
+    away: { teamId?: string; name?: string },
+    /** global = trainingSessions (admin zavihek); team = teamTrainings[teamId] */
+    scope?: "team" | "global",
+  ) => string;
   setTrainingMatchLineup: (
     sessionId: string,
     side: "home" | "away",
@@ -708,13 +713,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         );
         return id;
       },
-      newTrainingMatch: (teamId, away) => {
+      newTrainingMatch: (teamId, away, scope = "team") => {
         const id = uid("tr");
         update((s) => {
           const homeId = teamId || s.teams[0]?.id;
           const awayId = away.teamId || uid("tp");
           const homeName = s.teams.find((t) => t.id === homeId)?.name;
-          const awayName = away.teamId ? s.teams.find((t) => t.id === away.teamId)?.name : away.name?.trim();
+          const awayName = away.teamId
+            ? s.teams.find((t) => t.id === away.teamId)?.name
+            : away.name?.trim();
           const session = {
             id,
             date: todayDate(),
@@ -722,6 +729,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             scores: [],
             match: emptyTrainingMatch(homeId, awayId, homeName, awayName),
           };
+          if (scope === "global") {
+            return {
+              ...s,
+              trainingSessions: [session, ...(s.trainingSessions ?? [])],
+            };
+          }
           return setTeamSessions(s, teamId, [session, ...getTeamSessions(s, teamId)]);
         });
         return id;

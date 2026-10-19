@@ -6,6 +6,7 @@ import { PlayerStandings } from "./pages/PlayerStandings";
 import { TeamDetail } from "./pages/TeamDetail";
 import { TeamAccess } from "./pages/TeamAccess";
 import { Teams } from "./pages/Teams";
+import { AdminTraining } from "./pages/AdminTraining";
 import { Training } from "./pages/Training";
 import { ClaimInvite } from "./pages/ClaimInvite";
 import { Login } from "./pages/Login";
@@ -165,7 +166,7 @@ function LeagueApp() {
         page: next,
         matchId: null,
         detailTeamId: null,
-        trainingSessionId: navRef.current.trainingSessionId,
+        trainingSessionId: next === "training" ? navRef.current.trainingSessionId : null,
       },
       mode,
     );
@@ -224,8 +225,9 @@ function LeagueApp() {
   useEffect(() => {
     if (!authReady) return;
     const cur = navRef.current;
-    if (cur.page === "training") {
-      commitNav({ ...cur, page: "teams" }, "replace");
+    // Trening zavihek samo za admina.
+    if (cur.page === "training" && !canEdit) {
+      commitNav({ ...cur, page: "schedule", trainingSessionId: null }, "replace");
       return;
     }
     if (canEdit) return;
@@ -366,6 +368,7 @@ function LeagueApp() {
               ...(canEdit || Boolean(loginTeamId)
                 ? [["teams", loginTeamId && !admin ? "Moja ekipa" : "Ekipe"] as [Page, string]]
                 : []),
+              ...(canEdit ? [["training", "Trening"] as [Page, string]] : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
@@ -445,6 +448,17 @@ function LeagueApp() {
           </div>
         )}
         {page === "access" && canEdit && <TeamAccess />}
+        {page === "training" && canEdit && (
+          <AdminTraining
+            sessionId={trainingSessionId}
+            onOpen={openTraining}
+            onBack={() =>
+              navigateBack(() =>
+                commitNav({ ...navRef.current, trainingSessionId: null }, "replace"),
+              )
+            }
+          />
+        )}
         {(canEdit || teamCaps.season) && page === "teams" && !detailTeamId && (
           <Teams onOpen={openTeam} />
         )}
