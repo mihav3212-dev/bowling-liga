@@ -965,6 +965,37 @@ html[data-theme="light"] .live-now .list button.row:hover {
   font-size: 13px;
 }
 
+.match-row-split {
+  gap: 8px 12px;
+}
+
+.match-when-btn {
+  min-width: 11.5rem;
+  justify-content: flex-start;
+  text-align: left;
+  font-size: 13px;
+  color: var(--muted) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 4px 8px;
+  min-height: 36px;
+}
+
+.match-row-open {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
 .match-names {
   flex: 1;
   min-width: 12rem;

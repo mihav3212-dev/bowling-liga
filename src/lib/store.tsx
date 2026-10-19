@@ -92,6 +92,8 @@ type Store = {
     starters: string[],
     bench: string[],
   ) => void;
+  /** Spremeni datum/uro tekme (admin / sezona). */
+  setMatchStartsAt: (matchId: string, startsAt: string) => void;
   setPins: (
     matchId: string,
     roundIndex: number,
@@ -487,6 +489,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           );
           void saveMatchLineup(seasonIdRef.current, matchId, side, clean.starters, clean.bench);
         }
+      },
+      setMatchStartsAt: (matchId, startsAt) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === viewer), "season")) return;
+        }
+        update((s) => ({
+          ...s,
+          matches: s.matches.map((m) => (m.id === matchId ? { ...m, startsAt } : m)),
+        }));
       },
       setPins: (matchId, roundIndex, gameIndex, side, pins) => {
         const team = viewerTeamRef.current;

@@ -8,24 +8,32 @@ import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import type { Match } from "../lib/types";
 import { PdfButton } from "./PdfButton";
+import { RescheduleMatchDialog } from "./RescheduleMatchDialog";
 import { ResultHighlights } from "./ResultHighlights";
 
 export function Matches({
   onOpen,
   canOpen,
   mode,
+  canReschedule = false,
 }: {
   onOpen?: (id: string) => void;
   canOpen?: (match: Match) => boolean;
   mode: "schedule" | "results";
+  /** Admin: sprememba datuma/ure na razporedu. */
+  canReschedule?: boolean;
 }) {
   const { state } = useStore();
   const [now, setNow] = useState(() => Date.now());
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
   useEffect(() => {
     const tick = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(tick);
   }, []);
   const seasonKey = inferSeasonKey(state);
+  const rescheduleMatch = rescheduleId
+    ? state.matches.find((m) => m.id === rescheduleId) ?? null
+    : null;
   const catalog = seasonCatalog(seasonKey);
   const byRound = new Map<number, typeof state.matches>();
   for (const match of state.matches) {
@@ -42,11 +50,25 @@ export function Matches({
     const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
     const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
     const totals = matchTotals(match, state.players);
+    const when = formatMatchWhen(match.startsAt) || "Brez termina";
     const row = (
       <>
-        {mode === "schedule" && (
-          <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
-        )}
+        {mode === "schedule" &&
+          (canReschedule ? (
+            <button
+              type="button"
+              className="ghost match-when-btn mono"
+              title="Spremeni termin"
+              onClick={(e) => {
+                e.stopPropagation();
+                setRescheduleId(match.id);
+              }}
+            >
+              {when}
+            </button>
+          ) : (
+            <span className="match-when mono">{when === "Brez termina" ? "" : when}</span>
+          ))}
         <span className="match-names">
           {home} – {away}
         </span>
@@ -65,8 +87,41 @@ export function Matches({
         )}
       </>
     );
-    return onOpen && (!canOpen || canOpen(match)) ? (
-      <button className="row match-row" key={match.id} onClick={() => onOpen(match.id)}>
+    const openable = Boolean(onOpen && (!canOpen || canOpen(match)));
+
+    // Ločena vrstica, da gumb za termin ni znotraj gumba za odpiranje tekme.
+    if (mode === "schedule" && canReschedule) {
+      return (
+        <div className="row match-row match-row-split" key={match.id}>
+          <button
+            type="button"
+            className="ghost match-when-btn mono"
+            title="Spremeni termin"
+            onClick={() => setRescheduleId(match.id)}
+          >
+            {when}
+          </button>
+          {openable ? (
+            <button
+              type="button"
+              className="match-row-open"
+              onClick={() => onOpen?.(match.id)}
+            >
+              <span className="match-names">
+                {home} – {away}
+              </span>
+            </button>
+          ) : (
+            <span className="match-names">
+              {home} – {away}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    return openable ? (
+      <button className="row match-row" key={match.id} onClick={() => onOpen!(match.id)}>
         {row}
       </button>
     ) : (
@@ -81,6 +136,9 @@ export function Matches({
       {mode === "schedule" && (
         <p className="muted" style={{ marginBottom: 20 }}>
           {catalog.intro}
+          {canReschedule
+            ? " Termin spremeniš s klikom na datum/uro (ko se ekipi dogovorita)."
+            : ""}
         </p>
       )}
       {mode === "schedule" && live.length > 0 && (
@@ -180,6 +238,9 @@ export function Matches({
           </details>
         );
       })}
+      {rescheduleMatch && (
+        <RescheduleMatchDialog match={rescheduleMatch} onClose={() => setRescheduleId(null)} />
+      )}
     </section>
   );
 }

@@ -102,6 +102,21 @@ export function isoStart(date: string, time: string): string {
   return `${date}T${time}:00${offset}`;
 }
 
+/** Razčleni ISO termin nazaj na YYYY-MM-DD in HH:MM (brez TZ premika). */
+export function splitStartsAt(iso?: string): { date: string; time: string } {
+  if (!iso) return { date: "", time: SLOT_TIMES[0] };
+  const m = iso.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  if (m) return { date: m[1], time: m[2] };
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return { date: "", time: SLOT_TIMES[0] };
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return { date: `${y}-${mo}-${day}`, time: `${hh}:${mm}` };
+}
+
 function parseDate(raw: string): string | null {
   const iso = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;

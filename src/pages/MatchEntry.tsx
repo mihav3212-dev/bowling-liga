@@ -7,6 +7,7 @@ import { lineupsRevealed, teamMatchSide } from "../lib/lineup";
 import { lineupLocked, matchPlayerStats, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
+import { RescheduleMatchDialog } from "./RescheduleMatchDialog";
 import type { Player } from "../lib/types";
 
 /** Kot TV: hitro osveževanje, da vsi vidijo isto vpisano. */
@@ -166,14 +167,17 @@ export function MatchEntry({
   onBack,
   readOnly = false,
   lineupTeamId = null,
+  canReschedule = false,
 }: {
   matchId: string;
   onBack: () => void;
   readOnly?: boolean;
   lineupTeamId?: string | null;
+  canReschedule?: boolean;
 }) {
   const { state, remote, setLineup, setPins, setRoundPlayer, saveMatchLineupNow, syncFromRemote } =
     useStore();
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const editingPinsRef = useRef(false);
   const syncRef = useRef(syncFromRemote);
   syncRef.current = syncFromRemote;
@@ -249,6 +253,16 @@ export function MatchEntry({
             <h2 className="match-title">
               {home?.name} — {away?.name}
             </h2>
+            {canReschedule && (
+              <button
+                className="ghost"
+                type="button"
+                style={{ marginTop: 8 }}
+                onClick={() => setRescheduleOpen(true)}
+              >
+                Spremeni termin
+              </button>
+            )}
           </div>
           <div>
             {!hideScores && (
@@ -584,6 +598,9 @@ export function MatchEntry({
           </>
         )}
       </div>
+      {rescheduleOpen && (
+        <RescheduleMatchDialog match={match} onClose={() => setRescheduleOpen(false)} />
+      )}
     </section>
   );
 }
