@@ -66,7 +66,7 @@ export function PlayerDetail({
               <span className="muted">Male</span>
               <strong className="mono">{stats.small}</strong>
             </div>
-            <div>
+            <div className="player-detail-highs">
               <span className="muted">≥200 / 220 / 240</span>
               <strong className="mono">
                 {stats.over200} / {stats.over220} / {stats.over240}

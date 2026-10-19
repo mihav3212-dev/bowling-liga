@@ -1437,6 +1437,16 @@ button.linkish {
   font-size: 1.15rem;
 }
 
+.player-detail-highs {
+  min-width: 11rem;
+  grid-column: span 1;
+}
+
+.player-detail-highs > span,
+.player-detail-highs > strong {
+  white-space: nowrap;
+}
+
 .player-detail-table {
   width: 100%;
   border-collapse: collapse;
