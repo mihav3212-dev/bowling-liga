@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import { leagueSeasonTitle } from "../lib/fixtures";
 import { daysNeededForHalf, daysNeededPerRound, firstHalfComplete, halfRoundCount } from "../lib/schedule";
@@ -8,56 +8,65 @@ import { DayPicker } from "./DayPicker";
 export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
   const { state, addTeam, drawSchedule, drawReturnSchedule, resetDemo, loadSeason2025 } = useStore();
   const [name, setName] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [picker, setPicker] = useState<"first" | "return" | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
   const emptySchedule = state.matches.length === 0;
   const canBuild = emptySchedule && state.teams.length >= 2;
   const canReturn = firstHalfComplete(state);
   const needed = daysNeededForHalf(state.teams.length);
   const rounds = halfRoundCount(state.teams.length);
 
+  useEffect(() => {
+    if (!addOpen) return;
+    setName("");
+    const t = window.setTimeout(() => nameRef.current?.focus(), 0);
+    return () => window.clearTimeout(t);
+  }, [addOpen]);
+
+  const submitAdd = () => {
+    if (!name.trim()) return;
+    addTeam(name);
+    setName("");
+    setAddOpen(false);
+  };
+
   return (
     <section className="panel">
-      <h2 className="round-title">Ekipe ({state.teams.length})</h2>
-      <form
-        className="form-row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          addTeam(name);
-          setName("");
-        }}
-      >
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ime ekipe" />
-        <button className="primary" type="submit">
-          Dodaj
-        </button>
-        {canBuild && (
-          <button className="primary" type="button" onClick={() => setPicker("first")}>
-            Sestavi razpored
+      <div className="teams-toolbar">
+        <h2 className="round-title teams-toolbar-title">Ekipe ({state.teams.length})</h2>
+        <div className="teams-toolbar-actions">
+          {canBuild && (
+            <button className="primary" type="button" onClick={() => setPicker("first")}>
+              Sestavi razpored
+            </button>
+          )}
+          {canReturn && (
+            <button className="primary" type="button" onClick={() => setPicker("return")}>
+              Žreb 2. dela
+            </button>
+          )}
+          <button
+            className="ghost"
+            type="button"
+            disabled={exporting || state.teams.length === 0}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                await exportRegistrationPdf(state);
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            {exporting ? "Pripravljam…" : "Izvozi prijavne liste"}
           </button>
-        )}
-        {canReturn && (
-          <button className="primary" type="button" onClick={() => setPicker("return")}>
-            Žreb 2. dela
+          <button className="primary" type="button" onClick={() => setAddOpen(true)}>
+            Dodaj
           </button>
-        )}
-        <button
-          className="ghost"
-          type="button"
-          disabled={exporting || state.teams.length === 0}
-          onClick={async () => {
-            setExporting(true);
-            try {
-              await exportRegistrationPdf(state);
-            } finally {
-              setExporting(false);
-            }
-          }}
-        >
-          {exporting ? "Pripravljam…" : "Izvozi prijavne liste"}
-        </button>
-      </form>
+        </div>
+      </div>
       {emptySchedule ? (
         <p className="muted">
           Nova sezona {leagueSeasonTitle(state)}: dodaj ekipe, nato sestavi razpored. Na koledarju izbereš
@@ -110,6 +119,44 @@ export function Teams({ onOpen }: { onOpen: (id: string) => void }) {
           );
         })}
       </div>
+      {addOpen && (
+        <div className="dialog-overlay" role="presentation" onClick={() => setAddOpen(false)}>
+          <div
+            className="dialog-panel"
+            role="dialog"
+            aria-labelledby="add-team-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="add-team-title">Nova ekipa</h2>
+            <p className="muted">Vpiši ime ekipe. Vodjo, kontakt in igralce dodaš v podrobnostih.</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitAdd();
+              }}
+            >
+              <label className="dialog-field">
+                Ime ekipe
+                <input
+                  ref={nameRef}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="npr. Bar 10"
+                  autoComplete="off"
+                />
+              </label>
+              <div className="dialog-actions">
+                <button type="button" className="ghost" onClick={() => setAddOpen(false)}>
+                  Prekliči
+                </button>
+                <button className="primary" type="submit" disabled={!name.trim()}>
+                  Dodaj
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {picker && (
         <DayPicker
           title={picker === "return" ? "Dnevi 2. dela sezone" : "Dnevi tekem"}

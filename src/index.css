@@ -1187,6 +1187,28 @@ html[data-theme="light"] .live-now .list button.row:hover {
   min-height: 44px;
 }
 
+.teams-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.teams-toolbar-title {
+  margin: 0;
+}
+
+.teams-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
 .form-row {
   display: flex;
   gap: 8px;
