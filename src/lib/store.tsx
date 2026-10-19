@@ -94,6 +94,8 @@ type Store = {
   ) => void;
   /** Spremeni datum/uro tekme (admin / sezona). */
   setMatchStartsAt: (matchId: string, startsAt: string) => void;
+  /** Zamenjaj termina dveh tekem. */
+  swapMatchStartsAt: (matchIdA: string, matchIdB: string) => void;
   setPins: (
     matchId: string,
     roundIndex: number,
@@ -499,6 +501,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           matches: s.matches.map((m) => (m.id === matchId ? { ...m, startsAt } : m)),
         }));
+      },
+      swapMatchStartsAt: (matchIdA, matchIdB) => {
+        if (matchIdA === matchIdB) return;
+        const viewer = viewerTeamRef.current;
+        if (viewer) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === viewer), "season")) return;
+        }
+        update((s) => {
+          const a = s.matches.find((m) => m.id === matchIdA);
+          const b = s.matches.find((m) => m.id === matchIdB);
+          if (!a || !b) return s;
+          const startsA = a.startsAt;
+          const startsB = b.startsAt;
+          return {
+            ...s,
+            matches: s.matches.map((m) => {
+              if (m.id === matchIdA) return { ...m, startsAt: startsB };
+              if (m.id === matchIdB) return { ...m, startsAt: startsA };
+              return m;
+            }),
+          };
+        });
       },
       setPins: (matchId, roundIndex, gameIndex, side, pins) => {
         const team = viewerTeamRef.current;

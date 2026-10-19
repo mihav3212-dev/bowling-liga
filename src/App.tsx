@@ -381,7 +381,6 @@ function LeagueApp() {
         {page === "schedule" && !matchId && (
           <Matches
             mode="schedule"
-            canReschedule={canEdit || canTeam(loginTeam, "season")}
             onOpen={canEdit || canOpenTeamMatch(loginTeam) ? openMatch : undefined}
             canOpen={
               canEdit
@@ -409,7 +408,6 @@ function LeagueApp() {
             }
             readOnly={!canEdit && !loginTeamId}
             lineupTeamId={canEdit ? null : loginTeamId}
-            canReschedule={canEdit || canTeam(loginTeam, "season")}
           />
         )}
         {page === "results" && matchId && !resultsEditing && (

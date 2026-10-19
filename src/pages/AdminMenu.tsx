@@ -5,6 +5,7 @@ import { seasonIsComplete } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
+import { SwapMatchTimesDialog } from "./SwapMatchTimesDialog";
 
 export function AdminMenu({
   canEdit,
@@ -38,6 +39,7 @@ export function AdminMenu({
   const csvRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"home" | "seasons">("home");
+  const [swapOpen, setSwapOpen] = useState(false);
 
   const closeMenu = () => {
     setOpen(false);
@@ -48,12 +50,13 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (swapOpen) return;
       if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel]);
+  }, [open, panel, swapOpen]);
 
   const renameCurrentSeason = async () => {
     if (!seasonId) return;
@@ -92,6 +95,7 @@ export function AdminMenu({
   };
 
   return (
+    <>
     <div className="admin-menu">
       <button
         className="ghost header-admin"
@@ -158,6 +162,24 @@ export function AdminMenu({
             <button className="ghost" type="button" onClick={() => void renameCurrentSeason()}>
               Preimenuj
             </button>
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
+                disabled={state.matches.length < 2}
+                title={
+                  state.matches.length < 2
+                    ? "Najprej mora biti razpored s tekmami."
+                    : "Zamenjaj datum/uro dveh tekem."
+                }
+                onClick={() => {
+                  setSwapOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Zamenjaj termin
+              </button>
+            )}
             <button
               className="ghost"
               type="button"
@@ -310,5 +332,7 @@ export function AdminMenu({
       </div>
       )}
     </div>
+    {swapOpen && <SwapMatchTimesDialog onClose={() => setSwapOpen(false)} />}
+    </>
   );
 }
