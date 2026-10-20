@@ -2,12 +2,14 @@ import { useMemo, useState } from "react";
 import {
   formatTrainingDate,
   getTeamSessions,
+  playerCountLabel,
   trainingMatchTitle,
 } from "../lib/training";
 import { useStore } from "../lib/store";
+import { Training } from "./Training";
 import { TrainingMatch } from "./TrainingMatch";
 
-/** Admin zavihek: trening kot tekma (skupini → sestava 2–4 → keglji). */
+/** Admin zavihek: posamezni trening (kot pri ekipah) + trening tekma. */
 export function AdminTraining({
   sessionId,
   onOpen,
@@ -17,12 +19,19 @@ export function AdminTraining({
   onOpen: (id: string) => void;
   onBack: () => void;
 }) {
-  const { state, remote, newTrainingMatch, deleteTrainingSession, saveTrainingNow } = useStore();
+  const {
+    state,
+    remote,
+    newTrainingSession,
+    newTrainingMatch,
+    deleteTrainingSession,
+    saveTrainingNow,
+  } = useStore();
   const sessions = useMemo(
     () =>
-      [...getTeamSessions(state, null)]
-        .filter((s) => s.kind === "match")
-        .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id)),
+      [...getTeamSessions(state, null)].sort(
+        (a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id),
+      ),
     [state],
   );
   const session = sessions.find((s) => s.id === sessionId) ?? null;
@@ -72,6 +81,18 @@ export function AdminTraining({
     );
   }
 
+  if (session) {
+    return (
+      <Training
+        sessionId={session.id}
+        ownerTeamId={null}
+        canPickTeam={false}
+        onOpen={onOpen}
+        onBack={onBack}
+      />
+    );
+  }
+
   const canCreate =
     Boolean(homeName.trim() && awayName.trim()) &&
     !(homeTeamId && awayTeamId && homeTeamId === awayTeamId);
@@ -80,8 +101,8 @@ export function AdminTraining({
     <section className="panel">
       <h2 className="round-title">Trening</h2>
       <p className="muted">
-        Samo za admina. Ustvari trening tekmo (2–4 igralci na stran, tudi iz različnih ekip), nato sestavo in
-        keglje.
+        Samo za admina. Posamezni trening (vnos kegljev po igralcih, tudi iz različnih ekip) ali trening tekma
+        (2–4 na stran).
       </p>
       <p className="muted">
         {remote
@@ -92,6 +113,13 @@ export function AdminTraining({
       <div className="row-actions">
         <button
           className="primary"
+          type="button"
+          onClick={() => onOpen(newTrainingSession())}
+        >
+          Posamezni trening
+        </button>
+        <button
+          className="ghost"
           type="button"
           onClick={() => {
             setHomeName("Skupina A");
@@ -107,7 +135,7 @@ export function AdminTraining({
 
       {sessions.length === 0 ? (
         <p className="muted" style={{ marginTop: 16 }}>
-          Še ni trening tekem.
+          Še ni treningov.
         </p>
       ) : (
         <div className="list training-list" style={{ marginTop: 16 }}>
@@ -115,14 +143,17 @@ export function AdminTraining({
             <div key={item.id} className="form-row training-row">
               <button className="ghost" type="button" onClick={() => onOpen(item.id)}>
                 {formatTrainingDate(item.date)}
-                {" · "}
-                {trainingMatchTitle(item, state.teams)}
+                {item.kind === "match"
+                  ? ` · tekma · ${trainingMatchTitle(item, state.teams)}`
+                  : item.scores.length
+                    ? ` · posamezni · ${playerCountLabel(item.scores.length)}`
+                    : " · posamezni"}
               </button>
               <button
                 className="danger"
                 type="button"
                 onClick={() => {
-                  if (window.confirm("Izbrišem to trening tekmo?")) {
+                  if (window.confirm("Izbrišem ta trening?")) {
                     deleteTrainingSession(item.id);
                   }
                 }}

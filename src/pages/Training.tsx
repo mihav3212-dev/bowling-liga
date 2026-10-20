@@ -102,7 +102,9 @@ export function Training({
       <section className="panel">
         <h2 className="round-title">Treningi{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
         <p className="muted">
-          Samo igralci te ekipe. Število iger ni določeno — ob vpisu se odpre naslednje polje.
+          {ownerTeamId
+            ? "Samo igralci te ekipe. Število iger ni določeno — ob vpisu se odpre naslednje polje."
+            : "Igralci iz poljubnih ekip. Število iger ni določeno — ob vpisu se odpre naslednje polje."}
         </p>
         <p className="muted">
           {remote
@@ -203,13 +205,16 @@ export function Training({
             placeholder="Išči po imenu"
             aria-label="Išči igralca"
           />
-          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Igralec ekipe">
+          <select value={pickId} onChange={(e) => setPickId(e.target.value)} aria-label="Igralec">
             <option value="">Izberi igralca…</option>
-            {visiblePool.map((p) => (
-              <option key={p.id} value={p.id}>
-                {playerTag(p)}
-              </option>
-            ))}
+            {visiblePool.map((p) => {
+              const team = state.teams.find((t) => t.id === p.teamId)?.name;
+              return (
+                <option key={p.id} value={p.id}>
+                  {!ownerTeamId && team ? `${playerTag(p)} · ${team}` : playerTag(p)}
+                </option>
+              );
+            })}
           </select>
           <button className="ghost" type="submit" disabled={!pickId}>
             Dodaj
