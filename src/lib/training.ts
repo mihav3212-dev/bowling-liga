@@ -123,11 +123,102 @@ export function compactGames(games: (number | null)[] | undefined): (number | nu
 }
 
 export function compactSession(session: TrainingSession): TrainingSession {
-  if (session.kind === "match") return session;
+  if (session.kind === "match") {
+    return session.fromLiga ? { ...session, fromLiga: true } : session;
+  }
   return {
     ...session,
+    ...(session.fromLiga ? { fromLiga: true } : {}),
     scores: session.scores.map((row) => ({ ...row, games: compactGames(row.games) })),
   };
+}
+
+/** Ekipe, na katere se admin trening prenese (solo = ekipe igralcev; tekma = obe ekipi + igralci). */
+export function teamsTouchedBySession(
+  session: TrainingSession,
+  players: Player[],
+  realTeamIds: Set<string>,
+): Set<string> {
+  const teams = new Set<string>();
+  const addPlayerTeam = (playerId: string) => {
+    const p = players.find((x) => x.id === playerId);
+    if (p?.teamId && realTeamIds.has(p.teamId)) teams.add(p.teamId);
+  };
+  if (session.kind === "match" && session.match) {
+    const m = session.match;
+    if (m.homeTeamId && realTeamIds.has(m.homeTeamId)) teams.add(m.homeTeamId);
+    if (m.awayTeamId && realTeamIds.has(m.awayTeamId)) teams.add(m.awayTeamId);
+    for (const id of [...m.homeStarters, ...m.awayStarters, ...m.homeBench, ...m.awayBench]) {
+      if (id) addPlayerTeam(id);
+    }
+  } else {
+    for (const row of session.scores) addPlayerTeam(row.playerId);
+  }
+  return teams;
+}
+
+/** Kopija admin treninga za eno ekipo (solo: samo njeni igralci; tekma: celotna). */
+export function mirrorSessionForTeam(
+  session: TrainingSession,
+  teamId: string,
+  players: Player[],
+): TrainingSession {
+  if (session.kind === "match") {
+    return { ...session, fromLiga: true };
+  }
+  return {
+    ...session,
+    fromLiga: true,
+    scores: session.scores.filter(
+      (row) => players.find((p) => p.id === row.playerId)?.teamId === teamId,
+    ),
+  };
+}
+
+/**
+ * Po admin treningih (trainingSessions) posodobi kopije v teamTrainings.
+ * Če trainingSessions manjka (ekipni API), ne spreminjaj — ekipe že imajo shranjene kopije.
+ */
+export function syncLigaTrainingMirrors(state: LeagueState): LeagueState {
+  if (state.trainingSessions === undefined) return state;
+
+  const realTeamIds = new Set(state.teams.map((t) => t.id));
+  const global = state.trainingSessions;
+  const globalIds = new Set(global.map((s) => s.id));
+  const teamTrainings: Record<string, TrainingSession[]> = {
+    ...(state.teamTrainings ?? {}),
+  };
+
+  for (const teamId of Object.keys(teamTrainings)) {
+    teamTrainings[teamId] = (teamTrainings[teamId] ?? []).filter(
+      (s) => !s.fromLiga || globalIds.has(s.id),
+    );
+  }
+
+  for (const session of global) {
+    const touched = teamsTouchedBySession(session, state.players, realTeamIds);
+    for (const teamId of Object.keys(teamTrainings)) {
+      if (touched.has(teamId)) continue;
+      teamTrainings[teamId] = (teamTrainings[teamId] ?? []).filter(
+        (s) => s.id !== session.id || !s.fromLiga,
+      );
+    }
+    for (const teamId of touched) {
+      const mirrored = mirrorSessionForTeam(session, teamId, state.players);
+      if (session.kind !== "match" && mirrored.scores.length === 0) {
+        teamTrainings[teamId] = (teamTrainings[teamId] ?? []).filter(
+          (s) => s.id !== session.id || !s.fromLiga,
+        );
+        continue;
+      }
+      const list = teamTrainings[teamId] ?? [];
+      const idx = list.findIndex((s) => s.id === session.id);
+      teamTrainings[teamId] =
+        idx >= 0 ? list.map((s, i) => (i === idx ? mirrored : s)) : [mirrored, ...list];
+    }
+  }
+
+  return { ...state, teamTrainings };
 }
 
 export function compactTrainings(state: LeagueState): LeagueState {
@@ -135,7 +226,7 @@ export function compactTrainings(state: LeagueState): LeagueState {
   const teamTrainings = state.teamTrainings
     ? Object.fromEntries(Object.entries(state.teamTrainings).map(([id, list]) => [id, list.map(compactSession)]))
     : state.teamTrainings;
-  return { ...state, trainingSessions, teamTrainings };
+  return syncLigaTrainingMirrors({ ...state, trainingSessions, teamTrainings });
 }
 
 export function scoreTotal(score: TrainingScore, player?: Player): number | null {
@@ -186,7 +277,23 @@ function adjustedTrainingPins(raw: number | null, player: Player): number | null
   return scoredPins(raw, player);
 }
 
-/** Statistika igralca na treningih ekipe (solo + trening tekme). */
+function playerInTrainingSession(session: TrainingSession, playerId: string): boolean {
+  if (session.kind === "match" && session.match) {
+    const m = session.match;
+    return (
+      m.homeStarters.includes(playerId) ||
+      m.awayStarters.includes(playerId) ||
+      m.homeBench.includes(playerId) ||
+      m.awayBench.includes(playerId) ||
+      (m.rounds ?? []).some((r) =>
+        (r.games ?? []).some((g) => g.homePlayerId === playerId || g.awayPlayerId === playerId),
+      )
+    );
+  }
+  return session.scores.some((row) => row.playerId === playerId);
+}
+
+/** Statistika igralca na treningih ekipe + admin Trening (zrcaljeno / globalno). */
 export function computePlayerTrainingStats(
   state: LeagueState,
   playerId: string,
@@ -194,7 +301,12 @@ export function computePlayerTrainingStats(
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return null;
 
-  const sessions = getTeamSessions(state, player.teamId);
+  const teamSessions = getTeamSessions(state, player.teamId);
+  const seen = new Set(teamSessions.map((s) => s.id));
+  const fromGlobal = (state.trainingSessions ?? []).filter(
+    (s) => !seen.has(s.id) && playerInTrainingSession(s, playerId),
+  );
+  const sessions = [...teamSessions, ...fromGlobal];
   const rows: PlayerTrainingSessionRow[] = [];
   let games = 0;
   let pins = 0;
@@ -289,6 +401,7 @@ export function parseTrainingSessions(value: unknown): TrainingSession[] | undef
       kind: item.kind === "match" ? "match" : "solo",
       scores,
       match: item.match,
+      ...(item.fromLiga ? { fromLiga: true } : {}),
     });
   }
   return sessions;

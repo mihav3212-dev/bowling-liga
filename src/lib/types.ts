@@ -87,6 +87,11 @@ export type TrainingSession = {
   kind?: TrainingKind;
   scores: TrainingScore[];
   match?: TrainingMatch;
+  /**
+   * Kopija iz admin zavihka Trening v teamTrainings.
+   * Ekipa vidi rezultate; urejanje je samo v admin zavihku.
+   */
+  fromLiga?: boolean;
 };
 
 export type LeagueState = {

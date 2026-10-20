@@ -85,16 +85,31 @@ export function TrainingMatch({
   if (!packed) return <p>Tekma ne obstaja.</p>;
 
   const owner = ownerTeamId ?? undefined;
+  const ligaReadOnly = Boolean(session.fromLiga);
   const homeName =
     state.teams.find((t) => t.id === packed.homeTeamId)?.name || packed.homeName || "Skupina A";
   const awayName =
     state.teams.find((t) => t.id === packed.awayTeamId)?.name || packed.awayName || "Skupina B";
 
-  /** Vsi igralci sezone — lahko mečejo iz različnih ekip. */
-  const allRoster = useMemo(
-    () => [...state.players].sort((a, b) => a.name.localeCompare(b.name, "sl")),
-    [state.players],
-  );
+  const homeIsTeam = state.teams.some((t) => t.id === packed.homeTeamId);
+  const awayIsTeam = state.teams.some((t) => t.id === packed.awayTeamId);
+
+  /** Igralci obeh ekip (trening tekma); sicer vsi v sezoni. */
+  const allRoster = useMemo(() => {
+    const list =
+      homeIsTeam || awayIsTeam
+        ? state.players.filter(
+            (p) =>
+              p.teamId === packed.homeTeamId ||
+              p.teamId === packed.awayTeamId ||
+              packed.homeStarters.includes(p.id) ||
+              packed.awayStarters.includes(p.id) ||
+              packed.homeBench.includes(p.id) ||
+              packed.awayBench.includes(p.id),
+          )
+        : [...state.players];
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, "sl"));
+  }, [state.players, packed, homeIsTeam, awayIsTeam]);
   const teamNameOf = (p: Player) =>
     p.teamId === TRAINING_TEAM_ID
       ? "Gost"
@@ -116,7 +131,7 @@ export function TrainingMatch({
   const totals = matchTotals(asMatch, state.players);
   const homeNom = nominatedIds(packed.homeStarters, packed.homeBench);
   const awayNom = nominatedIds(packed.awayStarters, packed.awayBench);
-  const playersLocked = lineupLocked(packed.rounds);
+  const playersLocked = ligaReadOnly || lineupLocked(packed.rounds);
   const nominated = useMemo(
     () => allRoster.filter((p) => homeNom.includes(p.id) || awayNom.includes(p.id)),
     [allRoster, homeNom, awayNom],
@@ -129,21 +144,27 @@ export function TrainingMatch({
       </button>
       <h2 className="round-title" style={{ marginTop: 12 }}>
         {trainingMatchTitle(session, state.teams)}
+        {ligaReadOnly ? " · liga" : ""}
       </h2>
       <label className="training-date">
         Datum
         <input
           type="date"
           value={session.date}
+          disabled={ligaReadOnly}
           onChange={(e) => {
+            if (ligaReadOnly) return;
             if (e.target.value) setTrainingDate(session.id, e.target.value, owner);
           }}
         />
       </label>
       <p className="muted">
-        {formatTrainingDate(session.date)} · trening kot tekma · igralci iz poljubnih ekip
+        {formatTrainingDate(session.date)} · trening tekma
+        {homeIsTeam && awayIsTeam ? ` · ${homeName} — ${awayName}` : ""}
       </p>
-      {!playersLocked && (
+      {ligaReadOnly ? (
+        <p className="muted">Vnos iz zavihka Trening — samo pregled. Spremembe ureja admin.</p>
+      ) : !lineupLocked(packed.rounds) ? (
         <label className="training-date" style={{ marginTop: 8 }}>
           Število mest na stran (2–4)
           <select
@@ -166,8 +187,7 @@ export function TrainingMatch({
             <option value={4}>4</option>
           </select>
         </label>
-      )}
-      {playersLocked && (
+      ) : (
         <p className="muted">
           Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
           keglje v 1. krogu.
@@ -192,7 +212,7 @@ export function TrainingMatch({
               bench={packed.homeBench}
               starterCount={starterCount}
               showBench={starterCount >= 4}
-              hint={`Izberi ${starterCount} igralce (lahko iz različnih ekip).`}
+              hint={`Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`}
               formatPlayer={formatPlayer}
               searchIn={teamNameOf}
               onChange={(starters, bench) =>
@@ -218,7 +238,7 @@ export function TrainingMatch({
               bench={packed.awayBench}
               starterCount={starterCount}
               showBench={starterCount >= 4}
-              hint={`Izberi ${starterCount} igralce (lahko iz različnih ekip).`}
+              hint={`Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`}
               formatPlayer={formatPlayer}
               searchIn={teamNameOf}
               onChange={(starters, bench) =>
@@ -229,12 +249,11 @@ export function TrainingMatch({
         </div>
       </div>
 
-      {!playersLocked && (
+      {!ligaReadOnly && !lineupLocked(packed.rounds) && (
         <div className="panel" style={{ marginBottom: 16 }}>
           <h3>Nov igralec</h3>
           <p className="muted">
-            Sestava A/B je samo strani treninga — igralce izbereš zgoraj iz poljubnih ekip. Če ga še ni v
-            sezoni, ga dodaj z izbiro prave ekipe (ali gost).
+            Če igralca še ni v sezoni, ga dodaj z izbiro prave ekipe (ali gost). Sicer izberi iz sestave zgoraj.
           </p>
           <AddPlayerForm
             teams={state.teams}
@@ -298,7 +317,7 @@ export function TrainingMatch({
                       <td>
                         <span className="player-pick">
                           <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
-                          {lockRoundPlayers ? (
+                          {lockRoundPlayers || ligaReadOnly ? (
                             playerName(allRoster, game.homePlayerId)
                           ) : (
                             <select
@@ -321,7 +340,7 @@ export function TrainingMatch({
                         <PinField
                           raw={game.homePins}
                           player={allRoster.find((p) => p.id === game.homePlayerId)}
-                          readOnly={false}
+                          readOnly={ligaReadOnly}
                           onChange={(pins) => setTrainingMatchPins(session.id, ri, gi, "home", pins, owner)}
                         />
                       </td>
@@ -331,14 +350,14 @@ export function TrainingMatch({
                         <PinField
                           raw={game.awayPins}
                           player={allRoster.find((p) => p.id === game.awayPlayerId)}
-                          readOnly={false}
+                          readOnly={ligaReadOnly}
                           onChange={(pins) => setTrainingMatchPins(session.id, ri, gi, "away", pins, owner)}
                         />
                       </td>
                       <td>
                         <span className="player-pick">
                           <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
-                          {lockRoundPlayers ? (
+                          {lockRoundPlayers || ligaReadOnly ? (
                             playerName(allRoster, game.awayPlayerId)
                           ) : (
                             <select

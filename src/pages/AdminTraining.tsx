@@ -9,7 +9,7 @@ import { useStore } from "../lib/store";
 import { Training } from "./Training";
 import { TrainingMatch } from "./TrainingMatch";
 
-/** Admin zavihek: posamezni trening (kot pri ekipah) + trening tekma. */
+/** Admin zavihek: posamezni trening (mešane ekipe → zrcali v ekipe) + trening tekma (2 ekipi). */
 export function AdminTraining({
   sessionId,
   onOpen,
@@ -36,10 +36,8 @@ export function AdminTraining({
   );
   const session = sessions.find((s) => s.id === sessionId) ?? null;
   const [createOpen, setCreateOpen] = useState(false);
-  const [homeName, setHomeName] = useState("Skupina A");
-  const [awayName, setAwayName] = useState("Skupina B");
-  const [homeTeamId, setHomeTeamId] = useState("");
-  const [awayTeamId, setAwayTeamId] = useState("");
+  const [homeTeamId, setHomeTeamId] = useState(state.teams[0]?.id ?? "");
+  const [awayTeamId, setAwayTeamId] = useState(state.teams[1]?.id ?? "");
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveNote, setSaveNote] = useState("");
 
@@ -94,15 +92,17 @@ export function AdminTraining({
   }
 
   const canCreate =
-    Boolean(homeName.trim() && awayName.trim()) &&
-    !(homeTeamId && awayTeamId && homeTeamId === awayTeamId);
+    Boolean(homeTeamId && awayTeamId) && homeTeamId !== awayTeamId && state.teams.length >= 2;
 
   return (
     <section className="panel">
       <h2 className="round-title">Trening</h2>
       <p className="muted">
-        Samo za admina. Posamezni trening (vnos kegljev po igralcih, tudi iz različnih ekip) ali trening tekma
-        (2–4 na stran).
+        Samo za admina. Posamezni trening — igralci iz različnih ekip; rezultati se prenesejo v treninge vsake
+        ekipe. Trening tekma — dve ekipi dogovorita sestavo in keglje (vidno tudi pri obeh ekipah).
+      </p>
+      <p className="muted">
+        Ekipe same še vedno beležijo svoje treninge pod Ekipe → podrobnosti.
       </p>
       <p className="muted">
         {remote
@@ -111,21 +111,16 @@ export function AdminTraining({
       </p>
 
       <div className="row-actions">
-        <button
-          className="primary"
-          type="button"
-          onClick={() => onOpen(newTrainingSession())}
-        >
+        <button className="primary" type="button" onClick={() => onOpen(newTrainingSession())}>
           Posamezni trening
         </button>
         <button
           className="ghost"
           type="button"
+          disabled={state.teams.length < 2}
           onClick={() => {
-            setHomeName("Skupina A");
-            setAwayName("Skupina B");
-            setHomeTeamId("");
-            setAwayTeamId("");
+            setHomeTeamId(state.teams[0]?.id ?? "");
+            setAwayTeamId(state.teams[1]?.id ?? "");
             setCreateOpen(true);
           }}
         >
@@ -175,70 +170,29 @@ export function AdminTraining({
           >
             <h2 id="admin-training-title">Nova trening tekma</h2>
             <p className="muted">
-              Poimenuj skupini (ali izberi ekipo za ime). Igralce iz poljubnih ekip izbereš na naslednjem koraku.
+              Izberi dve ekipi, ki se dogovorita za trening. Sestavo in keglje vpišeš na naslednjem koraku; rezultat
+              se prikaže tudi pri obeh ekipah.
             </p>
             <label className="dialog-field">
-              Skupina A — ime
-              <input
-                value={homeName}
-                onChange={(e) => setHomeName(e.target.value)}
-                placeholder="Skupina A"
-              />
+              Ekipa A
+              <select value={homeTeamId} onChange={(e) => setHomeTeamId(e.target.value)}>
+                {state.teams.map((t) => (
+                  <option key={t.id} value={t.id} disabled={t.id === awayTeamId}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
             </label>
-            {state.teams.length > 0 && (
-              <label className="dialog-field">
-                ali ime iz ekipe
-                <select
-                  value={homeTeamId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setHomeTeamId(id);
-                    if (id) {
-                      const t = state.teams.find((x) => x.id === id);
-                      if (t) setHomeName(t.name);
-                    }
-                  }}
-                >
-                  <option value="">—</option>
-                  {state.teams.map((t) => (
-                    <option key={t.id} value={t.id} disabled={t.id === awayTeamId}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <label className="dialog-field">
-              Skupina B — ime
-              <input
-                value={awayName}
-                onChange={(e) => setAwayName(e.target.value)}
-                placeholder="Skupina B"
-              />
+              Ekipa B
+              <select value={awayTeamId} onChange={(e) => setAwayTeamId(e.target.value)}>
+                {state.teams.map((t) => (
+                  <option key={t.id} value={t.id} disabled={t.id === homeTeamId}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
             </label>
-            {state.teams.length > 0 && (
-              <label className="dialog-field">
-                ali ime iz ekipe
-                <select
-                  value={awayTeamId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setAwayTeamId(id);
-                    if (id) {
-                      const t = state.teams.find((x) => x.id === id);
-                      if (t) setAwayName(t.name);
-                    }
-                  }}
-                >
-                  <option value="">—</option>
-                  {state.teams.map((t) => (
-                    <option key={t.id} value={t.id} disabled={t.id === homeTeamId}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <div className="dialog-actions">
               <button type="button" className="ghost" onClick={() => setCreateOpen(false)}>
                 Prekliči
@@ -250,8 +204,8 @@ export function AdminTraining({
                 onClick={() => {
                   if (!canCreate) return;
                   const id = newTrainingMatch(
-                    homeTeamId ? { teamId: homeTeamId } : { name: homeName.trim() },
-                    awayTeamId ? { teamId: awayTeamId } : { name: awayName.trim() },
+                    { teamId: homeTeamId },
+                    { teamId: awayTeamId },
                     "global",
                   );
                   setCreateOpen(false);
