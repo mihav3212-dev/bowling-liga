@@ -108,7 +108,7 @@ export function Training({
         <h2 className="round-title">Treningi{ownerTeam ? ` — ${ownerTeam.name}` : ""}</h2>
         <p className="muted">
           {ownerTeamId
-            ? "Vaši ekipni treningi. Vnosi iz zavihka Trening (liga) se samodejno prikažejo tukaj."
+            ? "Beleži treninge ekipe. Liga treningi (admin) se tukaj prikažejo kot pregled."
             : "Igralci iz poljubnih ekip. Število iger ni določeno — ob vpisu se odpre naslednje polje."}
         </p>
         <p className="muted">

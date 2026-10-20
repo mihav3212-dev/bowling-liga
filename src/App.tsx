@@ -230,8 +230,8 @@ function LeagueApp() {
   useEffect(() => {
     if (!authReady) return;
     const cur = navRef.current;
-    // Trening zavihek samo za admina.
-    if (cur.page === "training" && !canEdit) {
+    // Trening: admin ali prijavljena ekipa.
+    if (cur.page === "training" && !canEdit && !loginTeamId) {
       commitNav({ ...cur, page: "schedule", trainingSessionId: null }, "replace");
       return;
     }
@@ -373,7 +373,9 @@ function LeagueApp() {
               ...(canEdit || Boolean(loginTeamId)
                 ? [["teams", loginTeamId && !admin ? "Moja ekipa" : "Ekipe"] as [Page, string]]
                 : []),
-              ...(canEdit ? [["training", "Trening"] as [Page, string]] : []),
+              ...(canEdit || Boolean(loginTeamId)
+                ? [["training", "Trening"] as [Page, string]]
+                : []),
             ] as [Page, string][]
           ).map(([id, label]) => (
             <button
@@ -456,6 +458,19 @@ function LeagueApp() {
         {page === "training" && canEdit && (
           <AdminTraining
             sessionId={trainingSessionId}
+            onOpen={openTraining}
+            onBack={() =>
+              navigateBack(() =>
+                commitNav({ ...navRef.current, trainingSessionId: null }, "replace"),
+              )
+            }
+          />
+        )}
+        {page === "training" && !canEdit && loginTeamId && (
+          <Training
+            sessionId={trainingSessionId}
+            ownerTeamId={loginTeamId}
+            canPickTeam={false}
             onOpen={openTraining}
             onBack={() =>
               navigateBack(() =>
