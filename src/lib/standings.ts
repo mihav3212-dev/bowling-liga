@@ -1,5 +1,5 @@
 import { matchTotals, scoreGame, scoredPins, standingSortKey } from "./scoring";
-import type { LeagueState, Player, Team } from "./types";
+import type { LeagueState, Match, Player, Team } from "./types";
 
 export type StandingRow = {
   team: Team;
@@ -86,20 +86,83 @@ export function computeStandings(state: LeagueState): StandingRow[] {
     }
   }
 
-  return [...rows.values()]
-    .map((row) => ({
-      ...row,
-      avg: row.games ? row.pins / row.games : 0,
-      teamAvg: row.played ? row.pins / row.played : 0,
-    }))
-    .sort((a, b) => {
-    const ka = standingSortKey(a);
-    const kb = standingSortKey(b);
-    for (let i = 0; i < ka.length; i++) {
-      if (kb[i] !== ka[i]) return kb[i] - ka[i];
-    }
-    return a.team.name.localeCompare(b.team.name, "sl");
+  const list = [...rows.values()].map((row) => ({
+    ...row,
+    avg: row.games ? row.pins / row.games : 0,
+    teamAvg: row.played ? row.pins / row.played : 0,
+  }));
+
+  return list.sort((a, b) => compareStandingRows(a, b, state));
+}
+
+/**
+ * 1. zmagovalne točke → 2. medsebojno → 3. velike → 4. keglji → 5. male → 6. povprečje kegljev
+ */
+export function compareStandingRows(a: StandingRow, b: StandingRow, state: LeagueState): number {
+  if (b.big !== a.big) return b.big - a.big;
+  const h2h = compareHeadToHead(state, a.team.id, b.team.id);
+  if (h2h !== 0) return h2h;
+  const ka = standingSortKey(a);
+  const kb = standingSortKey(b);
+  // standingSortKey[0] je že big — primerjaj od velike naprej
+  for (let i = 1; i < ka.length; i++) {
+    if (kb[i] !== ka[i]) return kb[i] - ka[i];
+  }
+  return a.team.name.localeCompare(b.team.name, "sl");
+}
+
+function matchesBetween(state: LeagueState, teamA: string, teamB: string): Match[] {
+  return state.matches.filter((m) => {
+    if (!matchTotals(m, state.players).complete) return false;
+    return (
+      (m.homeTeamId === teamA && m.awayTeamId === teamB) ||
+      (m.homeTeamId === teamB && m.awayTeamId === teamA)
+    );
   });
+}
+
+/** Pozitivno = B boljša (A za B), negativno = A boljša. 0 = ni odločeno / nista igrali. */
+export function compareHeadToHead(state: LeagueState, teamA: string, teamB: string): number {
+  const fixtures = matchesBetween(state, teamA, teamB);
+  if (fixtures.length === 0) return 0;
+
+  let aPts = 0;
+  let bPts = 0;
+  let aVelike = 0;
+  let bVelike = 0;
+  let aPins = 0;
+  let bPins = 0;
+  let aSmall = 0;
+  let bSmall = 0;
+
+  for (const match of fixtures) {
+    const t = matchTotals(match, state.players);
+    if (match.homeTeamId === teamA) {
+      aPts += t.homeMatch;
+      bPts += t.awayMatch;
+      aVelike += t.homeBig;
+      bVelike += t.awayBig;
+      aPins += t.homePins;
+      bPins += t.awayPins;
+      aSmall += t.homeSmall;
+      bSmall += t.awaySmall;
+    } else {
+      aPts += t.awayMatch;
+      bPts += t.homeMatch;
+      aVelike += t.awayBig;
+      bVelike += t.homeBig;
+      aPins += t.awayPins;
+      bPins += t.homePins;
+      aSmall += t.awaySmall;
+      bSmall += t.homeSmall;
+    }
+  }
+
+  if (bPts !== aPts) return bPts - aPts;
+  if (bVelike !== aVelike) return bVelike - aVelike;
+  if (bPins !== aPins) return bPins - aPins;
+  if (bSmall !== aSmall) return bSmall - aSmall;
+  return 0;
 }
 
 type HighCounts = {

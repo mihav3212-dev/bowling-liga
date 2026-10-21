@@ -150,8 +150,8 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
     },
     bodyStyles: { lineWidth: 0.15, lineColor: [160, 160, 160] },
     columnStyles: {
-      1: { halign: "left", cellWidth: 32 },
-      10: { fontStyle: "bold", halign: "center" },
+      1: { halign: "left", cellWidth: 30 },
+      11: { fontStyle: "bold", halign: "center" },
     },
     head: [[
       "#",
@@ -162,6 +162,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
       "R",
       "Velike točke",
       "Male točke",
+      "Keglji",
       "Povp./ekipa",
       "Povp./igralec",
       "TOČKE",
@@ -175,6 +176,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
       row.drawn,
       row.velike,
       row.small,
+      row.pins,
       row.teamAvg ? row.teamAvg.toFixed(1) : "0.0",
       row.avg ? row.avg.toFixed(2) : "0.00",
       row.big,

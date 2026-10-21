@@ -23,7 +23,8 @@ export function Standings() {
             : `${leagueSeasonTitle(state)} · pred začetkom`}
         </p>
         <p className="board-view-note">
-          Razvrstitev: točke (zmaga 2, remi 1), male točke, podrti keglji.
+          Razvrstitev: zmagovalne točke → medsebojno srečanje → velike točke → podrti keglji → male
+          točke → povprečje kegljev.
         </p>
       </header>
 
@@ -39,6 +40,7 @@ export function Standings() {
               <th title="Remijev">R</th>
               <th>Velike</th>
               <th>Male</th>
+              <th title="Skupno podrtih kegljev">Keglji</th>
               <th>Povp./ekipa</th>
               <th>Povp./igralec</th>
               <th>Točke</th>
@@ -55,6 +57,7 @@ export function Standings() {
                 <td className="mono">{row.drawn}</td>
                 <td className="mono">{row.velike}</td>
                 <td className="mono">{row.small}</td>
+                <td className="mono">{row.pins}</td>
                 <td className="mono">{row.teamAvg ? row.teamAvg.toFixed(1) : "0.0"}</td>
                 <td className="mono">{row.avg ? row.avg.toFixed(2) : "0.00"}</td>
                 <td className="mono board-points">{row.big}</td>

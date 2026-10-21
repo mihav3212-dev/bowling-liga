@@ -349,10 +349,13 @@ export function seasonIsComplete(state: { matches: Match[]; players: Player[] })
   return state.matches.length > 0 && state.matches.every((m) => matchTotals(m, state.players).complete);
 }
 
+/** Brez medsebojnega: zmagovalne → velike → keglji → male → povprečje. */
 export function standingSortKey(row: {
   big: number;
-  small: number;
+  velike: number;
   pins: number;
-}): [number, number, number] {
-  return [row.big, row.small, row.pins];
+  small: number;
+  avg: number;
+}): [number, number, number, number, number] {
+  return [row.big, row.velike, row.pins, row.small, row.avg];
 }

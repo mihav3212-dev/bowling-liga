@@ -451,35 +451,27 @@ function RoundCard({
           : "away";
   const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
   const quad = variant === "quad";
+  const pinsText =
+    r.homePins != null || r.awayPins != null
+      ? `${pairLabel(r.homePins, r.awayPins)} kegljev`
+      : "— kegljev";
   return (
     <div
       className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}`}
     >
-      <div className="live-tv-round-card-num">{r.round}. krog</div>
-      <div className="live-tv-round-card-score">
-        <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
-        <span className="live-tv-duel-vs">:</span>
-        <span className={bigLead === "away" ? "is-lead" : undefined}>{r.awayBig ?? "·"}</span>
+      <div className="live-tv-round-card-num">{r.round}. kolo</div>
+      <div className="live-tv-round-card-totals">
+        <span>
+          Velike{" "}
+          <strong>
+            <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
+            <span className="live-tv-duel-vs">:</span>
+            <span className={bigLead === "away" ? "is-lead" : undefined}>{r.awayBig ?? "·"}</span>
+          </strong>
+        </span>
+        <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
+        <span>{pinsText}</span>
       </div>
-      {quad ? (
-        <div className="live-tv-round-card-meta">
-          <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
-          <span>
-            {pairLabel(r.homePins, r.awayPins)}
-            {r.homePins != null ? " kegljev" : ""}
-          </span>
-        </div>
-      ) : (
-        <>
-          <div className="live-tv-round-card-meta">
-            <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
-          </div>
-          <div className="live-tv-round-card-pins">
-            {pairLabel(r.homePins, r.awayPins)}
-            {r.homePins != null ? " kegljev" : ""}
-          </div>
-        </>
-      )}
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
           const dLead = duelLead(d.homePins, d.awayPins);
@@ -572,7 +564,7 @@ function LiveMatchScreen({
           <span className="live-tv-pulse" aria-hidden />
           <span className="live-tv-live">V živo</span>
           {showRoundFocus ? (
-            <span className="live-tv-when">{quadPhase.focusRound}. krog · fokus</span>
+            <span className="live-tv-when">{quadPhase.focusRound}. kolo · fokus</span>
           ) : null}
         </>
       )}

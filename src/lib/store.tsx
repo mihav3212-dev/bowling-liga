@@ -16,6 +16,7 @@ import {
   buildDrawMatches,
   buildReturnDraw,
   buildSeasonMatches,
+  flipMatchHomeAway,
   type FixtureRow,
 } from "./schedule";
 import {
@@ -105,6 +106,8 @@ type Store = {
   setMatchStartsAt: (matchId: string, startsAt: string) => void;
   /** Zamenjaj termina dveh tekem. */
   swapMatchStartsAt: (matchIdA: string, matchIdB: string) => void;
+  /** Zamenjaj domačina in gosta na tekmi. */
+  swapMatchHomeAway: (matchId: string) => void;
   setPins: (
     matchId: string,
     roundIndex: number,
@@ -549,6 +552,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             }),
           };
         });
+      },
+      swapMatchHomeAway: (matchId) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === viewer), "season")) return;
+        }
+        update((s) => ({
+          ...s,
+          matches: s.matches.map((m) => (m.id === matchId ? flipMatchHomeAway(m) : m)),
+        }));
       },
       setPins: (matchId, roundIndex, gameIndex, side, pins) => {
         const team = viewerTeamRef.current;

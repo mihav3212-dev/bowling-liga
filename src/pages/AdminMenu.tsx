@@ -5,6 +5,7 @@ import { seasonIsComplete } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
+import { SwapMatchHomeAwayDialog } from "./SwapMatchHomeAwayDialog";
 import { SwapMatchTimesDialog } from "./SwapMatchTimesDialog";
 
 export function AdminMenu({
@@ -40,6 +41,7 @@ export function AdminMenu({
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"home" | "seasons">("home");
   const [swapOpen, setSwapOpen] = useState(false);
+  const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
 
   const closeMenu = () => {
     setOpen(false);
@@ -178,6 +180,24 @@ export function AdminMenu({
                 }}
               >
                 Zamenjaj termin
+              </button>
+            )}
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
+                disabled={state.matches.length < 1}
+                title={
+                  state.matches.length < 1
+                    ? "Najprej mora biti razpored s tekmami."
+                    : "Zamenjaj, kdo je domačin in kdo gost."
+                }
+                onClick={() => {
+                  setSwapHomeAwayOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Zamenjaj domačin/gost
               </button>
             )}
             <button
@@ -333,6 +353,7 @@ export function AdminMenu({
       )}
     </div>
     {swapOpen && <SwapMatchTimesDialog onClose={() => setSwapOpen(false)} />}
+    {swapHomeAwayOpen && <SwapMatchHomeAwayDialog onClose={() => setSwapHomeAwayOpen(false)} />}
     </>
   );
 }

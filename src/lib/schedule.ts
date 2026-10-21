@@ -31,6 +31,28 @@ export function roundRobinPairings(teamIds: string[]): { homeId: string; awayId:
   return rounds;
 }
 
+/** Zamenjaj domačina in gosta (tudi sestavo in vpisane keglje). Termin ostane. */
+export function flipMatchHomeAway(match: Match): Match {
+  return {
+    ...match,
+    homeTeamId: match.awayTeamId,
+    awayTeamId: match.homeTeamId,
+    homeStarters: [...match.awayStarters],
+    awayStarters: [...match.homeStarters],
+    homeBench: [...match.awayBench],
+    awayBench: [...match.homeBench],
+    rounds: match.rounds.map((round) => ({
+      games: round.games.map((game) => ({
+        ...game,
+        homePlayerId: game.awayPlayerId,
+        awayPlayerId: game.homePlayerId,
+        homePins: game.awayPins,
+        awayPins: game.homePins,
+      })),
+    })),
+  };
+}
+
 function emptyMatch(
   round: number,
   homeTeamId: string,

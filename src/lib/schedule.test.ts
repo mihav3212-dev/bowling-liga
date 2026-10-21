@@ -5,10 +5,11 @@ import {
   buildReturnDraw,
   daysNeededForHalf,
   firstHalfComplete,
+  flipMatchHomeAway,
   parseScheduleCsv,
   splitCalendarDates,
 } from "./schedule";
-import type { LeagueState, Team } from "./types";
+import type { LeagueState, Match, Team } from "./types";
 
 describe("parseScheduleCsv", () => {
   it("prebere pavzo samo iz kola in opombe", () => {
@@ -72,5 +73,51 @@ describe("žreb s koledarjem", () => {
     const drawn = buildDrawMatches(teams, [...match, ...holiday]);
     expect(drawn.roundNotes["2"]).toMatch(/počitnice/);
     expect(drawn.matches).toHaveLength(6);
+  });
+});
+
+describe("flipMatchHomeAway", () => {
+  it("zamenja ekipe, sestavo in keglje, termin pusti", () => {
+    const match: Match = {
+      id: "m1",
+      round: 3,
+      homeTeamId: "h",
+      awayTeamId: "a",
+      startsAt: "2026-11-01T19:00:00",
+      homeStarters: ["h1"],
+      awayStarters: ["a1"],
+      homeBench: ["h2"],
+      awayBench: ["a2"],
+      status: "scheduled",
+      rounds: [
+        {
+          games: [
+            {
+              homePlayerId: "h1",
+              awayPlayerId: "a1",
+              lane: 1,
+              homePins: 180,
+              awayPins: 150,
+            },
+          ],
+        },
+      ],
+    };
+    const flipped = flipMatchHomeAway(match);
+    expect(flipped.homeTeamId).toBe("a");
+    expect(flipped.awayTeamId).toBe("h");
+    expect(flipped.homeStarters).toEqual(["a1"]);
+    expect(flipped.awayStarters).toEqual(["h1"]);
+    expect(flipped.homeBench).toEqual(["a2"]);
+    expect(flipped.awayBench).toEqual(["h2"]);
+    expect(flipped.startsAt).toBe("2026-11-01T19:00:00");
+    expect(flipped.round).toBe(3);
+    expect(flipped.rounds[0].games[0]).toMatchObject({
+      homePlayerId: "a1",
+      awayPlayerId: "h1",
+      homePins: 150,
+      awayPins: 180,
+      lane: 1,
+    });
   });
 });

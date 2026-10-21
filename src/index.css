@@ -2437,10 +2437,12 @@ button.linkish {
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-num {
   margin-bottom: 2px;
+  font-size: clamp(1.15rem, 1.9vw, 1.45rem);
 }
 
-.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-score {
-  font-size: clamp(1.7rem, 3.2vw, 2.55rem);
+.live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
+  font-size: clamp(0.95rem, 1.45vw, 1.15rem);
+  margin-bottom: 6px;
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-duels {
@@ -2762,50 +2764,39 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-round-card-num {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
   margin-bottom: 6px;
 }
 
-.live-tv-round-card-score {
+.live-tv-round-card-totals {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
-  gap: 8px;
+  gap: 0.35em 1em;
+  margin-top: 2px;
+  margin-bottom: 10px;
+  color: var(--tv-muted);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
   font-family: "IBM Plex Mono", monospace;
-  font-weight: 600;
-  font-size: clamp(1.85rem, 3.6vw, 2.75rem);
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  line-height: 1.25;
 }
 
-.live-tv-round-card-score .is-lead {
+.live-tv-round-card-totals strong {
+  font-weight: 600;
+  color: var(--tv-ink);
+}
+
+.live-tv-round-card-totals .is-lead {
   color: var(--tv-live);
 }
 
-.live-tv-round-card-pins {
-  margin-top: 2px;
-  margin-bottom: 12px;
-  color: var(--tv-muted);
-  font-size: clamp(1rem, 1.5vw, 1.25rem);
-  font-family: "IBM Plex Mono", monospace;
-}
-
-.live-tv-round-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-top: 4px;
-  margin-bottom: 2px;
-  color: var(--tv-muted);
-  font-size: clamp(0.95rem, 1.45vw, 1.2rem);
-  font-family: "IBM Plex Mono", monospace;
-  line-height: 1.2;
-}
-
-.live-tv:not(.is-quad) .live-tv-round-card-meta {
-  margin-bottom: 0;
+.live-tv:not(.is-quad) .live-tv-round-card-totals {
+  margin-bottom: 8px;
 }
 
 .live-tv-round-duels {
@@ -2932,13 +2923,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   font-size: 1.15em;
 }
 
-.live-tv:not(.is-quad) .live-tv-round-card-score {
-  font-size: clamp(2.1rem, 3.9vw, 3.2rem);
-}
-
-.live-tv:not(.is-quad) .live-tv-round-card-meta,
-.live-tv:not(.is-quad) .live-tv-round-card-pins {
-  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
+.live-tv:not(.is-quad) .live-tv-round-card-totals {
+  font-size: clamp(1.1rem, 1.7vw, 1.4rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
@@ -3108,17 +3094,14 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-num {
-  font-size: clamp(1.4rem, 2.6vw, 2rem);
-  margin-bottom: 6px;
+  font-size: clamp(1.85rem, 3.4vw, 2.6rem);
+  margin-bottom: 8px;
 }
 
-.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-score {
-  font-size: clamp(2.8rem, 6vw, 4.5rem);
-}
-
-.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-meta {
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-  margin-bottom: 10px;
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-totals {
+  font-size: clamp(1.45rem, 2.6vw, 2rem);
+  margin-bottom: 14px;
+  gap: 0.4em 1.25em;
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-mini-duel {
@@ -3149,26 +3132,27 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad .live-tv-round-card-num {
-  color: var(--tv-muted);
-  text-align: left;
-  font-size: clamp(0.95rem, 1.5vw, 1.25rem);
-  margin-bottom: 2px;
-}
-
-.live-tv.is-quad .live-tv-round-card-score {
   color: var(--tv-ink);
-  font-size: clamp(1.7rem, 3.2vw, 2.55rem);
-}
-
-.live-tv.is-quad .live-tv-round-card-score .is-lead {
-  color: var(--tv-live);
-}
-
-.live-tv.is-quad .live-tv-round-card-meta {
-  color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.25vw, 1.05rem);
-  margin-top: 2px;
+  text-align: left;
+  font-size: clamp(1.35rem, 2.3vw, 1.85rem);
   margin-bottom: 4px;
+}
+
+.live-tv.is-quad .live-tv-round-card-totals {
+  justify-content: flex-start;
+  color: var(--tv-muted);
+  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  margin-top: 0;
+  margin-bottom: 6px;
+  gap: 0.3em 0.9em;
+}
+
+.live-tv.is-quad .live-tv-round-card-totals strong {
+  color: var(--tv-ink);
+}
+
+.live-tv.is-quad .live-tv-round-card-totals .is-lead {
+  color: var(--tv-live);
 }
 
 .live-tv.is-quad .live-tv-round-duels {
@@ -3494,10 +3478,15 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     padding: 8px 6px;
   }
 
-  .live-tv.is-quad .live-tv-round-card-meta {
-    font-size: 0.75rem;
+  .live-tv.is-quad .live-tv-round-card-num {
+    font-size: 1.05rem;
+  }
+
+  .live-tv.is-quad .live-tv-round-card-totals {
+    font-size: 0.8rem;
     margin-top: 2px;
     margin-bottom: 4px;
+    gap: 0.25em 0.55em;
   }
 
   .live-tv.is-quad .live-tv-round-duels {
