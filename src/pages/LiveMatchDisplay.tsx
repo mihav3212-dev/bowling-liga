@@ -353,7 +353,94 @@ function LayoutPicker({
 
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
-function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: LiveTvLayout }) {
+/** Kvadrati: kolo čez zaslon, nato pregled; po koncu kroga spet fokus. */
+const QUAD_FOCUS_DEFAULT_MS = 5 * 60 * 1000;
+
+function readQuadFocusMs(): number {
+  const raw = new URLSearchParams(window.location.search).get("focusMs");
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 5_000 && n <= 30 * 60_000) return n;
+  return QUAD_FOCUS_DEFAULT_MS;
+}
+
+function roundPinsComplete(r: RoundSummary): boolean {
+  return r.duels.length > 0 && r.duels.every((d) => d.homePins != null && d.awayPins != null);
+}
+
+type QuadPhase = {
+  mode: "focus" | "overview";
+  /** Kolo v fokusu / kolo, na katerega čakamo dokončanje v overview. */
+  focusRound: number;
+  until: number;
+};
+
+function useQuadRoundPhase(
+  rounds: RoundSummary[],
+  matchComplete: boolean,
+  matchKey: string,
+): QuadPhase {
+  const focusMs = useRef(readQuadFocusMs()).current;
+  const [phase, setPhase] = useState<QuadPhase>(() => ({
+    mode: "focus",
+    focusRound: 1,
+    until: Date.now() + focusMs,
+  }));
+  const keyRef = useRef(matchKey);
+
+  useEffect(() => {
+    if (keyRef.current === matchKey) return;
+    keyRef.current = matchKey;
+    const first = rounds.find((r) => !roundPinsComplete(r))?.round ?? 1;
+    setPhase({ mode: "focus", focusRound: first, until: Date.now() + focusMs });
+  }, [matchKey, rounds, focusMs]);
+
+  useEffect(() => {
+    if (matchComplete) {
+      setPhase((p) =>
+        p.mode === "overview" ? p : { mode: "overview", focusRound: p.focusRound, until: 0 },
+      );
+      return;
+    }
+    const tick = () => {
+      setPhase((p) => {
+        const now = Date.now();
+        const maxRound = Math.max(1, rounds.length);
+        const focused = rounds.find((r) => r.round === p.focusRound);
+
+        if (p.mode === "focus") {
+          if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
+            return { mode: "focus", focusRound: p.focusRound + 1, until: now + focusMs };
+          }
+          if (now >= p.until) {
+            return { mode: "overview", focusRound: p.focusRound, until: 0 };
+          }
+          return p;
+        }
+
+        // overview: ko se trenutno kolo zaključi → naslednje na veliko
+        if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
+          return { mode: "focus", focusRound: p.focusRound + 1, until: now + focusMs };
+        }
+        return p;
+      });
+    };
+    tick();
+    const id = window.setInterval(tick, 400);
+    return () => window.clearInterval(id);
+  }, [rounds, matchComplete, focusMs, matchKey]);
+
+  return phase;
+}
+
+function RoundCard({
+  r,
+  variant = "classic",
+  enlarged = false,
+}: {
+  r: RoundSummary;
+  variant?: LiveTvLayout;
+  enlarged?: boolean;
+}) {
   const bigLead =
     r.homeBig == null || r.awayBig == null
       ? "open"
@@ -365,7 +452,9 @@ function RoundCard({ r, variant = "classic" }: { r: RoundSummary; variant?: Live
   const openRound = r.duels.some((d) => d.homePins == null || d.awayPins == null);
   const quad = variant === "quad";
   return (
-    <div className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}`}>
+    <div
+      className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}`}
+    >
       <div className="live-tv-round-card-num">{r.round}. krog</div>
       <div className="live-tv-round-card-score">
         <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
@@ -436,6 +525,8 @@ type ScreenProps = {
   onLayoutChange: (next: LiveTvLayout) => void;
   /** Npr. „Trening“ namesto „Liga · n. kolo“. */
   brandSub?: string;
+  /** Stabilen id tekme za reset fokusa kroga na TV. */
+  matchKey?: string;
 };
 
 function LiveMatchScreen({
@@ -445,6 +536,7 @@ function LiveMatchScreen({
   layout,
   onLayoutChange,
   brandSub,
+  matchKey,
 }: ScreenProps) {
   const sub = brandSub ?? `Liga · ${m.round}. kolo`;
   const rootRef = useRef<HTMLDivElement>(null);
@@ -457,6 +549,11 @@ function LiveMatchScreen({
   const r2 = rounds[1]!;
   const r3 = rounds[2]!;
   const r4 = rounds[3]!;
+  const phaseKey = matchKey ?? `${m.homeName}|${m.awayName}|${m.startsAtLabel}|${m.round}`;
+  const quadPhase = useQuadRoundPhase(rounds, complete, phaseKey);
+  const focusRound = rounds.find((r) => r.round === quadPhase.focusRound) ?? r1;
+  const showRoundFocus =
+    layout === "quad" && badge === "live" && !complete && quadPhase.mode === "focus";
 
   const meta = (
     <div className="live-tv-meta">
@@ -474,6 +571,9 @@ function LiveMatchScreen({
         <>
           <span className="live-tv-pulse" aria-hidden />
           <span className="live-tv-live">V živo</span>
+          {showRoundFocus ? (
+            <span className="live-tv-when">{quadPhase.focusRound}. krog · fokus</span>
+          ) : null}
         </>
       )}
       <span className="live-tv-when">{m.startsAtLabel}</span>
@@ -487,7 +587,7 @@ function LiveMatchScreen({
     return (
       <div
         ref={rootRef}
-        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}`}
+        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${showRoundFocus ? " is-round-focus" : ""}`}
       >
         <div className="live-tv-glow" aria-hidden />
         <header className="live-tv-top">
@@ -501,70 +601,95 @@ function LiveMatchScreen({
           {meta}
         </header>
 
-        <div className="live-quad-board">
-          <RoundCard r={r1} variant="quad" />
-          <div className="live-quad-spine live-quad-spine-top">
-            <div className="live-quad-stat is-featured">
-              <span>Velike točke</span>
-              <strong>
-                {m.homeBig}:{m.awayBig}
-              </strong>
+        {showRoundFocus ? (
+          <div className="live-quad-focus">
+            <div className="live-quad-focus-banner">
+              <div className={`live-quad-focus-team is-home${homeWins ? " is-winner" : ""}`}>
+                <span className="live-quad-mid-side">Domači</span>
+                <span className="live-quad-mid-team">{m.homeName}</span>
+              </div>
+              <div className="live-quad-focus-score">
+                <span className="live-quad-focus-score-label">Velike</span>
+                <strong>
+                  {m.homeBig}:{m.awayBig}
+                </strong>
+                <span className="live-quad-focus-score-sub">
+                  Male {m.homeSmall}:{m.awaySmall} · keglji {m.homePins}:{m.awayPins}
+                </span>
+              </div>
+              <div className={`live-quad-focus-team is-away${awayWins ? " is-winner" : ""}`}>
+                <span className="live-quad-mid-side">Gostje</span>
+                <span className="live-quad-mid-team">{m.awayName}</span>
+              </div>
             </div>
-            <div className="live-quad-stat">
-              <span>Male točke</span>
-              <strong>
-                {m.homeSmall}:{m.awaySmall}
-              </strong>
-            </div>
+            <RoundCard r={focusRound} variant="quad" enlarged />
           </div>
-          <RoundCard r={r2} variant="quad" />
+        ) : (
+          <div className="live-quad-board">
+            <RoundCard r={r1} variant="quad" />
+            <div className="live-quad-spine live-quad-spine-top">
+              <div className="live-quad-stat is-featured">
+                <span>Velike točke</span>
+                <strong>
+                  {m.homeBig}:{m.awayBig}
+                </strong>
+              </div>
+              <div className="live-quad-stat">
+                <span>Male točke</span>
+                <strong>
+                  {m.homeSmall}:{m.awaySmall}
+                </strong>
+              </div>
+            </div>
+            <RoundCard r={r2} variant="quad" />
 
-          <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
-            <span className="live-quad-mid-side">Domači</span>
-            <span className="live-quad-mid-team">{m.homeName}</span>
-          </div>
-          <div className="live-quad-spine live-quad-spine-mid">
-            <div className={`live-quad-stat is-slot-large${complete ? " is-match" : ""}`}>
-              <span>{complete ? "Končne točke" : "Keglji"}</span>
-              <strong>
-                {complete ? (
-                  <>
-                    <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                    <span className="live-tv-score-sep">:</span>
-                    <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-                  </>
-                ) : (
-                  <>
-                    {m.homePins}:{m.awayPins}
-                  </>
-                )}
-              </strong>
+            <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
+              <span className="live-quad-mid-side">Domači</span>
+              <span className="live-quad-mid-team">{m.homeName}</span>
             </div>
-          </div>
-          <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
-            <span className="live-quad-mid-side">Gostje</span>
-            <span className="live-quad-mid-team">{m.awayName}</span>
-          </div>
+            <div className="live-quad-spine live-quad-spine-mid">
+              <div className={`live-quad-stat is-slot-large${complete ? " is-match" : ""}`}>
+                <span>{complete ? "Končne točke" : "Keglji"}</span>
+                <strong>
+                  {complete ? (
+                    <>
+                      <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                      <span className="live-tv-score-sep">:</span>
+                      <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                    </>
+                  ) : (
+                    <>
+                      {m.homePins}:{m.awayPins}
+                    </>
+                  )}
+                </strong>
+              </div>
+            </div>
+            <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
+              <span className="live-quad-mid-side">Gostje</span>
+              <span className="live-quad-mid-team">{m.awayName}</span>
+            </div>
 
-          <RoundCard r={r3} variant="quad" />
-          <div className="live-quad-spine live-quad-spine-bot">
-            <div
-              className={`live-quad-stat is-slot-small${complete ? "" : " is-match is-pending"}`}
-            >
-              <span>{complete ? "Keglji" : "Končne točke"}</span>
-              <strong>
-                {complete ? (
-                  <>
-                    {m.homePins}:{m.awayPins}
-                  </>
-                ) : (
-                  "·:·"
-                )}
-              </strong>
+            <RoundCard r={r3} variant="quad" />
+            <div className="live-quad-spine live-quad-spine-bot">
+              <div
+                className={`live-quad-stat is-slot-small${complete ? "" : " is-match is-pending"}`}
+              >
+                <span>{complete ? "Keglji" : "Končne točke"}</span>
+                <strong>
+                  {complete ? (
+                    <>
+                      {m.homePins}:{m.awayPins}
+                    </>
+                  ) : (
+                    "·:·"
+                  )}
+                </strong>
+              </div>
             </div>
+            <RoundCard r={r4} variant="quad" />
           </div>
-          <RoundCard r={r4} variant="quad" />
-        </div>
+        )}
       </div>
     );
   }
@@ -806,6 +931,7 @@ export function LiveMatchBoard() {
       rotateLabel={rotateLabel}
       layout={layout}
       onLayoutChange={setLayout}
+      matchKey={pick.match.id}
     />
   );
 }
@@ -893,6 +1019,7 @@ export function TrainingLiveBoard({ sessionId }: { sessionId: string }) {
       layout={layout}
       onLayoutChange={setLayout}
       brandSub="Trening"
+      matchKey={session.id}
     />
   );
 }

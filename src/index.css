@@ -3036,6 +3036,101 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   align-items: stretch;
 }
 
+/* En krog čez zaslon (~5 min), nato spet pregled vseh 4 */
+.live-quad-focus {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: clamp(10px, 1.8vh, 18px);
+}
+
+.live-quad-focus-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: clamp(10px, 2vw, 24px);
+  align-items: center;
+}
+
+.live-quad-focus-team {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.live-quad-focus-team.is-home {
+  text-align: left;
+}
+
+.live-quad-focus-team.is-away {
+  text-align: right;
+}
+
+.live-quad-focus-team.is-winner .live-quad-mid-team {
+  color: var(--tv-live);
+}
+
+.live-quad-focus-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 2px;
+}
+
+.live-quad-focus-score-label {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+}
+
+.live-quad-focus-score strong {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: clamp(2.4rem, 5.5vw, 4rem);
+  line-height: 1;
+  color: var(--tv-ink);
+}
+
+.live-quad-focus-score-sub {
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged {
+  min-height: 0;
+  height: 100%;
+  padding: clamp(14px, 2.2vh, 22px) clamp(16px, 2.5vw, 28px);
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-num {
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  margin-bottom: 6px;
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-score {
+  font-size: clamp(2.8rem, 6vw, 4.5rem);
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-meta {
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  margin-bottom: 10px;
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-mini-duel {
+  font-size: clamp(1.45rem, 2.8vw, 2.2rem);
+  gap: 4px 12px;
+  grid-template-columns: 4.2em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+}
+
+.live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-mini-pins {
+  min-width: 2.4em;
+}
+
 .live-tv.is-quad .live-tv-round-card.is-quad {
   background: rgba(255, 255, 255, 0.05);
   color: var(--tv-ink);
