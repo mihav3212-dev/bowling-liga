@@ -1,6 +1,6 @@
-import { emptyRounds } from "./pairings";
+import { emptyRounds, pairingTemplate } from "./pairings";
 import { lineupLocked, MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
-import type { Match, Player } from "./types";
+import type { GameScore, Match, Player } from "./types";
 
 export function teamMatchSide(
   match: { homeTeamId: string; awayTeamId: string },
@@ -114,5 +114,49 @@ export function applyLineup(match: Match, side: "home" | "away", starters: strin
           : match.rounds[ri]?.games[gi]?.awayPlayerId || game.awayPlayerId,
     })),
   }));
-  return next;
+  return repairDuplicateLanePlayers(next);
+}
+
+/** Isti igralec ne sme stati na dveh stezah istega kroga. */
+export function playerOnOtherLane(
+  games: GameScore[],
+  side: "home" | "away",
+  playerId: string,
+  gameIndex: number,
+): boolean {
+  if (!playerId) return false;
+  const key = side === "home" ? "homePlayerId" : "awayPlayerId";
+  return games.some((game, index) => index !== gameIndex && game[key] === playerId);
+}
+
+/**
+ * Če je isti igralec na dveh stezah, na napačni stezi ga zamenja tisti,
+ * ki mu pripada oznaka (A1–A4 / B1–B4). Prava steza in menjave ostanejo.
+ */
+export function repairDuplicateLanePlayers(match: Match): Match {
+  const slots = pairingTemplate();
+  let changed = false;
+  const rounds = (match.rounds ?? []).map((round, ri) => {
+    const games = (round.games ?? []).map((game) => ({ ...game }));
+    for (const side of ["home", "away"] as const) {
+      const key = side === "home" ? "homePlayerId" : "awayPlayerId";
+      const starters = side === "home" ? match.homeStarters : match.awayStarters;
+      const counts = new Map<string, number>();
+      for (const game of games) {
+        const id = game[key];
+        if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+      games.forEach((game, gi) => {
+        const slot = side === "home" ? slots[ri]?.[gi]?.homeSlot : slots[ri]?.[gi]?.awaySlot;
+        const expected = slot == null ? "" : (starters?.[slot] ?? "");
+        const id = game[key];
+        if (id && (counts.get(id) ?? 0) > 1 && id !== expected) {
+          game[key] = expected;
+          changed = true;
+        }
+      });
+    }
+    return { ...round, games };
+  });
+  return changed ? { ...match, rounds } : match;
 }

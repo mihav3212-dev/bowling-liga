@@ -119,5 +119,38 @@ export function applyLineup(match, side, starters, bench) {
       awayPins: match.rounds?.[ri]?.games?.[gi]?.awayPins ?? null,
     })),
   }));
-  return next;
+  return repairDuplicateLanePlayers(next);
+}
+
+export function playerOnOtherLane(games, side, playerId, gameIndex) {
+  if (!playerId) return false;
+  const key = side === "home" ? "homePlayerId" : "awayPlayerId";
+  return (games ?? []).some((game, index) => index !== gameIndex && game?.[key] === playerId);
+}
+
+export function repairDuplicateLanePlayers(match) {
+  let changed = false;
+  const rounds = (match.rounds ?? []).map((round, ri) => {
+    const games = (round.games ?? []).map((game) => ({ ...game }));
+    for (const side of ["home", "away"]) {
+      const key = side === "home" ? "homePlayerId" : "awayPlayerId";
+      const starters = side === "home" ? match.homeStarters : match.awayStarters;
+      const counts = new Map();
+      for (const game of games) {
+        const id = game[key];
+        if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+      games.forEach((game, gi) => {
+        const slot = side === "home" ? PAIRINGS[ri]?.[gi]?.homeSlot : PAIRINGS[ri]?.[gi]?.awaySlot;
+        const expected = slot == null ? "" : (starters?.[slot] ?? "");
+        const id = game[key];
+        if (id && (counts.get(id) ?? 0) > 1 && id !== expected) {
+          game[key] = expected;
+          changed = true;
+        }
+      });
+    }
+    return { ...round, games };
+  });
+  return changed ? { ...match, rounds } : match;
 }

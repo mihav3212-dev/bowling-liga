@@ -27,6 +27,7 @@ import {
   renameLeague,
   replaceLeague,
   reopenLeague,
+  saveAdminMatch,
   saveLeague,
   saveMatchGame,
   saveMatchLineup,
@@ -52,7 +53,14 @@ import {
   type SeasonVault,
 } from "./storage";
 import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpen } from "./access";
-import { applyLineup, rosterIdsForTeam, sanitizeLineup, teamMatchSide } from "./lineup";
+import {
+  applyLineup,
+  playerOnOtherLane,
+  repairDuplicateLanePlayers,
+  rosterIdsForTeam,
+  sanitizeLineup,
+  teamMatchSide,
+} from "./lineup";
 import { useAuth } from "./auth";
 import { cloneTeamsAndPlayers } from "./cloneRoster";
 import { uid } from "./ids";
@@ -180,6 +188,8 @@ type Store = {
   deleteTrainingSession: (sessionId: string, teamId?: string) => void;
   saveTrainingNow: () => Promise<boolean>;
   saveMatchLineupNow: (matchId: string) => Promise<boolean>;
+  /** Admin: zapiše to tekmo (oznake A/B + keglje), ne cele sezone. */
+  saveShownMatch: (matchId: string) => Promise<boolean>;
   saveTeamRosterNow: (teamId: string) => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
   createTeamInvite: (teamId: string) => Promise<{ url: string; token: string; expiresAt: string }>;
@@ -218,6 +228,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const archivedRef = useRef(opening.archived);
   const seasonIdRef = useRef<string | null>(opening.id);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const editEpoch = useRef(0);
+  const savesInFlight = useRef(0);
+
+  const noteEdit = () => {
+    editEpoch.current += 1;
+  };
+
+  const trackSave = async (work: () => Promise<unknown>) => {
+    savesInFlight.current += 1;
+    try {
+      return await work();
+    } finally {
+      savesInFlight.current -= 1;
+    }
+  };
 
   const applyVault = (nextVault: SeasonVault, id: string) => {
     const season = nextVault.seasons.find((s) => s.id === id) ?? nextVault.seasons[0];
@@ -241,13 +266,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const team = viewerTeamRef.current;
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        if (team) {
-          const perms = teamPerms(packed.teams.find((item) => item.id === team));
-          if (perms.season) void saveLeague(id, packed);
-          else void saveTeamTrainings(id, team, packed.teamTrainings?.[team] ?? []);
-        } else {
-          void saveLeague(id, packed);
-        }
+        saveTimer.current = undefined;
+        if (seasonIdRef.current !== id) return;
+        const latest = stateRef.current;
+        void trackSave(async () => {
+          if (team) {
+            const perms = teamPerms(latest.teams.find((item) => item.id === team));
+            if (perms.season) await saveLeague(id, latest);
+            else await saveTeamTrainings(id, team, latest.teamTrainings?.[team] ?? []);
+          } else {
+            await saveLeague(id, latest);
+          }
+        });
       }, 600);
     } else if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
       vaultRef.current = writeCurrent(vaultRef.current, packed);
@@ -258,6 +288,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   const update = (recipe: (s: LeagueState) => LeagueState) => {
+    noteEdit();
     setState((s) => {
       if (archivedRef.current) return s;
       return persist(recipe(s));
@@ -266,6 +297,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   /** Lokalni popravek brez celotnega saveLeague — za keglje/igralce na tekmi. */
   const touchLocal = (recipe: (s: LeagueState) => LeagueState) => {
+    noteEdit();
     setState((s) => {
       if (archivedRef.current) return s;
       const packed = compactTrainings(recipe(s));
@@ -461,26 +493,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setLineup: (matchId, side, starters, bench) => {
         const team = viewerTeamRef.current;
         if (team && !canTeam(stateRef.current.teams.find((t) => t.id === team), "lineup")) return;
-        update((s) => ({
+        const match = stateRef.current.matches.find((item) => item.id === matchId);
+        if (!match || lineupLocked(match.rounds)) return;
+        let nextStarters = starters;
+        let nextBench = bench;
+        if (team) {
+          if (teamMatchSide(match, team) !== side) return;
+          const clean = sanitizeLineup(starters, bench, rosterIdsForTeam(stateRef.current.players, team));
+          nextStarters = clean.starters;
+          nextBench = clean.bench;
+        }
+        // Sestava gre v bazo sama, ne kot cela sezona. Čakajoči zapis celotne
+        // sezone ob sprožitvi prebere trenutno stanje, zato sestave ne povozi.
+        touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
             if (m.id !== matchId || lineupLocked(m.rounds)) return m;
-            if (team) {
-              const own = teamMatchSide(m, team);
-              if (own !== side) return m;
-              const clean = sanitizeLineup(starters, bench, rosterIdsForTeam(s.players, team));
-              return applyLineup(m, side, clean.starters, clean.bench);
-            }
-            return applyLineup(m, side, starters, bench);
+            if (team && teamMatchSide(m, team) !== side) return m;
+            return applyLineup(m, side, nextStarters, nextBench);
           }),
         }));
-        if (remoteRef.current && team && seasonIdRef.current) {
-          const clean = sanitizeLineup(
-            starters,
-            bench,
-            rosterIdsForTeam(stateRef.current.players, team),
-          );
-          void saveMatchLineup(seasonIdRef.current, matchId, side, clean.starters, clean.bench);
+        if (remoteRef.current && seasonIdRef.current) {
+          const season = seasonIdRef.current;
+          void trackSave(() => saveMatchLineup(season, matchId, side, nextStarters, nextBench));
         }
       },
       setMatchStartsAt: (matchId, startsAt) => {
@@ -526,6 +561,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         // Ne shranjuj cele sezone — sicer starejši zavihek prepiše sveže keglje.
         clearTimeout(saveTimer.current);
+        saveTimer.current = undefined;
         touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
@@ -547,7 +583,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
         if (remoteRef.current && seasonIdRef.current) {
           // Ne apply-aj odziva tukaj — hitro tipkanje bi sicer lahko prepisalo novejšo lokalno vrednost.
-          void saveMatchGame(seasonIdRef.current, { matchId, roundIndex, gameIndex, side, pins });
+          const season = seasonIdRef.current;
+          void trackSave(() => saveMatchGame(season, { matchId, roundIndex, gameIndex, side, pins }));
         }
       },
       setRoundPlayer: (matchId, roundIndex, gameIndex, side, playerId) => {
@@ -557,7 +594,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const match = stateRef.current.matches.find((m) => m.id === matchId);
           if (!match || teamMatchSide(match, team) !== side) return;
         }
+        const current = stateRef.current.matches.find((m) => m.id === matchId);
+        const games = current?.rounds[roundIndex]?.games ?? [];
+        if (playerOnOtherLane(games, side, playerId, gameIndex)) return;
         clearTimeout(saveTimer.current);
+        saveTimer.current = undefined;
         touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
@@ -567,6 +608,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               side === "home" ? m.homeBench : m.awayBench,
             );
             if (playerId && !allowed.includes(playerId)) return m;
+            if (playerOnOtherLane(m.rounds[roundIndex]?.games ?? [], side, playerId, gameIndex)) return m;
             if (roundIndex === 0 && lineupLocked(m.rounds)) return m;
             return {
               ...m,
@@ -585,19 +627,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }),
         }));
         if (remoteRef.current && seasonIdRef.current) {
-          void saveMatchGame(seasonIdRef.current, {
-            matchId,
-            roundIndex,
-            gameIndex,
-            side,
-            playerId,
-          });
+          const season = seasonIdRef.current;
+          void trackSave(() =>
+            saveMatchGame(season, {
+              matchId,
+              roundIndex,
+              gameIndex,
+              side,
+              playerId,
+            }),
+          );
         }
       },
       syncFromRemote: async () => {
         if (!remoteRef.current || !seasonIdRef.current || archivedRef.current) return false;
+        if (saveTimer.current || savesInFlight.current > 0) return false;
+        const started = editEpoch.current;
         try {
           const payload = await fetchLeague(seasonIdRef.current);
+          // Vnos med čakanjem ali shranjevanje iz druge naprave ne sme povoziti lokalnega.
+          if (started !== editEpoch.current || saveTimer.current || savesInFlight.current > 0) return false;
           if (payload.storage === "db" && payload.current) {
             applyRemote(payload);
             return true;
@@ -920,17 +969,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ),
       saveMatchLineupNow: async (matchId) => {
         const packed = compactTrainings(stateRef.current);
-        update(() => packed);
         const team = viewerTeamRef.current;
-        if (!team || !seasonIdRef.current) return true;
         const match = packed.matches.find((item) => item.id === matchId);
-        const side = match ? teamMatchSide(match, team) : null;
-        if (!match || !side) return false;
-        if (!remoteRef.current) return true;
+        if (!remoteRef.current || !seasonIdRef.current) {
+          update(() => packed);
+          return true;
+        }
+        clearTimeout(saveTimer.current);
+        saveTimer.current = undefined;
+        if (!match) return false;
+        const own = team ? teamMatchSide(match, team) : null;
+        if (team && !own) return false;
+        const sides: ("home" | "away")[] = own ? [own] : ["home", "away"];
         try {
-          const starters = side === "home" ? match.homeStarters : match.awayStarters;
-          const bench = side === "home" ? match.homeBench : match.awayBench;
-          return await saveMatchLineup(seasonIdRef.current, matchId, side, starters, bench);
+          let ok = true;
+          for (const side of sides) {
+            const starters = side === "home" ? match.homeStarters : match.awayStarters;
+            const bench = side === "home" ? match.homeBench : match.awayBench;
+            const saved = await trackSave(() =>
+              saveMatchLineup(seasonIdRef.current as string, matchId, side, starters, bench),
+            );
+            ok = ok && Boolean(saved);
+          }
+          return ok;
+        } catch {
+          return false;
+        }
+      },
+      saveShownMatch: async (matchId) => {
+        const packed = compactTrainings(stateRef.current);
+        const match = packed.matches.find((item) => item.id === matchId);
+        if (!match) return false;
+        const fixed = repairDuplicateLanePlayers(match);
+        if (!remoteRef.current || !seasonIdRef.current) {
+          update((s) => ({
+            ...s,
+            matches: s.matches.map((item) => (item.id === matchId ? fixed : item)),
+          }));
+          return true;
+        }
+        if (viewerTeamRef.current) return false;
+        clearTimeout(saveTimer.current);
+        saveTimer.current = undefined;
+        touchLocal((s) => ({
+          ...s,
+          matches: s.matches.map((item) => (item.id === matchId ? fixed : item)),
+        }));
+        try {
+          return Boolean(await trackSave(() => saveAdminMatch(seasonIdRef.current as string, fixed)));
         } catch {
           return false;
         }

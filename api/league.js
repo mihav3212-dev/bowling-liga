@@ -14,6 +14,7 @@ import {
   getSql,
   listSeasons,
   saveSeason,
+  saveAdminMatch,
   saveMatchGame,
   saveMatchLineup,
   saveTeamRoster,
@@ -147,8 +148,9 @@ export async function handleLeague(req, res) {
         return;
       }
       if (body.action === "saveLineup") {
+        const admin = Boolean(viewer.admin);
         const teamId = viewer.teamId;
-        if (!teamId) {
+        if (!admin && !teamId) {
           json(res, 401, { ok: false });
           return;
         }
@@ -165,6 +167,7 @@ export async function handleLeague(req, res) {
           body.starters,
           body.bench,
           body.id,
+          { admin },
         );
         if (!current) {
           json(res, 409, { ok: false });
@@ -174,6 +177,23 @@ export async function handleLeague(req, res) {
           storage: "db",
           current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
+      if (body.action === "saveMatch") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const current = await saveAdminMatch(sql, body.id, body.match);
+        if (!current) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          storage: "db",
+          current: presentSeason(current, viewer),
+          seasons: await listSeasons(sql, { includeTraining: true }),
         });
         return;
       }

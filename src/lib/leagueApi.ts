@@ -142,6 +142,26 @@ export async function saveTeamRoster(
   return res.ok;
 }
 
+export async function saveAdminMatch(
+  id: string,
+  match: {
+    id: string;
+    homeStarters: string[];
+    awayStarters: string[];
+    homeBench: string[];
+    awayBench: string[];
+    rounds: { games: { homePins: number | null; awayPins: number | null; homePlayerId: string; awayPlayerId: string; lane: number }[] }[];
+  },
+): Promise<boolean> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "saveMatch", id, match }),
+  });
+  return res.ok;
+}
+
 export async function saveMatchLineup(
   id: string,
   matchId: string,

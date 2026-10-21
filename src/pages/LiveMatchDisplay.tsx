@@ -289,7 +289,7 @@ const PREVIEW_FINAL: LiveMatchView = {
   ],
 };
 
-const POLL_MS = 8_000;
+const POLL_MS = 2_000;
 
 export type LiveTvLayout = "classic" | "quad";
 

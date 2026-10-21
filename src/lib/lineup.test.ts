@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { lineupsRevealed, maskMatchLineups, sanitizeLineup, teamMatchSide } from "./lineup";
+import {
+  applyLineup,
+  lineupsRevealed,
+  maskMatchLineups,
+  playerOnOtherLane,
+  repairDuplicateLanePlayers,
+  sanitizeLineup,
+  teamMatchSide,
+} from "./lineup";
+import { emptyRounds } from "./pairings";
 import type { Match } from "./types";
 
 function sampleMatch(over: Partial<Match> = {}): Match {
@@ -86,5 +95,36 @@ describe("team lineup", () => {
   it("keeps full lineups for admin", () => {
     const match = sampleMatch();
     expect(maskMatchLineups(match, { admin: true }).awayStarters).toEqual(match.awayStarters);
+  });
+
+  it("puts each starter on one lane per round", () => {
+    const base = sampleMatch({
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    const next = applyLineup(base, "home", ["h1", "h2", "h3", "h4"], []);
+    for (const round of next.rounds) {
+      const ids = round.games.map((game) => game.homePlayerId).filter(Boolean);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+    expect(next.rounds[1]?.games[2]?.homePlayerId).toBe("h1");
+    expect(next.rounds[2]?.games[2]?.homePlayerId).toBe("h4");
+    expect(next.rounds[3]?.games[2]?.homePlayerId).toBe("h2");
+  });
+
+  it("moves a duplicated starter back to the labelled lane", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    match.rounds[1].games[2].homePlayerId = "h3";
+    match.rounds[2].games[2].homePlayerId = "h3";
+    match.rounds[3].games[2].homePlayerId = "h3";
+    const fixed = repairDuplicateLanePlayers(match);
+    expect(fixed.rounds[1].games[2].homePlayerId).toBe("h1");
+    expect(fixed.rounds[2].games[2].homePlayerId).toBe("h4");
+    expect(fixed.rounds[3].games[2].homePlayerId).toBe("h2");
+    expect(fixed.rounds[1].games[0].homePlayerId).toBe("h3");
+    expect(playerOnOtherLane(fixed.rounds[1].games, "home", "h3", 0)).toBe(false);
   });
 });

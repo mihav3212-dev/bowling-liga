@@ -200,11 +200,12 @@ if ($route === 'league') {
                 json_out($code, $result);
             }
             if ($action === 'saveGame') {
+                $asAdmin = !empty($viewer['admin']);
                 $teamId = $viewer['teamId'] ?? null;
-                if (!$teamId) {
+                if (!$asAdmin && !$teamId) {
                     json_out(401, ['ok' => false]);
                 }
-                $current = save_match_game($pdo, $teamId, $body, $body['id'] ?? null);
+                $current = save_match_game($pdo, $teamId, $body, $body['id'] ?? null, $asAdmin);
                 if (!$current) {
                     json_out(409, ['ok' => false]);
                 }
@@ -230,8 +231,9 @@ if ($route === 'league') {
                 ]);
             }
             if ($action === 'saveLineup') {
+                $asAdmin = !empty($viewer['admin']);
                 $teamId = $viewer['teamId'] ?? null;
-                if (!$teamId) {
+                if (!$asAdmin && !$teamId) {
                     json_out(401, ['ok' => false]);
                 }
                 $side = ($body['side'] ?? '') === 'away' ? 'away' : (($body['side'] ?? '') === 'home' ? 'home' : null);
@@ -245,7 +247,8 @@ if ($route === 'league') {
                     $side,
                     $body['starters'] ?? [],
                     $body['bench'] ?? [],
-                    $body['id'] ?? null
+                    $body['id'] ?? null,
+                    $asAdmin
                 );
                 if (!$current) {
                     json_out(409, ['ok' => false]);
@@ -254,6 +257,20 @@ if ($route === 'league') {
                     'storage' => 'db',
                     'current' => present_season($current, $viewer),
                     'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                ]);
+            }
+            if ($action === 'saveMatch') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $current = save_admin_match($pdo, $body['id'] ?? null, $body['match'] ?? []);
+                if (!$current) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'storage' => 'db',
+                    'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, true),
                 ]);
             }
             if ($action === 'saveTraining') {

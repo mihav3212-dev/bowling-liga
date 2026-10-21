@@ -87,6 +87,7 @@ export function LineupEditor({
   starters,
   bench,
   onChange,
+  onEditingChange,
   starterCount = 4,
   showBench = true,
   hint,
@@ -99,6 +100,7 @@ export function LineupEditor({
   starters: string[];
   bench: string[];
   onChange: (starters: string[], bench: string[]) => void;
+  onEditingChange?: (editing: boolean) => void;
   /** Koliko mest A1… (2–4). Ostala mesta ostanejo prazna. */
   starterCount?: number;
   showBench?: boolean;
@@ -149,6 +151,8 @@ export function LineupEditor({
         <select
           key={`s${i}`}
           value={starters[i] ?? ""}
+          onFocus={() => onEditingChange?.(true)}
+          onBlur={() => onEditingChange?.(false)}
           onChange={(e) => {
             const next = padStarters(starters);
             next[i] = e.target.value;
@@ -169,6 +173,8 @@ export function LineupEditor({
           <select
             key={`b${i}`}
             value={bench[i] ?? ""}
+            onFocus={() => onEditingChange?.(true)}
+            onBlur={() => onEditingChange?.(false)}
             onChange={(e) => {
               const next = [...bench];
               next[i] = e.target.value;
@@ -198,9 +204,20 @@ export function MatchEntry({
   readOnly?: boolean;
   lineupTeamId?: string | null;
 }) {
-  const { state, remote, setLineup, setPins, setRoundPlayer, saveMatchLineupNow, syncFromRemote } =
-    useStore();
+  const {
+    state,
+    remote,
+    setLineup,
+    setPins,
+    setRoundPlayer,
+    saveMatchLineupNow,
+    saveShownMatch,
+    syncFromRemote,
+  } = useStore();
+  const [saving, setSaving] = useState(false);
+  const [saveNote, setSaveNote] = useState("");
   const editingPinsRef = useRef(false);
+  const editingLineupRef = useRef(false);
   const syncRef = useRef(syncFromRemote);
   syncRef.current = syncFromRemote;
   const match = state.matches.find((m) => m.id === matchId);
@@ -209,7 +226,7 @@ export function MatchEntry({
     if (!remote) return;
     let cancelled = false;
     const tick = async () => {
-      if (cancelled || editingPinsRef.current) return;
+      if (cancelled || editingPinsRef.current || editingLineupRef.current) return;
       await syncRef.current();
     };
     void tick();
@@ -330,6 +347,9 @@ export function MatchEntry({
               starters={match.homeStarters}
               bench={match.homeBench}
               onChange={(starters, bench) => setLineup(match.id, "home", starters, bench)}
+              onEditingChange={(editing) => {
+                editingLineupRef.current = editing;
+              }}
             />
           ) : (
             <LineupReadout
@@ -354,6 +374,9 @@ export function MatchEntry({
               starters={match.awayStarters}
               bench={match.awayBench}
               onChange={(starters, bench) => setLineup(match.id, "away", starters, bench)}
+              onEditingChange={(editing) => {
+                editingLineupRef.current = editing;
+              }}
             />
           ) : (
             <LineupReadout
@@ -395,6 +418,12 @@ export function MatchEntry({
                 const duel = scoreGame(game, state.players);
                 const homePlayers = homeRoster.filter((p) => homeNom.includes(p.id));
                 const awayPlayers = awayRoster.filter((p) => awayNom.includes(p.id));
+                const homeTaken = new Set(
+                  round.games.map((g, i) => (i === gi ? "" : g.homePlayerId)).filter(Boolean),
+                );
+                const awayTaken = new Set(
+                  round.games.map((g, i) => (i === gi ? "" : g.awayPlayerId)).filter(Boolean),
+                );
                 const slots = pair[gi];
                 return (
                   <tr key={gi} className="duel-row">
@@ -407,14 +436,22 @@ export function MatchEntry({
                         ) : (
                           <select
                             value={game.homePlayerId}
+                            onFocus={() => {
+                              editingLineupRef.current = true;
+                            }}
+                            onBlur={() => {
+                              editingLineupRef.current = false;
+                            }}
                             onChange={(e) => setRoundPlayer(match.id, ri, gi, "home", e.target.value)}
                           >
                             <option value="">—</option>
-                            {homePlayers.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {playerTag(p)}
-                              </option>
-                            ))}
+                            {homePlayers
+                              .filter((p) => p.id === game.homePlayerId || !homeTaken.has(p.id))
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {playerTag(p)}
+                                </option>
+                              ))}
                           </select>
                         )}
                       </span>
@@ -468,14 +505,22 @@ export function MatchEntry({
                         ) : (
                           <select
                             value={game.awayPlayerId}
+                            onFocus={() => {
+                              editingLineupRef.current = true;
+                            }}
+                            onBlur={() => {
+                              editingLineupRef.current = false;
+                            }}
                             onChange={(e) => setRoundPlayer(match.id, ri, gi, "away", e.target.value)}
                           >
                             <option value="">—</option>
-                            {awayPlayers.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {playerTag(p)}
-                              </option>
-                            ))}
+                            {awayPlayers
+                              .filter((p) => p.id === game.awayPlayerId || !awayTaken.has(p.id))
+                              .map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {playerTag(p)}
+                                </option>
+                              ))}
                           </select>
                         )}
                       </span>
@@ -595,17 +640,28 @@ export function MatchEntry({
             <button
               className="primary"
               type="button"
+              disabled={saving}
               onClick={async () => {
-                if (teamLineup) await saveMatchLineupNow(match.id);
+                setSaving(true);
+                setSaveNote("");
+                const ok = teamLineup
+                  ? await saveMatchLineupNow(match.id)
+                  : await saveShownMatch(match.id);
+                setSaving(false);
+                if (!ok) {
+                  setSaveNote("Shranjevanje ni uspelo. Poskusi znova, ne zapiraj tekme.");
+                  return;
+                }
                 onBack();
               }}
             >
-              Shrani
+              {saving ? "Shranjujem…" : "Shrani"}
             </button>
             <span className="muted">
-              {teamLineup
-                ? "Sestava se sproti zapiše; gumb te vrne na razpored."
-                : "Rezultat se sproti zapiše; gumb te vrne na seznam."}
+              {saveNote ||
+                (teamLineup
+                  ? "Sestava se sproti zapiše; gumb te vrne na razpored."
+                  : "Shrani zapiše sestavo in keglje. TV jih pokaže v paru sekundah.")}
             </span>
           </>
         )}

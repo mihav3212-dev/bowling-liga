@@ -1,7 +1,7 @@
 import mysql from "mysql2/promise";
 import { loadFileConfig } from "./config.mjs";
 import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
-import { applyLineup, lineupLocked, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
+import { applyLineup, lineupLocked, playerOnOtherLane, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
 import {
   findInviteTeam,
   hashInviteToken,
@@ -280,25 +280,158 @@ export async function deleteSeason(pool, id) {
   return getSeason(pool, nextId);
 }
 
-export async function saveMatchLineup(pool, teamId, matchId, side, starters, bench, seasonId) {
-  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
-  if (!current || current.archived) return null;
-  const matches = [...(current.data.matches ?? [])];
-  const index = matches.findIndex((match) => match.id === matchId);
-  if (index < 0) return null;
-  const match = matches[index];
-  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
-  if (!teamPerms(team).lineup) return null;
-  const own = teamMatchSide(match, teamId);
-  if (own == null || own !== side) return null;
-  if (lineupLocked(match.rounds)) return null;
-  const allowed = new Set(
-    (current.data.players ?? []).filter((player) => player.teamId === teamId).map((player) => player.id),
-  );
-  const clean = sanitizeLineup(starters ?? [], bench ?? [], allowed);
-  matches[index] = applyLineup(match, side, clean.starters, clean.bench);
-  const ok = await saveSeason(pool, current.id, { ...current.data, matches });
-  return ok ? getSeason(pool, current.id) : null;
+export async function saveMatchLineup(pool, teamId, matchId, side, starters, bench, seasonId, opts = {}) {
+  const admin = Boolean(opts.admin);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    let id = seasonId;
+    if (!id) {
+      const [ids] = await conn.execute(
+        `SELECT id FROM seasons WHERE archived_at IS NULL ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
+      );
+      id = ids[0]?.id;
+    }
+    if (!id) {
+      await conn.rollback();
+      return null;
+    }
+    const [rows] = await conn.execute(
+      `SELECT * FROM seasons WHERE id = ? AND archived_at IS NULL FOR UPDATE`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) {
+      await conn.rollback();
+      return null;
+    }
+    const current = asSeason(row);
+    const matches = [...(current.data.matches ?? [])];
+    const index = matches.findIndex((match) => match.id === matchId);
+    if (index < 0) {
+      await conn.rollback();
+      return null;
+    }
+    const match = matches[index];
+    let rosterTeamId = teamId;
+    if (admin) {
+      rosterTeamId = side === "home" ? match.homeTeamId : match.awayTeamId;
+    } else {
+      const team = (current.data.teams ?? []).find((item) => item.id === teamId);
+      if (!teamPerms(team).lineup) {
+        await conn.rollback();
+        return null;
+      }
+      const own = teamMatchSide(match, teamId);
+      if (own == null || own !== side) {
+        await conn.rollback();
+        return null;
+      }
+    }
+    if (lineupLocked(match.rounds)) {
+      await conn.rollback();
+      return null;
+    }
+    const allowed = new Set(
+      (current.data.players ?? []).filter((player) => player.teamId === rosterTeamId).map((player) => player.id),
+    );
+    const clean = sanitizeLineup(starters ?? [], bench ?? [], allowed);
+    matches[index] = applyLineup(match, side, clean.starters, clean.bench);
+    const payload = preserveSecrets(asState({ ...current.data, matches }), current.data, { lockPerms: true });
+    await conn.execute(
+      "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+      [dump(payload), current.id],
+    );
+    await conn.commit();
+    return getSeason(pool, current.id);
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+/** Admin: ena tekma. Igralci gredo po oznakah A1–A4 / B1–B4, keglji ostanejo iz vnosa. */
+export async function saveAdminMatch(pool, seasonId, incoming) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    let id = seasonId;
+    if (!id) {
+      const [ids] = await conn.execute(
+        `SELECT id FROM seasons WHERE archived_at IS NULL ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
+      );
+      id = ids[0]?.id;
+    }
+    if (!id || !incoming?.id) {
+      await conn.rollback();
+      return null;
+    }
+    const [rows] = await conn.execute(
+      `SELECT * FROM seasons WHERE id = ? AND archived_at IS NULL FOR UPDATE`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) {
+      await conn.rollback();
+      return null;
+    }
+    const current = asSeason(row);
+    const matches = [...(current.data.matches ?? [])];
+    const index = matches.findIndex((match) => match.id === incoming.id);
+    if (index < 0) {
+      await conn.rollback();
+      return null;
+    }
+    const match = matches[index];
+    const players = current.data.players ?? [];
+    const homeAllowed = new Set(players.filter((p) => p.teamId === match.homeTeamId).map((p) => p.id));
+    const awayAllowed = new Set(players.filter((p) => p.teamId === match.awayTeamId).map((p) => p.id));
+    const home = sanitizeLineup(incoming.homeStarters ?? [], incoming.homeBench ?? [], homeAllowed);
+    const away = sanitizeLineup(incoming.awayStarters ?? [], incoming.awayBench ?? [], awayAllowed);
+    let next = applyLineup(match, "home", home.starters, home.bench);
+    next = applyLineup(next, "away", away.starters, away.bench);
+    const inRounds = incoming.rounds ?? [];
+    next = {
+      ...next,
+      rounds: next.rounds.map((round, ri) => ({
+        games: round.games.map((game, gi) => {
+          const cell = inRounds[ri]?.games?.[gi];
+          if (!cell) return game;
+          return {
+            ...game,
+            homePins: cell.homePins ?? null,
+            awayPins: cell.awayPins ?? null,
+          };
+        }),
+      })),
+    };
+    const filled = next.rounds.every((round) =>
+      round.games.every((game) => game.homePins != null && game.awayPins != null),
+    );
+    matches[index] = { ...next, status: filled ? "done" : "scheduled" };
+    const payload = preserveSecrets(asState({ ...current.data, matches }), current.data, { lockPerms: true });
+    await conn.execute(
+      "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+      [dump(payload), current.id],
+    );
+    await conn.commit();
+    return getSeason(pool, current.id);
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 /**
@@ -386,6 +519,10 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
       const bench = patch.side === "home" ? match.homeBench : match.awayBench;
       const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
       if (pid && !allowed.has(pid)) {
+        await conn.rollback();
+        return null;
+      }
+      if (playerOnOtherLane(match.rounds?.[ri]?.games, patch.side, pid, gi)) {
         await conn.rollback();
         return null;
       }

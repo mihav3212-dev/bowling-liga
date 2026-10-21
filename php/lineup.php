@@ -170,5 +170,63 @@ function liga_apply_lineup($match, $side, $starters, $bench)
         $rounds[] = $row;
     }
     $match['rounds'] = $rounds;
+    return liga_repair_duplicate_lane_players($match);
+}
+
+function liga_player_on_other_lane($games, $side, $playerId, $gameIndex)
+{
+    if ($playerId === '' || $playerId === null) {
+        return false;
+    }
+    $key = $side === 'home' ? 'homePlayerId' : 'awayPlayerId';
+    foreach ($games as $index => $game) {
+        if ((int) $index === (int) $gameIndex) {
+            continue;
+        }
+        if (($game[$key] ?? '') === $playerId) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function liga_repair_duplicate_lane_players($match)
+{
+    $pairings = liga_pairings();
+    $changed = false;
+    $rounds = [];
+    foreach ($match['rounds'] ?? [] as $ri => $round) {
+        $games = [];
+        foreach ($round['games'] ?? [] as $game) {
+            $games[] = $game;
+        }
+        foreach (['home', 'away'] as $side) {
+            $key = $side === 'home' ? 'homePlayerId' : 'awayPlayerId';
+            $starters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
+            $counts = [];
+            foreach ($games as $game) {
+                $id = $game[$key] ?? '';
+                if ($id !== '') {
+                    $counts[$id] = ($counts[$id] ?? 0) + 1;
+                }
+            }
+            foreach ($games as $gi => $game) {
+                $slot = $side === 'home'
+                    ? ($pairings[$ri][$gi]['homeSlot'] ?? null)
+                    : ($pairings[$ri][$gi]['awaySlot'] ?? null);
+                $expected = $slot === null ? '' : ($starters[$slot] ?? '');
+                $id = $game[$key] ?? '';
+                if ($id !== '' && ($counts[$id] ?? 0) > 1 && $id !== $expected) {
+                    $games[$gi][$key] = $expected;
+                    $changed = true;
+                }
+            }
+        }
+        $rounds[] = ['games' => $games];
+    }
+    if (!$changed) {
+        return $match;
+    }
+    $match['rounds'] = $rounds;
     return $match;
 }
