@@ -155,12 +155,21 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
   let homeBig = 0;
   let awayBig = 0;
   let scored = 0;
-  /** Trening 2–4: štej samo dvoboje z obema igralcema; sicer uradnih 16. */
+  /**
+   * Uradna tekma: vedno 4 steze × 4 krogi.
+   * Trening z manj igralci: število mest v krogu (2–3), samo aktivni dvoboji.
+   */
+  const slotsPerRound = match.rounds[0]?.games?.length || PLAYERS_ON_LANE;
+  const isFlexible = slotsPerRound > 0 && slotsPerRound < PLAYERS_ON_LANE;
   const activeCount = match.rounds.reduce(
     (n, round) => n + round.games.filter(gameIsActive).length,
     0,
   );
-  const expected = activeCount > 0 ? activeCount : ROUNDS * PLAYERS_ON_LANE;
+  const expected = isFlexible
+    ? activeCount > 0
+      ? activeCount
+      : ROUNDS * slotsPerRound
+    : ROUNDS * PLAYERS_ON_LANE;
   const rounds: MatchTotals["rounds"] = [];
 
   for (const round of match.rounds) {
@@ -170,8 +179,11 @@ export function matchTotals(match: Match, players: Player[]): MatchTotals {
     let rpa = 0;
     let rscored = 0;
     const activeInRound = round.games.filter(gameIsActive);
-    const roundExpected =
-      activeInRound.length > 0 ? activeInRound.length : PLAYERS_ON_LANE;
+    const roundExpected = isFlexible
+      ? activeInRound.length > 0
+        ? activeInRound.length
+        : slotsPerRound
+      : PLAYERS_ON_LANE;
     for (const game of round.games) {
       // Pri odsotnosti (0) ne štej ženskega +8 — ostane 0 kegljev.
       const homeP = playerById(players, game.homePlayerId);

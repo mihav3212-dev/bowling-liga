@@ -102,9 +102,17 @@ export function slotLabel(side: "home" | "away", index: number): string {
   return `${letter}${index + 1}`;
 }
 
-export function emptyRounds(homeStarters: string[], awayStarters: string[]): MatchRound[] {
-  const size = lineupSize(homeStarters, awayStarters);
-  return pairingTemplate(size).map((games) => ({
+/**
+ * Privzeto uradna tekma (4v4). Trening poda `size` 2–4.
+ * Nikoli ne skrči uradne tekme samo zato, ker sestava še ni polna.
+ */
+export function emptyRounds(
+  homeStarters: string[],
+  awayStarters: string[],
+  size = 4,
+): MatchRound[] {
+  const n = Math.max(2, Math.min(4, size));
+  return pairingTemplate(n).map((games) => ({
     games: games.map((g) => ({
       homePlayerId: homeStarters[g.homeSlot] ?? "",
       awayPlayerId: awayStarters[g.awaySlot] ?? "",

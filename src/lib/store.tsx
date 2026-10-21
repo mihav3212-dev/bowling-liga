@@ -787,7 +787,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getTeamSessions(s, teamId).map((session) => {
               if (session.id !== sessionId || !session.match) return session;
               if (lineupLocked(session.match.rounds)) return session;
-              const next = applyLineup(trainingAsMatch(session.id, session.match), side, starters, bench);
+              const next = applyLineup(
+                trainingAsMatch(session.id, session.match),
+                side,
+                starters,
+                bench,
+                { flexiblePairing: true },
+              );
               return {
                 ...session,
                 match: {

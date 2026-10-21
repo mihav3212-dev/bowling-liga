@@ -1,4 +1,4 @@
-import { emptyRounds, pairingTemplate } from "./pairings";
+import { emptyRounds, lineupSize, pairingTemplate } from "./pairings";
 import { lineupLocked, MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import type { GameScore, Match, Player } from "./types";
 
@@ -86,7 +86,14 @@ export function sanitizeLineup(
   return { starters: cleanStarters, bench: cleanBench };
 }
 
-export function applyLineup(match: Match, side: "home" | "away", starters: string[], bench: string[]): Match {
+export function applyLineup(
+  match: Match,
+  side: "home" | "away",
+  starters: string[],
+  bench: string[],
+  /** Trening tekma: 2–4. Uradna liga vedno 4 (privzeto). */
+  opts?: { flexiblePairing?: boolean },
+): Match {
   const cleanStarters = starters.slice(0, PLAYERS_ON_LANE);
   while (cleanStarters.length < PLAYERS_ON_LANE) cleanStarters.push("");
   const cleanBench = bench.filter(Boolean).slice(0, MAX_BENCH);
@@ -98,7 +105,8 @@ export function applyLineup(match: Match, side: "home" | "away", starters: strin
   };
   const home = side === "home" ? cleanStarters : next.homeStarters;
   const away = side === "away" ? cleanStarters : next.awayStarters;
-  const template = emptyRounds(home, away);
+  const pairingSize = opts?.flexiblePairing ? lineupSize(home, away) : PLAYERS_ON_LANE;
+  const template = emptyRounds(home, away, pairingSize);
   next.rounds = template.map((round, ri) => ({
     games: round.games.map((game, gi) => ({
       ...game,
@@ -134,7 +142,8 @@ export function playerOnOtherLane(
  * ki mu pripada oznaka (A1–A4 / B1–B4). Prava steza in menjave ostanejo.
  */
 export function repairDuplicateLanePlayers(match: Match): Match {
-  const slots = pairingTemplate();
+  const size = Math.max(2, Math.min(4, match.rounds?.[0]?.games?.length || PLAYERS_ON_LANE));
+  const slots = pairingTemplate(size);
   let changed = false;
   const rounds = (match.rounds ?? []).map((round, ri) => {
     const games = (round.games ?? []).map((game) => ({ ...game }));

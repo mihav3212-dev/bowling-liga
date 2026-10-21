@@ -1,7 +1,7 @@
 import { formatMatchWhen } from "./labels";
 import { matchesInPlay, nextSlotMatches } from "./live";
 import { matchTotals, playerById, scoreGame, scoredPins } from "./scoring";
-import { lineupSize, pairingTemplate, slotLabel } from "./pairings";
+import { pairingTemplate, slotLabel } from "./pairings";
 import type { LeagueState, Match, Player } from "./types";
 
 /** Na TV: končni keglji s +8/−8; odsotnost (0) ostane 0. */
@@ -136,7 +136,8 @@ export function buildLiveMatchView(
   const away = state.teams.find((t) => t.id === match.awayTeamId);
   const totals = matchTotals(match, state.players);
   const rounds = match.rounds ?? [];
-  const size = lineupSize(match.homeStarters, match.awayStarters);
+  /** Po strukturi krogov (uradna 4, trening lahko 2–3), ne po nepopolni sestavi. */
+  const size = Math.max(2, Math.min(4, rounds[0]?.games?.length || 4));
 
   const templates = pairingTemplate(size);
   const roundSummaries: LiveRoundSummary[] = rounds.map((round, ri) => {
