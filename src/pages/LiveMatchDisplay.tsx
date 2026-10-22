@@ -490,10 +490,13 @@ function RoundCard({
   r,
   variant = "classic",
   enlarged = false,
+  hideLane = false,
 }: {
   r: RoundSummary;
   variant?: LiveTvLayout;
   enlarged?: boolean;
+  /** Klasični pregled: S1–S4 so zunaj mreže, v kartici jih skrijemo. */
+  hideLane?: boolean;
 }) {
   const bigLead =
     r.homeBig == null || r.awayBig == null
@@ -511,7 +514,7 @@ function RoundCard({
       : "— kegljev";
   return (
     <div
-      className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}`}
+      className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}${hideLane ? " is-no-lane" : ""}`}
     >
       <div className="live-tv-round-card-num">{r.round}. kolo</div>
       <div className="live-tv-round-card-totals">
@@ -534,10 +537,16 @@ function RoundCard({
           const homeLabel = shortOneLine ? shortTvPersonName(d.homeName) : d.homeName;
           const awayLabel = shortOneLine ? shortTvPersonName(d.awayName) : d.awayName;
           return (
-            <div key={d.lane} className="live-tv-mini-duel">
-              <span className="live-tv-mini-lane" data-lane={d.lane}>
-                {quad || enlarged ? `Steza ${d.lane}` : `S${d.lane}`}
-              </span>
+            <div
+              key={d.lane}
+              className={`live-tv-mini-duel${hideLane ? " is-no-lane" : ""}`}
+              data-lane={d.lane}
+            >
+              {hideLane ? null : (
+                <span className="live-tv-mini-lane" data-lane={d.lane}>
+                  {quad || enlarged ? `Steza ${d.lane}` : `S${d.lane}`}
+                </span>
+              )}
               {shortOneLine ? (
                 <span
                   className={`live-tv-mini-name is-home is-one-line${dLead === "home" ? " is-lead" : ""}`}
@@ -870,10 +879,29 @@ function LiveMatchScreen({
         <div className="live-tv-round-head">
           <h2>Po krogih</h2>
         </div>
-        <div className="live-tv-rounds-grid">
-          {m.roundSummaries.map((r) => (
-            <RoundCard key={r.round} r={r} />
-          ))}
+        <div className="live-tv-rounds-wrap">
+          <aside className="live-tv-rounds-lanes" aria-label="Steze">
+            <div className="live-tv-rounds-lanes-head" aria-hidden="true">
+              <div className="live-tv-round-card-num">1. kolo</div>
+              <div className="live-tv-round-card-totals">
+                <span>Velike ·:·</span>
+                <span>Male —</span>
+                <span>— kegljev</span>
+              </div>
+            </div>
+            <div className="live-tv-rounds-lanes-body">
+              {[1, 2, 3, 4].map((n) => (
+                <span key={n} className="live-tv-rounds-lane-tag">
+                  S{n}
+                </span>
+              ))}
+            </div>
+          </aside>
+          <div className="live-tv-rounds-grid">
+            {m.roundSummaries.map((r) => (
+              <RoundCard key={r.round} r={r} hideLane />
+            ))}
+          </div>
         </div>
       </section>
 

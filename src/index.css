@@ -2425,10 +2425,61 @@ button.linkish {
   font-size: clamp(1.25rem, 2.4vw, 2.25rem);
 }
 
+.live-tv:not(.is-quad) .live-tv-rounds-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 clamp(8px, 1.2vw, 14px);
+  align-items: stretch;
+}
+
+.live-tv:not(.is-quad) .live-tv-rounds-lanes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.live-tv:not(.is-quad) .live-tv-rounds-lanes-head {
+  visibility: hidden;
+  pointer-events: none;
+  flex: 0 0 auto;
+  padding: clamp(5px, 0.9vh, 10px) 0 0;
+}
+
+.live-tv:not(.is-quad) .live-tv-rounds-lanes-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: clamp(4px, 0.9vh, 10px);
+  padding-top: 6px;
+  border-top: 1px solid transparent;
+}
+
+.live-tv:not(.is-quad) .live-tv-rounds-lane-tag {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-accent);
+  font-size: clamp(1.45rem, 2.8vw, 2.75rem);
+  line-height: 1.12;
+  text-align: right;
+  padding-right: 2px;
+}
+
 .live-tv:not(.is-quad) .live-tv-rounds-grid {
   flex: 1 1 auto;
   min-height: 0;
   align-items: stretch;
+  height: 100%;
+}
+
+.live-tv:not(.is-quad) .live-tv-round-card.is-no-lane .live-tv-mini-duel {
+  grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card {
@@ -3942,6 +3993,29 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   .live-tv-side.is-away,
   .live-tv-side.is-home {
     text-align: center;
+  }
+
+  /* Telefon: S1–S4 spet v vrstici; zunanji stolpec skrij */
+  .live-tv:not(.is-quad) .live-tv-rounds-wrap {
+    display: block;
+  }
+
+  .live-tv:not(.is-quad) .live-tv-rounds-lanes {
+    display: none;
+  }
+
+  .live-tv:not(.is-quad) .live-tv-round-card.is-no-lane .live-tv-mini-duel {
+    grid-template-columns: 2.1em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
+  }
+
+  .live-tv:not(.is-quad) .live-tv-mini-duel.is-no-lane::before {
+    content: "S" attr(data-lane);
+    font-family: "Barlow Condensed", sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tv-accent);
+    font-size: 0.95em;
   }
 
   /* Kola drug pod drugim, polna širina — berljive steze/imena */
