@@ -2536,7 +2536,7 @@ button.linkish {
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
   line-height: 1.12;
-  font-size: clamp(1.15rem, 9.5cqi, 2.05rem);
+  font-size: clamp(1.45rem, 14cqi, 2.75rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-name-line {
@@ -2972,7 +2972,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-fullscreen:not(.is-quad) .live-tv-mini-duel {
-  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.45rem, 14cqi, 2.75rem);
 }
 
 .live-tv-mini-duel {
@@ -2985,8 +2985,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-duel {
-  /* Polna imena v 2 vrsticah → malo večja pisava */
-  font-size: clamp(1.15rem, 9.5cqi, 2.05rem);
+  /* Ista lestvica kot kvadrati (cqi × ožji stolpec → višji %) */
+  font-size: clamp(1.45rem, 14cqi, 2.75rem);
   column-gap: 8px;
   align-items: center;
   line-height: 1.12;
@@ -3075,14 +3075,15 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-pins {
-  font-size: 1.35em;
-  min-width: 2.3em;
+  /* Kot pri kvadratkih */
+  font-size: 1.12em;
+  min-width: 2em;
   text-align: center;
   justify-self: center;
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-sep {
-  font-size: 1.15em;
+  font-size: 1em;
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-totals {
