@@ -26,21 +26,41 @@ function PinField({
   onChange: (pins: number | null) => void;
   readOnly?: boolean;
 }) {
-  const final = scoredPins(raw, player);
-  const showAdj = raw != null && final != null && final !== raw;
+  const [draft, setDraft] = useState<string | null>(null);
+  const editing = draft !== null;
+  const shown = editing ? draft : raw != null ? String(raw) : "";
+  const draftNum = editing ? parsePins(draft) : raw;
+  const draftFinal = scoredPins(draftNum, player);
+  const showAdj = draftNum != null && draftFinal != null && draftFinal !== draftNum;
   return (
     <span className="pin-entry">
       <input
         className="mono"
         inputMode="numeric"
-        value={raw ?? ""}
+        enterKeyHint="done"
+        autoComplete="off"
+        value={shown}
         readOnly={readOnly}
+        onFocus={() => {
+          if (!readOnly) setDraft(raw != null ? String(raw) : "");
+        }}
         onChange={(e) => {
-          if (!readOnly) onChange(parsePins(e.target.value));
+          if (readOnly) return;
+          const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
+          setDraft(next);
+          onChange(parsePins(next));
+        }}
+        onBlur={() => {
+          if (readOnly || draft === null) return;
+          onChange(parsePins(draft));
+          setDraft(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
         }}
         aria-label="Keglji"
       />
-      {showAdj ? <span className="pin-adj">({final})</span> : null}
+      {showAdj ? <span className="pin-adj">({draftFinal})</span> : null}
     </span>
   );
 }

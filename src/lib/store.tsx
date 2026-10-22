@@ -108,6 +108,8 @@ type Store = {
   swapMatchStartsAt: (matchIdA: string, matchIdB: string) => void;
   /** Zamenjaj domačina in gosta na tekmi. */
   swapMatchHomeAway: (matchId: string) => void;
+  /** Odstrani tekmo iz razporeda (npr. ekipa ni igrala). */
+  deleteMatch: (matchId: string) => void;
   /** Admin: prisili / ugasni TV prikaz te tekme. */
   setMatchLiveOnTv: (matchId: string, on: boolean) => void;
   setPins: (
@@ -233,6 +235,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const archivedRef = useRef(opening.archived);
   const seasonIdRef = useRef<string | null>(opening.id);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** Debounce shranjevanja kegljev po celici — sicer vmesni »15« lahko na strežniku pre Maga »155«. */
+  const pinSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const editEpoch = useRef(0);
   const savesInFlight = useRef(0);
 
@@ -565,6 +569,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: s.matches.map((m) => (m.id === matchId ? flipMatchHomeAway(m) : m)),
         }));
       },
+      deleteMatch: (matchId) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === viewer), "season")) return;
+        }
+        update((s) => ({
+          ...s,
+          matches: s.matches.filter((m) => m.id !== matchId),
+        }));
+      },
       setMatchLiveOnTv: (matchId, on) => {
         const viewer = viewerTeamRef.current;
         if (viewer) return; // samo admin (brez team viewerja)
@@ -617,8 +631,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
         if (remoteRef.current && seasonIdRef.current) {
           // Ne apply-aj odziva tukaj — hitro tipkanje bi sicer lahko prepisalo novejšo lokalno vrednost.
+          // Debounce: samo zadnja vrednost celice gre na strežnik (sicer 15 lahko premaga 155).
           const season = seasonIdRef.current;
-          void trackSave(() => saveMatchGame(season, { matchId, roundIndex, gameIndex, side, pins }));
+          const key = `${matchId}:${roundIndex}:${gameIndex}:${side}`;
+          const prev = pinSaveTimers.current.get(key);
+          if (prev) clearTimeout(prev);
+          pinSaveTimers.current.set(
+            key,
+            setTimeout(() => {
+              pinSaveTimers.current.delete(key);
+              void trackSave(() =>
+                saveMatchGame(season, { matchId, roundIndex, gameIndex, side, pins }),
+              );
+            }, 120),
+          );
         }
       },
       setRoundPlayer: (matchId, roundIndex, gameIndex, side, playerId) => {

@@ -7,6 +7,7 @@ import { lastCompletedRound } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
+import { DeleteMatchDialog } from "./DeleteMatchDialog";
 import { SwapMatchHomeAwayDialog } from "./SwapMatchHomeAwayDialog";
 import { SwapMatchTimesDialog } from "./SwapMatchTimesDialog";
 
@@ -45,6 +46,7 @@ export function AdminMenu({
   const [panel, setPanel] = useState<"home" | "seasons" | "edit">("home");
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
+  const [deleteMatchOpen, setDeleteMatchOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
   const closeMenu = () => {
@@ -56,14 +58,26 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (swapOpen || swapHomeAwayOpen) return;
+      if (swapOpen || swapHomeAwayOpen || deleteMatchOpen) return;
       if (panel === "edit") setPanel("seasons");
       else if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel, swapOpen, swapHomeAwayOpen]);
+  }, [open, panel, swapOpen, swapHomeAwayOpen, deleteMatchOpen]);
+
+  const downloadSeasonJson = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    const safe = seasonLabel.replace(/[^\w\-]+/g, "_").replace(/_+/g, "_").slice(0, 40);
+    a.download = `backupbowlingliga_${safe || "sezona"}_${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const renameCurrentSeason = async () => {
     if (!seasonId) return;
@@ -88,7 +102,15 @@ export function AdminMenu({
     }
     if (
       !window.confirm(
-        `Izbrišem sezono „${seasonLabel}“? Ekipe, razpored in rezultati te sezone bodo izgubljeni.`,
+        `Pred brisanjem snamem JSON kopijo sezone „${seasonLabel}“. Nadaljujem?`,
+      )
+    ) {
+      return;
+    }
+    downloadSeasonJson();
+    if (
+      !window.confirm(
+        `JSON je prenesen. Res zbrišem sezono „${seasonLabel}“? Kasneje jo lahko uvoziš nazaj z Uvozi JSON.`,
       )
     ) {
       return;
@@ -249,6 +271,24 @@ export function AdminMenu({
                 Zamenjaj domačin/gost
               </button>
             )}
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
+                disabled={state.matches.length < 1}
+                title={
+                  state.matches.length < 1
+                    ? "Najprej mora biti razpored s tekmami."
+                    : "Odstrani tekmo iz razporeda (npr. ekipa ni igrala)."
+                }
+                onClick={() => {
+                  setDeleteMatchOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Izbriši tekmo
+              </button>
+            )}
             {archived && (
               <button className="ghost" type="button" onClick={() => void reopenSeason()}>
                 Odpri sezono
@@ -272,17 +312,8 @@ export function AdminMenu({
             <button
               className="ghost"
               type="button"
-              title="Samo JSON sezone (ekipe, igralci, razpored, rezultati) — brez PDF-jev."
-              onClick={() => {
-                const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                const date = new Date().toISOString().slice(0, 10);
-                a.download = `backupbowlingliga_${date}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
+              title="Samo JSON sezone (ekipe, igralci, razpored, rezultati) — brez PDF-jev. S tem lahko sezono kasneje uvoziš nazaj."
+              onClick={() => downloadSeasonJson()}
             >
               Izvozi JSON
             </button>
@@ -404,6 +435,7 @@ export function AdminMenu({
     </div>
     {swapOpen && <SwapMatchTimesDialog onClose={() => setSwapOpen(false)} />}
     {swapHomeAwayOpen && <SwapMatchHomeAwayDialog onClose={() => setSwapHomeAwayOpen(false)} />}
+    {deleteMatchOpen && <DeleteMatchDialog onClose={() => setDeleteMatchOpen(false)} />}
     </>
   );
 }

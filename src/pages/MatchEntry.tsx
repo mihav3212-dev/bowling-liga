@@ -30,20 +30,45 @@ export function PinField({
   onChange: (pins: number | null) => void;
   onEditingChange?: (editing: boolean) => void;
 }) {
+  /** Med tipkanjem držimo niz lokalno — sicer vsaka števka gre v store/bazo in sync lahko odreže npr. 155 → 15. */
+  const [draft, setDraft] = useState<string | null>(null);
   const final = scoredPins(raw, player);
   if (readOnly) return <>{final ?? "—"}</>;
-  const showAdj = raw != null && final != null && final !== raw;
+
+  const editing = draft !== null;
+  const shown = editing ? draft : raw != null ? String(raw) : "";
+  const draftNum = editing ? parsePins(draft) : raw;
+  const draftFinal = scoredPins(draftNum, player);
+  const showAdj = draftNum != null && draftFinal != null && draftFinal !== draftNum;
+
   return (
     <span className="pin-entry">
       <input
         className="mono"
         inputMode="numeric"
-        value={raw ?? ""}
-        onChange={(e) => onChange(parsePins(e.target.value))}
-        onFocus={() => onEditingChange?.(true)}
-        onBlur={() => onEditingChange?.(false)}
+        enterKeyHint="done"
+        autoComplete="off"
+        value={shown}
+        onFocus={() => {
+          setDraft(raw != null ? String(raw) : "");
+          onEditingChange?.(true);
+        }}
+        onChange={(e) => {
+          const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
+          setDraft(next);
+          // Takoj v store/TV; draft med fokusom prepreči, da sync odreže števko.
+          onChange(parsePins(next));
+        }}
+        onBlur={() => {
+          onChange(parsePins(draft ?? ""));
+          setDraft(null);
+          onEditingChange?.(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();
+        }}
       />
-      {showAdj ? <span className="pin-adj">({final})</span> : null}
+      {showAdj ? <span className="pin-adj">({draftFinal})</span> : null}
     </span>
   );
 }
@@ -211,6 +236,7 @@ export function MatchEntry({
     setPins,
     setRoundPlayer,
     setMatchLiveOnTv,
+    deleteMatch,
     saveMatchLineupNow,
     saveShownMatch,
     syncFromRemote,
@@ -219,9 +245,26 @@ export function MatchEntry({
   const [saveNote, setSaveNote] = useState("");
   const editingPinsRef = useRef(false);
   const editingLineupRef = useRef(false);
+  const pinGuardTimer = useRef<number | undefined>(undefined);
   const syncRef = useRef(syncFromRemote);
   syncRef.current = syncFromRemote;
   const match = state.matches.find((m) => m.id === matchId);
+
+  const setPinsEditing = (editing: boolean) => {
+    if (pinGuardTimer.current != null) {
+      window.clearTimeout(pinGuardTimer.current);
+      pinGuardTimer.current = undefined;
+    }
+    if (editing) {
+      editingPinsRef.current = true;
+      return;
+    }
+    // Kratko po blur — dovolj, da zadnji save gre ven, TV pa ostane odziven.
+    pinGuardTimer.current = window.setTimeout(() => {
+      editingPinsRef.current = false;
+      pinGuardTimer.current = undefined;
+    }, 250);
+  };
 
   useEffect(() => {
     if (!remote) return;
@@ -235,6 +278,7 @@ export function MatchEntry({
     return () => {
       cancelled = true;
       window.clearInterval(poll);
+      if (pinGuardTimer.current != null) window.clearTimeout(pinGuardTimer.current);
     };
   }, [remote, matchId]);
 
@@ -488,9 +532,7 @@ export function MatchEntry({
                             !canEnterPins(viewerTeam, game.homePins))
                         }
                         onChange={(pins) => setPins(match.id, ri, gi, "home", pins)}
-                        onEditingChange={(editing) => {
-                          editingPinsRef.current = editing;
-                        }}
+                        onEditingChange={setPinsEditing}
                       />
                     </td>
                     <td className="mono t-cell t-duel" data-label="T">
@@ -514,9 +556,7 @@ export function MatchEntry({
                             !canEnterPins(viewerTeam, game.awayPins))
                         }
                         onChange={(pins) => setPins(match.id, ri, gi, "away", pins)}
-                        onEditingChange={(editing) => {
-                          editingPinsRef.current = editing;
-                        }}
+                        onEditingChange={setPinsEditing}
                       />
                     </td>
                     <td className="duel-away" data-label="Gostje">
@@ -656,6 +696,30 @@ export function MatchEntry({
       <div className="match-actions">
         {!hideScores && (
           <PdfButton label="Izvozi zapisnik PDF" onExport={() => exportMatchPdf(state, match.id)} />
+        )}
+        {canForceTv && (
+          <button
+            className="ghost"
+            type="button"
+            title="Odstrani to tekmo iz razporeda (npr. ekipa ni igrala)."
+            onClick={() => {
+              const hasPins = match.rounds.some((r) =>
+                r.games.some((g) => g.homePins != null || g.awayPins != null),
+              );
+              const warn = hasPins || totals.complete ? " Ima že rezultate." : "";
+              if (
+                !window.confirm(
+                  `Res zbrišem tekmo ${home?.name ?? "?"} — ${away?.name ?? "?"} (${match.round}. kolo)?${warn}`,
+                )
+              ) {
+                return;
+              }
+              deleteMatch(match.id);
+              onBack();
+            }}
+          >
+            Izbriši tekmo
+          </button>
         )}
         {(!readOnly || teamLineup) && (
           <>
