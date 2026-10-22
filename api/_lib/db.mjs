@@ -539,7 +539,13 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
     const filled = rounds.every((round) =>
       round.games.every((item) => item.homePins != null && item.awayPins != null),
     );
-    matches[index] = { ...match, rounds, status: filled ? "done" : "scheduled" };
+    matches[index] = {
+      ...match,
+      rounds,
+      status: filled ? "done" : "scheduled",
+      ...(filled ? { liveOnTv: undefined } : {}),
+    };
+    if (filled) delete matches[index].liveOnTv;
     const nextData = { ...current.data, matches };
     const payload = preserveSecrets(asState(nextData), current.data, { lockPerms: !admin });
     await conn.execute(

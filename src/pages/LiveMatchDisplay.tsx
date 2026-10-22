@@ -7,6 +7,7 @@ import {
   type LiveBoardHold,
   type LiveMatchView,
 } from "../lib/liveBoard";
+import { shortTvPersonName } from "../lib/labels";
 import { findTrainingSession, formatTrainingDate, trainingAsMatch } from "../lib/training";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
@@ -142,51 +143,46 @@ const LINEUPS: [string, string][][] = [
   ],
 ];
 
-/** Med tekmo: 1. krog končan, 2. delno, 3–4 še prazna. */
+/** Med tekmo: fokus 1. kola z vpisanimi igralci (brez kegljev) — za predogled velikosti. */
 const PREVIEW_LIVE: LiveMatchView = {
   complete: false,
-  round: 3,
+  round: 1,
   homeName: "Vardam",
   awayName: "Parma",
   homeMatch: null,
   awayMatch: null,
-  homeBig: 4,
-  awayBig: 2,
-  homeSmall: 14,
-  awaySmall: 8,
-  homePins: 612,
-  awayPins: 548,
+  homeBig: 0,
+  awayBig: 0,
+  homeSmall: 0,
+  awaySmall: 0,
+  homePins: 0,
+  awayPins: 0,
   startsAtLabel: "TOR 13. 10. 19:00",
   roundSummaries: [
     {
       round: 1,
-      homeSmall: 8,
-      awaySmall: 4,
-      homeBig: 2,
-      awayBig: 0,
-      homePins: 312,
-      awayPins: 278,
+      homeSmall: null,
+      awaySmall: null,
+      homeBig: null,
+      awayBig: null,
+      homePins: null,
+      awayPins: null,
       duels: [
-        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: 187, awayPins: 162, homeSmall: 2, awaySmall: 0 },
-        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: 201, awayPins: 178, homeSmall: 2, awaySmall: 0 },
-        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: 168, awayPins: 155, homeSmall: 2, awaySmall: 0 },
-        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: 156, awayPins: 183, homeSmall: 0, awaySmall: 2 },
+        { lane: 1, homeName: "Miha Novak", awayName: "Peter Zupan", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
+        { lane: 2, homeName: "Janez Horvat", awayName: "Luka Vidmar", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
+        { lane: 3, homeName: "Tomaž Kralj", awayName: "Matej Hribar", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
+        { lane: 4, homeName: "Simon Breznik", awayName: "Andrej Kovač", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
       ],
     },
     {
       round: 2,
-      homeSmall: 6,
-      awaySmall: 4,
+      homeSmall: null,
+      awaySmall: null,
       homeBig: null,
       awayBig: null,
-      homePins: 300,
-      awayPins: 270,
-      duels: [
-        { lane: 1, homeName: "Tomaž Kralj", awayName: "Andrej Kovač", homePins: 172, awayPins: 160, homeSmall: 2, awaySmall: 0 },
-        { lane: 2, homeName: "Simon Breznik", awayName: "Matej Hribar", homePins: 145, awayPins: 158, homeSmall: 0, awaySmall: 2 },
-        { lane: 3, homeName: "Miha Novak", awayName: "Luka Vidmar", homePins: 190, awayPins: null, homeSmall: null, awaySmall: null },
-        { lane: 4, homeName: "Janez Horvat", awayName: "Peter Zupan", homePins: null, awayPins: null, homeSmall: null, awaySmall: null },
-      ],
+      homePins: null,
+      awayPins: null,
+      duels: emptyDuels(LINEUPS[1]!),
     },
     {
       round: 3,
@@ -353,51 +349,88 @@ function LayoutPicker({
 
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
-/** Kvadrati: kolo čez zaslon, nato pregled; po koncu kroga spet fokus. */
-const QUAD_FOCUS_DEFAULT_MS = 5 * 60 * 1000;
+/** Povečano kolo: uvod (proge) ~5 min, potem pregled; ob vpisu kegljev spet fokus. */
+const ROUND_FOCUS_DEFAULT_MS = 5 * 60 * 1000;
 
-function readQuadFocusMs(): number {
-  const raw = new URLSearchParams(window.location.search).get("focusMs");
+function readRoundFocusMs(): number {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("focusMs");
   const n = raw ? Number(raw) : NaN;
   if (Number.isFinite(n) && n >= 5_000 && n <= 30 * 60_000) return n;
-  return QUAD_FOCUS_DEFAULT_MS;
+  // Predogled: kratek fokus (~30 s), da se hitro vidi pregled
+  if (params.get("display") === "preview") return 30_000;
+  return ROUND_FOCUS_DEFAULT_MS;
 }
 
 function roundPinsComplete(r: RoundSummary): boolean {
   return r.duels.length > 0 && r.duels.every((d) => d.homePins != null && d.awayPins != null);
 }
 
-type QuadPhase = {
+function roundHasAnyPins(r: RoundSummary): boolean {
+  return r.duels.some((d) => d.homePins != null || d.awayPins != null);
+}
+
+/**
+ * Ozek zaslon (telefon) — samo klasični TV, brez fokusa kola in brez kvadratov.
+ * Namerno brez pointer:coarse, da fokus deluje tudi na touch laptopih / tablicah v širokem oknu.
+ */
+function useIsHandheldTv(): boolean {
+  const query = "(max-width: 820px)";
+  const [handheld, setHandheld] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const sync = () => setHandheld(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  return handheld;
+}
+
+type RoundFocusPhase = {
   mode: "focus" | "overview";
-  /** Kolo v fokusu / kolo, na katerega čakamo dokončanje v overview. */
   focusRound: number;
+  /** Uvodni fokus: skrij po `until`. Pri scoringu timer ni aktiven. */
   until: number;
+  kind: "intro" | "scoring";
 };
 
-function useQuadRoundPhase(
+function initialFocusPhase(rounds: RoundSummary[], focusMs: number): RoundFocusPhase {
+  const open = rounds.find((r) => !roundPinsComplete(r));
+  const focusRound = open?.round ?? rounds[0]?.round ?? 1;
+  const current = rounds.find((r) => r.round === focusRound);
+  if (current && roundHasAnyPins(current) && !roundPinsComplete(current)) {
+    return { mode: "focus", focusRound, until: 0, kind: "scoring" };
+  }
+  return { mode: "focus", focusRound, until: Date.now() + focusMs, kind: "intro" };
+}
+
+function useRoundFocusPhase(
   rounds: RoundSummary[],
   matchComplete: boolean,
   matchKey: string,
-): QuadPhase {
-  const focusMs = useRef(readQuadFocusMs()).current;
-  const [phase, setPhase] = useState<QuadPhase>(() => ({
-    mode: "focus",
-    focusRound: 1,
-    until: Date.now() + focusMs,
-  }));
+  enabled: boolean,
+): RoundFocusPhase {
+  const focusMs = useRef(readRoundFocusMs()).current;
+  const [phase, setPhase] = useState<RoundFocusPhase>(() => initialFocusPhase(rounds, focusMs));
   const keyRef = useRef(matchKey);
 
   useEffect(() => {
+    if (!enabled) return;
     if (keyRef.current === matchKey) return;
     keyRef.current = matchKey;
-    const first = rounds.find((r) => !roundPinsComplete(r))?.round ?? 1;
-    setPhase({ mode: "focus", focusRound: first, until: Date.now() + focusMs });
-  }, [matchKey, rounds, focusMs]);
+    setPhase(initialFocusPhase(rounds, focusMs));
+  }, [matchKey, rounds, focusMs, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     if (matchComplete) {
       setPhase((p) =>
-        p.mode === "overview" ? p : { mode: "overview", focusRound: p.focusRound, until: 0 },
+        p.mode === "overview" && p.kind === "intro"
+          ? p
+          : { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" },
       );
       return;
     }
@@ -408,18 +441,39 @@ function useQuadRoundPhase(
         const focused = rounds.find((r) => r.round === p.focusRound);
 
         if (p.mode === "focus") {
-          if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
-            return { mode: "focus", focusRound: p.focusRound + 1, until: now + focusMs };
+          if (focused && roundPinsComplete(focused)) {
+            if (p.focusRound < maxRound) {
+              return {
+                mode: "focus",
+                focusRound: p.focusRound + 1,
+                until: now + focusMs,
+                kind: "intro",
+              };
+            }
+            return { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" };
           }
-          if (now >= p.until) {
-            return { mode: "overview", focusRound: p.focusRound, until: 0 };
+          // Med uvodom že vpisujejo → ostani v fokusu do konca kroga
+          if (p.kind === "intro" && focused && roundHasAnyPins(focused)) {
+            return { mode: "focus", focusRound: p.focusRound, until: 0, kind: "scoring" };
+          }
+          // Uvod: po 5 min skrij; scoring ostane, dokler krog ni končan
+          if (p.kind === "intro" && p.until > 0 && now >= p.until) {
+            return { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" };
           }
           return p;
         }
 
-        // overview: ko se trenutno kolo zaključi → naslednje na veliko
+        // Pregled: ko začnejo vpisovati keglje tega kola → spet fokus
         if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
-          return { mode: "focus", focusRound: p.focusRound + 1, until: now + focusMs };
+          return {
+            mode: "focus",
+            focusRound: p.focusRound + 1,
+            until: now + focusMs,
+            kind: "intro",
+          };
+        }
+        if (focused && roundHasAnyPins(focused) && !roundPinsComplete(focused)) {
+          return { mode: "focus", focusRound: p.focusRound, until: 0, kind: "scoring" };
         }
         return p;
       });
@@ -427,7 +481,7 @@ function useQuadRoundPhase(
     tick();
     const id = window.setInterval(tick, 400);
     return () => window.clearInterval(id);
-  }, [rounds, matchComplete, focusMs, matchKey]);
+  }, [rounds, matchComplete, focusMs, matchKey, enabled]);
 
   return phase;
 }
@@ -475,17 +529,21 @@ function RoundCard({
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
           const dLead = duelLead(d.homePins, d.awayPins);
+          const homeLabel = enlarged ? d.homeName : shortTvPersonName(d.homeName);
+          const awayLabel = enlarged ? d.awayName : shortTvPersonName(d.awayName);
           return (
             <div key={d.lane} className="live-tv-mini-duel">
               <span className="live-tv-mini-lane" data-lane={d.lane}>
-                {quad ? `Steza ${d.lane}` : `S${d.lane}`}
+                {quad || enlarged ? `Steza ${d.lane}` : `S${d.lane}`}
               </span>
-              {quad ? (
-                <span className={`live-tv-mini-name is-home${dLead === "home" ? " is-lead" : ""}`}>
-                  {d.homeName}
-                </span>
+              {enlarged ? (
+                <TvStackedName name={homeLabel} side="home" lead={dLead === "home"} />
               ) : (
-                <TvStackedName name={d.homeName} side="home" lead={dLead === "home"} />
+                <span
+                  className={`live-tv-mini-name is-home is-one-line${dLead === "home" ? " is-lead" : ""}`}
+                >
+                  {homeLabel}
+                </span>
               )}
               <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
                 {pinsLabel(d.homePins)}
@@ -494,12 +552,14 @@ function RoundCard({
               <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
                 {pinsLabel(d.awayPins)}
               </span>
-              {quad ? (
-                <span className={`live-tv-mini-name is-away${dLead === "away" ? " is-lead" : ""}`}>
-                  {d.awayName}
-                </span>
+              {enlarged ? (
+                <TvStackedName name={awayLabel} side="away" lead={dLead === "away"} />
               ) : (
-                <TvStackedName name={d.awayName} side="away" lead={dLead === "away"} />
+                <span
+                  className={`live-tv-mini-name is-away is-one-line${dLead === "away" ? " is-lead" : ""}`}
+                >
+                  {awayLabel}
+                </span>
               )}
             </div>
           );
@@ -533,6 +593,9 @@ function LiveMatchScreen({
   const sub = brandSub ?? `Liga · ${m.round}. kolo`;
   const rootRef = useRef<HTMLDivElement>(null);
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
+  const handheld = useIsHandheldTv();
+  /** Telefon/tablica vedno klasično; računalnik lahko še kvadrate. */
+  const effectiveLayout: LiveTvLayout = handheld ? "classic" : layout;
   const complete = m.complete || badge === "final";
   const homeWins = complete && (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = complete && (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
@@ -542,10 +605,48 @@ function LiveMatchScreen({
   const r3 = rounds[2]!;
   const r4 = rounds[3]!;
   const phaseKey = matchKey ?? `${m.homeName}|${m.awayName}|${m.startsAtLabel}|${m.round}`;
-  const quadPhase = useQuadRoundPhase(rounds, complete, phaseKey);
-  const focusRound = rounds.find((r) => r.round === quadPhase.focusRound) ?? r1;
-  const showRoundFocus =
-    layout === "quad" && badge === "live" && !complete && quadPhase.mode === "focus";
+  const focusEnabled = !handheld && badge === "live" && !complete;
+  const roundPhase = useRoundFocusPhase(rounds, complete, phaseKey, focusEnabled);
+  const focusRound = rounds.find((r) => r.round === roundPhase.focusRound) ?? r1;
+  const showRoundFocus = focusEnabled && roundPhase.mode === "focus";
+  /** Zoom-in/out fokus (klasično + kvadrati); ostane mountan med izhodom. */
+  const [focusOverlay, setFocusOverlay] = useState<{
+    round: RoundSummary;
+    kind: "intro" | "scoring";
+    exiting: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!focusEnabled) {
+      setFocusOverlay(null);
+      return;
+    }
+    if (showRoundFocus) {
+      setFocusOverlay({
+        round: focusRound,
+        kind: roundPhase.kind,
+        exiting: false,
+      });
+      return;
+    }
+    setFocusOverlay((prev) => {
+      if (!prev || prev.exiting) return prev;
+      return { ...prev, exiting: true };
+    });
+  }, [focusEnabled, showRoundFocus, focusRound, roundPhase.kind]);
+
+  useEffect(() => {
+    if (!focusOverlay?.exiting) return;
+    const t = window.setTimeout(() => setFocusOverlay(null), 560);
+    return () => window.clearTimeout(t);
+  }, [focusOverlay?.exiting]);
+
+  const focusOverlayVisible = focusOverlay != null;
+  const focusOverlayExiting = focusOverlay?.exiting === true;
+  const overlayRound =
+    focusOverlay == null
+      ? focusRound
+      : (rounds.find((r) => r.round === focusOverlay.round.round) ?? focusOverlay.round);
 
   const meta = (
     <div className="live-tv-meta">
@@ -563,23 +664,26 @@ function LiveMatchScreen({
         <>
           <span className="live-tv-pulse" aria-hidden />
           <span className="live-tv-live">V živo</span>
-          {showRoundFocus ? (
-            <span className="live-tv-when">{quadPhase.focusRound}. kolo · fokus</span>
+          {showRoundFocus || focusOverlayVisible ? (
+            <span className="live-tv-when">
+              {(focusOverlay?.round.round ?? roundPhase.focusRound)}. kolo
+              {(focusOverlay?.kind ?? roundPhase.kind) === "intro" ? " · steze" : " · vpis"}
+            </span>
           ) : null}
         </>
       )}
       <span className="live-tv-when">{m.startsAtLabel}</span>
       {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
-      <LayoutPicker layout={layout} onChange={onLayoutChange} />
+      {!handheld ? <LayoutPicker layout={layout} onChange={onLayoutChange} /> : null}
       <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
     </div>
   );
 
-  if (layout === "quad") {
+  if (effectiveLayout === "quad") {
     return (
       <div
         ref={rootRef}
-        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${showRoundFocus ? " is-round-focus" : ""}`}
+        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
       >
         <div className="live-tv-glow" aria-hidden />
         <header className="live-tv-top">
@@ -593,30 +697,7 @@ function LiveMatchScreen({
           {meta}
         </header>
 
-        {showRoundFocus ? (
-          <div className="live-quad-focus">
-            <div className="live-quad-focus-banner">
-              <div className={`live-quad-focus-team is-home${homeWins ? " is-winner" : ""}`}>
-                <span className="live-quad-mid-side">Domači</span>
-                <span className="live-quad-mid-team">{m.homeName}</span>
-              </div>
-              <div className="live-quad-focus-score">
-                <span className="live-quad-focus-score-label">Velike</span>
-                <strong>
-                  {m.homeBig}:{m.awayBig}
-                </strong>
-                <span className="live-quad-focus-score-sub">
-                  Male {m.homeSmall}:{m.awaySmall} · keglji {m.homePins}:{m.awayPins}
-                </span>
-              </div>
-              <div className={`live-quad-focus-team is-away${awayWins ? " is-winner" : ""}`}>
-                <span className="live-quad-mid-side">Gostje</span>
-                <span className="live-quad-mid-team">{m.awayName}</span>
-              </div>
-            </div>
-            <RoundCard r={focusRound} variant="quad" enlarged />
-          </div>
-        ) : (
+        <div className="live-quad-stage">
           <div className="live-quad-board">
             <RoundCard r={r1} variant="quad" />
             <div className="live-quad-spine live-quad-spine-top">
@@ -681,7 +762,37 @@ function LiveMatchScreen({
             </div>
             <RoundCard r={r4} variant="quad" />
           </div>
-        )}
+
+          {focusOverlay ? (
+            <div
+              className={`live-quad-focus${focusOverlay.exiting ? " is-zoom-out" : " is-zoom-in"}`}
+              aria-live="polite"
+            >
+              <div className="live-quad-focus-banner">
+                <div className={`live-quad-focus-team is-home${homeWins ? " is-winner" : ""}`}>
+                  <span className="live-quad-mid-side">Domači</span>
+                  <span className="live-quad-mid-team">{m.homeName}</span>
+                </div>
+                <div className="live-quad-focus-score">
+                  <span className="live-quad-focus-stat">
+                    M. točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
+                  </span>
+                  <span className="live-quad-focus-stat">
+                    V. točke <strong>{m.homeBig}:{m.awayBig}</strong>
+                  </span>
+                  <span className="live-quad-focus-stat">
+                    Keglji <strong>{m.homePins}:{m.awayPins}</strong>
+                  </span>
+                </div>
+                <div className={`live-quad-focus-team is-away${awayWins ? " is-winner" : ""}`}>
+                  <span className="live-quad-mid-side">Gostje</span>
+                  <span className="live-quad-mid-team">{m.awayName}</span>
+                </div>
+              </div>
+              <RoundCard r={overlayRound} variant="quad" enlarged />
+            </div>
+          ) : null}
+        </div>
       </div>
     );
   }
@@ -689,7 +800,7 @@ function LiveMatchScreen({
   return (
     <div
       ref={rootRef}
-      className={`live-tv${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}`}
+      className={`live-tv${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus-overlay" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
     >
       <div className="live-tv-glow" aria-hidden />
       <div className="live-tv-lane" aria-hidden />
@@ -712,62 +823,37 @@ function LiveMatchScreen({
         </div>
 
         <div className="live-tv-center">
-          <div className="live-tv-score-label">{complete ? "Končne točke" : "Velike točke"}</div>
-          <div className="live-tv-score">
-            {complete ? (
-              <>
+          {complete ? (
+            <>
+              <div className="live-tv-score-label">Končne točke</div>
+              <div className="live-tv-score">
                 <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
                 <span className="live-tv-score-sep">:</span>
                 <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-              </>
-            ) : (
-              <>
-                <span>{m.homeBig}</span>
-                <span className="live-tv-score-sep">:</span>
-                <span>{m.awayBig}</span>
-              </>
-            )}
-          </div>
-          <div className="live-tv-stats-featured">
-            <div className="live-tv-stat-block">
-              <span className="live-tv-stat-label">Male točke</span>
-              <strong>
-                {m.homeSmall}:{m.awaySmall}
-              </strong>
-            </div>
-            {complete ? (
-              <div className="live-tv-stat-block">
-                <span className="live-tv-stat-label">Velike točke</span>
-                <strong>
-                  {m.homeBig}:{m.awayBig}
-                </strong>
               </div>
-            ) : (
-              <div className="live-tv-stat-block">
-                <span className="live-tv-stat-label">Keglji</span>
-                <strong>
-                  {m.homePins}:{m.awayPins}
-                </strong>
+              <div className="live-tv-stats-row is-final-sub">
+                <span className="live-tv-stats-row-item">
+                  M. točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
+                </span>
+                <span className="live-tv-stats-row-item">
+                  V. točke <strong>{m.homeBig}:{m.awayBig}</strong>
+                </span>
+                <span className="live-tv-stats-row-item">
+                  Keglji <strong>{m.homePins}:{m.awayPins}</strong>
+                </span>
               </div>
-            )}
-          </div>
-          {complete ? (
-            <div className="live-tv-stats-featured is-bottom">
-              <div className="live-tv-stat-block">
-                <span className="live-tv-stat-label">Keglji</span>
-                <strong>
-                  {m.homePins}:{m.awayPins}
-                </strong>
-              </div>
-            </div>
+            </>
           ) : (
-            <div className="live-tv-stats-minor">
-              Končne točke{" "}
-              <strong>
-                <span>{m.homeMatch ?? "·"}</span>
-                <span className="live-tv-score-sep">:</span>
-                <span>{m.awayMatch ?? "·"}</span>
-              </strong>
+            <div className="live-tv-stats-row is-live-hero">
+              <span className="live-tv-stats-row-item">
+                V. točke <strong>{m.homeBig}:{m.awayBig}</strong>
+              </span>
+              <span className="live-tv-stats-row-item">
+                M. točke <strong>{m.homeSmall}:{m.awaySmall}</strong>
+              </span>
+              <span className="live-tv-stats-row-item">
+                Keglji <strong>{m.homePins}:{m.awayPins}</strong>
+              </span>
             </div>
           )}
         </div>
@@ -788,6 +874,21 @@ function LiveMatchScreen({
           ))}
         </div>
       </section>
+
+      {focusOverlay ? (
+        <div
+          className={`live-tv-focus-overlay${focusOverlay.exiting ? " is-zoom-out" : " is-zoom-in"}`}
+          aria-live="polite"
+        >
+          <div className="live-tv-focus-overlay-panel">
+            <div className="live-tv-focus-overlay-label">
+              {focusOverlay.kind === "intro" ? "Steze · kdo igra" : "Vpis kegljev"} ·{" "}
+              {focusOverlay.round.round}. kolo
+            </div>
+            <RoundCard r={overlayRound} enlarged />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

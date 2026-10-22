@@ -19,6 +19,15 @@ export function matchesInPlay(matches: Match[], now: number, durationMs = MATCH_
     .sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""));
 }
 
+/** Za razpored »V živo«: admin force + tekme v trenutnem 90-min terminu. */
+export function matchesShowingLive(matches: Match[], now: number, durationMs = MATCH_SLOT_MS): Match[] {
+  const forced = matches.filter((m) => m.liveOnTv);
+  if (forced.length > 0) {
+    return [...forced].sort((a, b) => (a.startsAt ?? "").localeCompare(b.startsAt ?? ""));
+  }
+  return matchesInPlay(matches, now, durationMs);
+}
+
 export function nextSlotMatches(matches: Match[], now: number): Match[] {
   let soonest: number | null = null;
   for (const match of matches) {

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
+import { exportLastRoundBackup } from "../lib/exportPdf";
 import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
+import { lastCompletedRound } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
@@ -35,6 +37,7 @@ export function AdminMenu({
   } = useStore();
   const complete = seasonIsComplete(state);
   const leftover = remainingOfficialRounds(state);
+  const lastRound = lastCompletedRound(state);
   const { logout } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
@@ -42,6 +45,7 @@ export function AdminMenu({
   const [panel, setPanel] = useState<"home" | "seasons">("home");
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
 
   const closeMenu = () => {
     setOpen(false);
@@ -238,12 +242,42 @@ export function AdminMenu({
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "bowling-liga.json";
+                const date = new Date().toISOString().slice(0, 10);
+                a.download = `backupbowlingliga_${date}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
               }}
             >
               Izvozi JSON
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              disabled={lastRound <= 0 || backupBusy}
+              title={
+                lastRound <= 0
+                  ? "Še ni končanega kola z rezultati."
+                  : `ZIP: PDF-ji tekem ${lastRound}. kola, lestvica, igralci + JSON sezone.`
+              }
+              onClick={() => {
+                setBackupBusy(true);
+                void exportLastRoundBackup(state)
+                  .then((round) => {
+                    if (round == null) {
+                      window.alert("Še ni končanega kola z rezultati.");
+                    }
+                  })
+                  .catch((err) => {
+                    window.alert(err instanceof Error ? err.message : "Varnostne kopije ni bilo mogoče pripraviti.");
+                  })
+                  .finally(() => setBackupBusy(false));
+              }}
+            >
+              {backupBusy
+                ? "Pripravljam kopijo…"
+                : lastRound > 0
+                  ? `Izvozi varnostno kopijo ${lastRound}. kola`
+                  : "Izvozi varnostno kopijo kola"}
             </button>
             <button
               className="ghost"

@@ -7,6 +7,20 @@ export function playerTag(player: Player): string {
   return bits.length ? `${player.name} (${bits.join(", ")})` : player.name;
 }
 
+/**
+ * TV pregled: „Novak David“ → „N. David“ (prva beseda začetnica, ostalo polno).
+ * Če je že „N. David“ / ena beseda, pusti.
+ */
+export function shortTvPersonName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "—";
+  if (parts.length === 1) return parts[0]!;
+  const first = parts[0]!;
+  if (/^[^\s.]{1,3}\.$/u.test(first)) return parts.join(" ");
+  const initial = [...first][0]?.toUpperCase() ?? first.charAt(0).toUpperCase();
+  return `${initial}. ${parts.slice(1).join(" ")}`;
+}
+
 const WEEKDAYS_SL = ["NED", "PON", "TOR", "SRE", "ČET", "PET", "SOB"];
 
 export function formatMatchWhen(iso?: string): string {

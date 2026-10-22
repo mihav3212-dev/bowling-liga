@@ -64,11 +64,21 @@ export const FINAL_SCORE_HOLD_MS = 2 * 60 * 1000;
 
 export type LiveBoardHold = { matchId: string; until: number };
 
+/** Admin je vklopil »V živo na TV« — ima prednost pred razporedom. */
+export function forcedLiveMatches(matches: Match[], players: Player[]): Match[] {
+  return matches.filter((m) => m.liveOnTv && !matchTotals(m, players).complete);
+}
+
 /**
- * Tekme v trenutnem terminu: najprej nedokončana (ne preklaplja, dokler ni končana),
+ * Tekme v trenutnem terminu: najprej admin »V živo na TV«, potem nedokončana v terminu,
  * sicer prva v terminu. Če ni ničesar v terminu → naslednja, sicer idle.
  */
 export function pickLiveBoardMatch(matches: Match[], players: Player[], now: number): LiveBoardPick {
+  const forced = forcedLiveMatches(matches, players);
+  if (forced.length > 0) {
+    return { status: "live", match: forced[0]!, siblings: 1, index: 0 };
+  }
+
   const inSlot = matchesInPlay(matches, now);
   if (inSlot.length > 0) {
     const openInSlot = inSlot.filter((m) => !matchTotals(m, players).complete);

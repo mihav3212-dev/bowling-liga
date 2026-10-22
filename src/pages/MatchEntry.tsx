@@ -210,6 +210,7 @@ export function MatchEntry({
     setLineup,
     setPins,
     setRoundPlayer,
+    setMatchLiveOnTv,
     saveMatchLineupNow,
     saveShownMatch,
     syncFromRemote,
@@ -245,6 +246,8 @@ export function MatchEntry({
   const canResults = Boolean(lineupTeamId && ownSide && (perms.results || perms.resultsEdit));
   const hideScores = Boolean(lineupTeamId && ownSide && !canResults);
   const pinsReadOnly = readOnly || (Boolean(lineupTeamId) && !canResults);
+  /** Admin (ne ekipa): lahko prisili TV prikaz. */
+  const canForceTv = !readOnly && !lineupTeamId;
 
   const home = state.teams.find((t) => t.id === match.homeTeamId);
   const away = state.teams.find((t) => t.id === match.awayTeamId);
@@ -292,6 +295,25 @@ export function MatchEntry({
             <h2 className="match-title">
               {home?.name} — {away?.name}
             </h2>
+            {canForceTv && !totals.complete && (
+              <button
+                type="button"
+                className={`live-tv-force-btn${match.liveOnTv ? " is-on" : ""}`}
+                title={
+                  match.liveOnTv
+                    ? "TV trenutno kaže to tekmo. Klikni za izklop."
+                    : "Vklopi, če se tekma začne prej (ali gre čez termin) — TV jo takoj pokaže."
+                }
+                onClick={() => setMatchLiveOnTv(match.id, !match.liveOnTv)}
+              >
+                {match.liveOnTv ? "TV: v živo (vklopljeno)" : "TV: v živo"}
+              </button>
+            )}
+            {canForceTv && match.liveOnTv && totals.complete && (
+              <p className="muted" style={{ marginTop: 8 }}>
+                Tekma je končana — TV force se ugasne sam.
+              </p>
+            )}
           </div>
           <div>
             {!hideScores && (

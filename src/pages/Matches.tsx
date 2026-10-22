@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { exportRoundPdfs } from "../lib/exportPdf";
 import { inferSeasonKey, officialRoundMeta, seasonCatalog } from "../lib/fixtures";
 import { formatMatchWhen } from "../lib/labels";
-import { matchesInPlay } from "../lib/live";
+import { matchesShowingLive } from "../lib/live";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
@@ -36,7 +36,7 @@ export function Matches({
   }
   const rounds = [...byRound.keys()].sort((a, b) => (mode === "results" ? b - a : a - b));
   const open = state.matches.filter((match) => !matchTotals(match, state.players).complete);
-  const live = matchesInPlay(open, now);
+  const live = matchesShowingLive(open, now);
 
   function matchRow(match: Match) {
     const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";

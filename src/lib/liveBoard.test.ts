@@ -64,6 +64,23 @@ describe("pickLiveBoardMatch", () => {
     expect(pick.status).toBe("idle");
   });
 
+  it("prefers admin liveOnTv before the scheduled slot", () => {
+    const early = matchAt("2026-10-13T19:00:00.000Z", { id: "early", liveOnTv: true });
+    const now = new Date("2026-10-13T17:00:00.000Z").getTime();
+    const pick = pickLiveBoardMatch([early], players, now);
+    expect(pick.status).toBe("live");
+    if (pick.status !== "idle") expect(pick.match.id).toBe("early");
+  });
+
+  it("keeps liveOnTv match on TV past its 90-minute slot", () => {
+    const late = matchAt("2026-10-13T17:00:00.000Z", { id: "late", liveOnTv: true });
+    const next = matchAt("2026-10-13T18:30:00.000Z", { id: "next-slot" });
+    const now = new Date("2026-10-13T18:45:00.000Z").getTime();
+    const pick = pickLiveBoardMatch([late, next], players, now);
+    expect(pick.status).toBe("live");
+    if (pick.status !== "idle") expect(pick.match.id).toBe("late");
+  });
+
   it("keeps the incomplete match until it finishes before showing another in the same slot", () => {
     const start = "2026-10-13T17:00:00.000Z";
     const now = new Date("2026-10-13T17:30:00.000Z").getTime();

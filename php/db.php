@@ -465,6 +465,9 @@ function save_match_game_locked(PDO $pdo, $teamId, $patch, $seasonId, $asAdmin, 
             }
         }
         $match['status'] = $filled ? 'done' : 'scheduled';
+        if ($filled) {
+            unset($match['liveOnTv']);
+        }
         $matches[$i] = $match;
         $found = true;
         break;

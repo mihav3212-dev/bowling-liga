@@ -737,7 +737,11 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
   };
 }
 
-export async function exportRoundPdfs(state: LeagueState, round: number): Promise<void> {
+async function buildRoundZip(
+  state: LeagueState,
+  round: number,
+  opts?: { includeJson?: boolean },
+): Promise<Blob> {
   const zip = new JSZip();
   const matches = state.matches
     .filter((m) => m.round === round)
@@ -750,8 +754,26 @@ export async function exportRoundPdfs(state: LeagueState, round: number): Promis
   zip.file(standings.filename, standings.doc.output("blob"));
   const players = await buildPlayersPdf(state);
   zip.file(players.filename, players.doc.output("blob"));
-  const blob = await zip.generateAsync({ type: "blob" });
+  if (opts?.includeJson) {
+    const date = new Date().toISOString().slice(0, 10);
+    zip.file(`backupbowlingliga_${date}.json`, JSON.stringify(state, null, 2));
+  }
+  return zip.generateAsync({ type: "blob" });
+}
+
+export async function exportRoundPdfs(state: LeagueState, round: number): Promise<void> {
+  const blob = await buildRoundZip(state, round);
   downloadBlob(blob, `bowling-liga-kolo-${round}.zip`);
+}
+
+/** Varnostna kopija zadnjega kola: PDF-ji tekem + lestvica + igralci + JSON sezone. */
+export async function exportLastRoundBackup(state: LeagueState): Promise<number | null> {
+  const round = lastCompletedRound(state);
+  if (round <= 0) return null;
+  const date = new Date().toISOString().slice(0, 10);
+  const blob = await buildRoundZip(state, round, { includeJson: true });
+  downloadBlob(blob, `backupbowlingliga_kolo-${round}_${date}.zip`);
+  return round;
 }
 
 function fileSafe(name: string): string {

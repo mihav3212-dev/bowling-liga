@@ -108,6 +108,8 @@ type Store = {
   swapMatchStartsAt: (matchIdA: string, matchIdB: string) => void;
   /** Zamenjaj domačina in gosta na tekmi. */
   swapMatchHomeAway: (matchId: string) => void;
+  /** Admin: prisili / ugasni TV prikaz te tekme. */
+  setMatchLiveOnTv: (matchId: string, on: boolean) => void;
   setPins: (
     matchId: string,
     roundIndex: number,
@@ -563,6 +565,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: s.matches.map((m) => (m.id === matchId ? flipMatchHomeAway(m) : m)),
         }));
       },
+      setMatchLiveOnTv: (matchId, on) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer) return; // samo admin (brez team viewerja)
+        update((s) => ({
+          ...s,
+          matches: s.matches.map((m) => {
+            if (m.id === matchId) return { ...m, liveOnTv: on || undefined };
+            // Na TV naj bo naenkrat samo ena »prisiljena« tekma
+            if (on && m.liveOnTv) return { ...m, liveOnTv: undefined };
+            return m;
+          }),
+        }));
+      },
       setPins: (matchId, roundIndex, gameIndex, side, pins) => {
         const team = viewerTeamRef.current;
         if (team) {
@@ -591,7 +606,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             const filled = rounds.every((r) =>
               r.games.every((g) => g.homePins != null && g.awayPins != null),
             );
-            return { ...m, rounds, status: filled ? "done" : "scheduled" };
+            return {
+              ...m,
+              rounds,
+              status: filled ? "done" : "scheduled",
+              // Ob koncu ugasni prisiljen TV (naslednji termin / hold prevzameta)
+              liveOnTv: filled ? undefined : m.liveOnTv,
+            };
           }),
         }));
         if (remoteRef.current && seasonIdRef.current) {

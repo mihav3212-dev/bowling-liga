@@ -53,6 +53,11 @@ export type Match = {
   awayTeamId: string;
   /** ISO začetek (ura in datum iz uradnega razporeda). */
   startsAt?: string;
+  /**
+   * Admin: prisili TV prikaz te tekme (zgodnji začetek / tekma čez termin).
+   * Samo ena tekma naenkrat; ob koncu se samo ugasne.
+   */
+  liveOnTv?: boolean;
   homeStarters: string[];
   awayStarters: string[];
   homeBench: string[];
