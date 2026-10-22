@@ -427,6 +427,16 @@ select {
   margin-bottom: 14px;
 }
 
+/* Razpored: prostor pod lepljivimi zavihki ob skoku na aktivno kolo. */
+.schedule-round,
+.schedule-round-past {
+  scroll-margin-top: 5.5rem;
+}
+
+.schedule-round.is-active > .panel {
+  border-color: color-mix(in srgb, var(--round) 35%, var(--line));
+}
+
 .round-fold > summary {
   cursor: pointer;
   list-style: none;

@@ -1,14 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { exportRoundPdfs } from "../lib/exportPdf";
 import { inferSeasonKey, officialRoundMeta, seasonCatalog } from "../lib/fixtures";
 import { formatMatchWhen } from "../lib/labels";
-import { matchesShowingLive } from "../lib/live";
+import { MATCH_SLOT_MS, matchesShowingLive } from "../lib/live";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
 import { useStore } from "../lib/store";
-import type { Match } from "../lib/types";
+import type { LeagueState, Match } from "../lib/types";
 import { PdfButton } from "./PdfButton";
 import { ResultHighlights } from "./ResultHighlights";
+
+/** Najnižje nepopolno kolo / živo / naslednji termin — za skok na razporedu. */
+function activeScheduleRound(state: LeagueState, now: number): number | null {
+  const { matches, players } = state;
+  if (matches.length === 0) return null;
+  const incomplete = matches.filter((m) => !matchTotals(m, players).complete);
+  const live = matchesShowingLive(incomplete, now);
+  if (live[0]) return live[0].round;
+  if (incomplete.length === 0) {
+    return Math.max(...matches.map((m) => m.round));
+  }
+  let bestRound: number | null = null;
+  let bestStart: number | null = null;
+  for (const m of incomplete) {
+    if (!m.startsAt) continue;
+    const t = new Date(m.startsAt).getTime();
+    if (Number.isNaN(t)) continue;
+    if (t < now - MATCH_SLOT_MS) continue;
+    if (bestStart == null || t < bestStart) {
+      bestStart = t;
+      bestRound = m.round;
+    }
+  }
+  if (bestRound != null) return bestRound;
+  return Math.min(...incomplete.map((m) => m.round));
+}
+
+function roundIsComplete(matches: Match[], players: LeagueState["players"]): boolean {
+  return matches.length > 0 && matches.every((m) => matchTotals(m, players).complete);
+}
 
 export function Matches({
   onOpen,
@@ -37,6 +67,19 @@ export function Matches({
   const rounds = [...byRound.keys()].sort((a, b) => (mode === "results" ? b - a : a - b));
   const open = state.matches.filter((match) => !matchTotals(match, state.players).complete);
   const live = matchesShowingLive(open, now);
+  const activeRound = useMemo(
+    () => (mode === "schedule" ? activeScheduleRound(state, now) : null),
+    [mode, state, now],
+  );
+
+  useEffect(() => {
+    if (mode !== "schedule" || activeRound == null) return;
+    const id = `schedule-round-${activeRound}`;
+    const timer = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "auto" });
+    }, 40);
+    return () => window.clearTimeout(timer);
+  }, [mode, activeRound]);
 
   function matchRow(match: Match) {
     const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
@@ -173,8 +216,27 @@ export function Matches({
         );
 
         if (mode === "schedule") {
+          const past = roundIsComplete(fixtures, state.players);
+          const active = activeRound === round;
+          if (past) {
+            return (
+              <details
+                key={round}
+                id={`schedule-round-${round}`}
+                className="round-fold schedule-round-past"
+              >
+                <summary className="round-title">{heading}</summary>
+                {body}
+                {note && <p className="season-note">{note}</p>}
+              </details>
+            );
+          }
           return (
-            <div key={round}>
+            <div
+              key={round}
+              id={`schedule-round-${round}`}
+              className={`schedule-round${active ? " is-active" : ""}`}
+            >
               <div className="panel">
                 <h3 className="round-title">{heading}</h3>
                 {body}
