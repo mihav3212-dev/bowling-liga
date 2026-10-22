@@ -66,8 +66,16 @@ export function Matches({
       </>
     );
     return onOpen && (!canOpen || canOpen(match)) ? (
-      <button className="row match-row" key={match.id} onClick={() => onOpen(match.id)}>
+      <button
+        className="row match-row is-openable"
+        type="button"
+        key={match.id}
+        onClick={() => onOpen(match.id)}
+      >
         {row}
+        <span className="match-row-chevron" aria-hidden="true">
+          ›
+        </span>
       </button>
     ) : (
       <div className="row match-row" key={match.id}>
@@ -96,7 +104,7 @@ export function Matches({
               const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
               return (
                 <button
-                  className="row match-row"
+                  className="row match-row is-openable"
                   key={match.id}
                   type="button"
                   onClick={() => {
@@ -106,6 +114,9 @@ export function Matches({
                   <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
                   <span className="match-names">
                     {home} – {away}
+                  </span>
+                  <span className="match-row-chevron" aria-hidden="true">
+                    ›
                   </span>
                 </button>
               );

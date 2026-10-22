@@ -959,6 +959,41 @@ html[data-theme="light"] .live-now .list button.row:hover {
   flex-wrap: wrap;
 }
 
+.list button.match-row.is-openable {
+  position: relative;
+  padding-right: 1.35rem;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.list button.match-row.is-openable:hover,
+.list button.match-row.is-openable:focus-visible {
+  color: var(--round);
+  background: var(--row-alt);
+}
+
+.list button.match-row.is-openable:hover .match-row-chevron,
+.list button.match-row.is-openable:focus-visible .match-row-chevron {
+  opacity: 1;
+  transform: translateY(-50%) translateX(2px);
+}
+
+.match-row-chevron {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.35rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0.72;
+  pointer-events: none;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
 .match-when {
   min-width: 11.5rem;
   color: var(--muted);
