@@ -272,6 +272,23 @@ export function AdminMenu({
             <button
               className="ghost"
               type="button"
+              title="Samo JSON sezone (ekipe, igralci, razpored, rezultati) — brez PDF-jev."
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const date = new Date().toISOString().slice(0, 10);
+                a.download = `backupbowlingliga_${date}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Izvozi JSON
+            </button>
+            <button
+              className="ghost"
+              type="button"
               title="Naloži prej izvožen JSON. Če sezona z istim imenom že obstaja, vpraša za prepis ali novo ime."
               onClick={() => fileRef.current?.click()}
             >
@@ -322,7 +339,7 @@ export function AdminMenu({
               {remote
                 ? "Sezone se shranjujejo na strežnik — vsi vidijo isto."
                 : "Zdaj so sezone samo v tem brskalniku. Pred vklopom baze nujno Izvozi JSON, sicer se lanski vnosi ne prenesejo."}{" "}
-              CSV: kolo, datum, ura, domači, gostje, opomba.
+              Izvozi JSON = kopija baze. Varnostna kopija kola (zgoraj) vključuje tudi PDF-je. CSV: kolo, datum, ura, domači, gostje, opomba.
             </p>
           </>
         )}

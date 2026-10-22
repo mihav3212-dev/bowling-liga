@@ -709,69 +709,87 @@ function LiveMatchScreen({
         </header>
 
         <div className="live-quad-stage">
-          <div className="live-quad-board">
-            <RoundCard r={r1} variant="quad" />
-            <div className="live-quad-spine live-quad-spine-top">
-              <div className="live-quad-stat is-featured">
-                <span>Velike točke</span>
-                <strong>
-                  {m.homeBig}:{m.awayBig}
-                </strong>
-              </div>
-              <div className="live-quad-stat">
-                <span>Male točke</span>
-                <strong>
-                  {m.homeSmall}:{m.awaySmall}
-                </strong>
-              </div>
+          <div className={`live-quad-board${complete ? " is-complete" : ""}`}>
+            <div className="live-quad-cell is-r1">
+              <RoundCard r={r1} variant="quad" />
             </div>
-            <RoundCard r={r2} variant="quad" />
+            {complete ? (
+              <div className="live-quad-spine live-quad-spine-final">
+                <div className="live-quad-final-stats">
+                  <div className="live-quad-stat is-match is-inline">
+                    <span>Velike točke</span>
+                    <strong>
+                      {m.homeBig}:{m.awayBig}
+                    </strong>
+                  </div>
+                  <div className="live-quad-stat is-match is-inline">
+                    <span>Male točke</span>
+                    <strong>
+                      {m.homeSmall}:{m.awaySmall}
+                    </strong>
+                  </div>
+                  <div className="live-quad-stat is-match is-inline">
+                    <span>Končne točke</span>
+                    <strong>
+                      <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
+                      <span className="live-tv-score-sep">:</span>
+                      <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                    </strong>
+                  </div>
+                  <div className="live-quad-stat is-match is-inline is-pins">
+                    <span>Keglji</span>
+                    <strong>
+                      {m.homePins}:{m.awayPins}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="live-quad-spine live-quad-spine-top">
+                <div className="live-quad-stat is-featured">
+                  <span>Velike točke</span>
+                  <strong>
+                    {m.homeBig}:{m.awayBig}
+                  </strong>
+                </div>
+                <div className="live-quad-stat">
+                  <span>Male točke</span>
+                  <strong>
+                    {m.homeSmall}:{m.awaySmall}
+                  </strong>
+                </div>
+              </div>
+            )}
+            <div className="live-quad-cell is-r2">
+              <RoundCard r={r2} variant="quad" />
+            </div>
 
             <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
               <span className="live-quad-mid-side">Domači</span>
               <span className="live-quad-mid-team">{m.homeName}</span>
             </div>
-            <div className="live-quad-spine live-quad-spine-mid">
-              <div className={`live-quad-stat is-slot-large${complete ? " is-match" : ""}`}>
-                <span>{complete ? "Končne točke" : "Keglji"}</span>
-                <strong>
-                  {complete ? (
-                    <>
-                      <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                      <span className="live-tv-score-sep">:</span>
-                      <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
-                    </>
-                  ) : (
-                    <>
-                      {m.homePins}:{m.awayPins}
-                    </>
-                  )}
-                </strong>
+            {complete ? null : (
+              <div className="live-quad-spine live-quad-spine-mid">
+                <div className="live-quad-stat is-slot-large">
+                  <span>Keglji</span>
+                  <strong>
+                    {m.homePins}:{m.awayPins}
+                  </strong>
+                </div>
               </div>
-            </div>
+            )}
             <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
               <span className="live-quad-mid-side">Gostje</span>
               <span className="live-quad-mid-team">{m.awayName}</span>
             </div>
 
-            <RoundCard r={r3} variant="quad" />
-            <div className="live-quad-spine live-quad-spine-bot">
-              <div
-                className={`live-quad-stat is-slot-small${complete ? "" : " is-match is-pending"}`}
-              >
-                <span>{complete ? "Keglji" : "Končne točke"}</span>
-                <strong>
-                  {complete ? (
-                    <>
-                      {m.homePins}:{m.awayPins}
-                    </>
-                  ) : (
-                    "·:·"
-                  )}
-                </strong>
-              </div>
+            <div className="live-quad-cell is-r3">
+              <RoundCard r={r3} variant="quad" />
             </div>
-            <RoundCard r={r4} variant="quad" />
+            {complete ? null : <div className="live-quad-spine live-quad-spine-bot" aria-hidden />}
+            <div className="live-quad-cell is-r4">
+              <RoundCard r={r4} variant="quad" />
+            </div>
           </div>
 
           {focusOverlay ? (
