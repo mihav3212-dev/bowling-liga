@@ -881,13 +881,10 @@ function LiveMatchScreen({
         </div>
         <div className="live-tv-rounds-wrap">
           <aside className="live-tv-rounds-lanes" aria-label="Steze">
+            {/* Samo višina glave kartice — brez širokega besedila, da S1–S4 ostanejo skrajno levo. */}
             <div className="live-tv-rounds-lanes-head" aria-hidden="true">
-              <div className="live-tv-round-card-num">1. kolo</div>
-              <div className="live-tv-round-card-totals">
-                <span>Velike ·:·</span>
-                <span>Male —</span>
-                <span>— kegljev</span>
-              </div>
+              <div className="live-tv-round-card-num">&nbsp;</div>
+              <div className="live-tv-round-card-totals">&nbsp;</div>
             </div>
             <div className="live-tv-rounds-lanes-body">
               {[1, 2, 3, 4].map((n) => (

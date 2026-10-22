@@ -2428,9 +2428,10 @@ button.linkish {
 .live-tv:not(.is-quad) .live-tv-rounds-wrap {
   flex: 1 1 auto;
   min-height: 0;
+  width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0 clamp(8px, 1.2vw, 14px);
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0 clamp(10px, 1.4vw, 18px);
   align-items: stretch;
 }
 
@@ -2439,6 +2440,8 @@ button.linkish {
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  width: max-content;
+  justify-self: start;
 }
 
 .live-tv:not(.is-quad) .live-tv-rounds-lanes-head {
@@ -2446,6 +2449,15 @@ button.linkish {
   pointer-events: none;
   flex: 0 0 auto;
   padding: clamp(5px, 0.9vh, 10px) 0 0;
+  /* Ne širi stolpca — samo rezervira višino glave kartice. */
+  overflow: hidden;
+  max-width: 2.5em;
+}
+
+.live-tv:not(.is-quad) .live-tv-rounds-lanes-head .live-tv-round-card-num,
+.live-tv:not(.is-quad) .live-tv-rounds-lanes-head .live-tv-round-card-totals {
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .live-tv:not(.is-quad) .live-tv-rounds-lanes-body {
@@ -2467,8 +2479,8 @@ button.linkish {
   color: var(--tv-accent);
   font-size: clamp(1.45rem, 2.8vw, 2.75rem);
   line-height: 1.12;
-  text-align: right;
-  padding-right: 2px;
+  text-align: left;
+  padding: 0;
 }
 
 .live-tv:not(.is-quad) .live-tv-rounds-grid {
@@ -3489,7 +3501,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-totals {
-  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  /* Ista velikost kot »1. kolo« */
+  font-size: clamp(2.4rem, 4.2vw, 3.4rem);
   margin-bottom: 16px;
   gap: 0.4em 1.25em;
 }
@@ -3545,7 +3558,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv.is-quad .live-tv-round-card-totals {
   justify-content: flex-start;
   color: var(--tv-muted);
-  font-size: clamp(1rem, 4.5cqi, 1.55rem);
+  /* Ista velikost kot »1. kolo« */
+  font-size: clamp(1.45rem, 7.5cqi, 2.75rem);
   margin-top: 0;
   margin-bottom: 6px;
   gap: 0.3em 0.9em;
@@ -3953,7 +3967,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   .live-tv.is-quad .live-tv-round-card-totals {
-    font-size: 0.8rem;
+    font-size: 1.05rem;
     margin-top: 2px;
     margin-bottom: 4px;
     gap: 0.25em 0.55em;

@@ -42,7 +42,7 @@ export function AdminMenu({
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState<"home" | "seasons">("home");
+  const [panel, setPanel] = useState<"home" | "seasons" | "edit">("home");
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
@@ -56,13 +56,14 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (swapOpen) return;
-      if (panel === "seasons") setPanel("home");
+      if (swapOpen || swapHomeAwayOpen) return;
+      if (panel === "edit") setPanel("seasons");
+      else if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel, swapOpen]);
+  }, [open, panel, swapOpen, swapHomeAwayOpen]);
 
   const renameCurrentSeason = async () => {
     if (!seasonId) return;
@@ -165,6 +166,50 @@ export function AdminMenu({
             >
               Nova sezona
             </button>
+            <button className="ghost" type="button" onClick={() => setPanel("edit")}>
+              Urejaj obstoječo
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              disabled={lastRound <= 0 || backupBusy}
+              title={
+                lastRound <= 0
+                  ? "Še ni končanega kola z rezultati."
+                  : `ZIP: PDF-ji tekem ${lastRound}. kola, lestvica, igralci + JSON sezone.`
+              }
+              onClick={() => {
+                setBackupBusy(true);
+                void exportLastRoundBackup(state)
+                  .then((round) => {
+                    if (round == null) {
+                      window.alert("Še ni končanega kola z rezultati.");
+                    }
+                  })
+                  .catch((err) => {
+                    window.alert(err instanceof Error ? err.message : "Varnostne kopije ni bilo mogoče pripraviti.");
+                  })
+                  .finally(() => setBackupBusy(false));
+              }}
+            >
+              {backupBusy
+                ? "Pripravljam kopijo…"
+                : lastRound > 0
+                  ? `Izvozi varnostno kopijo ${lastRound}. kola`
+                  : "Izvozi varnostno kopijo kola"}
+            </button>
+          </>
+        )}
+        {panel === "edit" && (
+          <>
+            <button className="ghost admin-menu-back" type="button" onClick={() => setPanel("seasons")}>
+              Nazaj
+            </button>
+            <p className="muted admin-menu-current">
+              {seasonLabel}
+              {state.training ? " (trening)" : ""}
+              {archived ? " — arhiv, samo branje" : ""}
+            </p>
             <button className="ghost" type="button" onClick={() => void renameCurrentSeason()}>
               Preimenuj
             </button>
@@ -204,15 +249,6 @@ export function AdminMenu({
                 Zamenjaj domačin/gost
               </button>
             )}
-            <button
-              className="ghost"
-              type="button"
-              disabled={seasons.length <= 1}
-              title={seasons.length <= 1 ? "Zadnje sezone ni mogoče izbrisati." : "Trajno odstrani izbrano sezono."}
-              onClick={() => void deleteCurrentSeason()}
-            >
-              Izbriši
-            </button>
             {archived && (
               <button className="ghost" type="button" onClick={() => void reopenSeason()}>
                 Odpri sezono
@@ -236,57 +272,21 @@ export function AdminMenu({
             <button
               className="ghost"
               type="button"
-              title="Shrani celotno sezono (ekipe, igralce, razpored in rezultate) v datoteko."
-              onClick={() => {
-                const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                const date = new Date().toISOString().slice(0, 10);
-                a.download = `backupbowlingliga_${date}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Izvozi JSON
-            </button>
-            <button
-              className="ghost"
-              type="button"
-              disabled={lastRound <= 0 || backupBusy}
-              title={
-                lastRound <= 0
-                  ? "Še ni končanega kola z rezultati."
-                  : `ZIP: PDF-ji tekem ${lastRound}. kola, lestvica, igralci + JSON sezone.`
-              }
-              onClick={() => {
-                setBackupBusy(true);
-                void exportLastRoundBackup(state)
-                  .then((round) => {
-                    if (round == null) {
-                      window.alert("Še ni končanega kola z rezultati.");
-                    }
-                  })
-                  .catch((err) => {
-                    window.alert(err instanceof Error ? err.message : "Varnostne kopije ni bilo mogoče pripraviti.");
-                  })
-                  .finally(() => setBackupBusy(false));
-              }}
-            >
-              {backupBusy
-                ? "Pripravljam kopijo…"
-                : lastRound > 0
-                  ? `Izvozi varnostno kopijo ${lastRound}. kola`
-                  : "Izvozi varnostno kopijo kola"}
-            </button>
-            <button
-              className="ghost"
-              type="button"
               title="Naloži prej izvožen JSON. Če sezona z istim imenom že obstaja, vpraša za prepis ali novo ime."
               onClick={() => fileRef.current?.click()}
             >
               Uvozi JSON
             </button>
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
+                title="CSV s stolpci kolo, datum, ura, domači, gostje. Doda tekme k sezoni."
+                onClick={() => csvRef.current?.click()}
+              >
+                Uvozi CSV
+              </button>
+            )}
             {canEdit && leftover > 0 && (
               <button
                 className="ghost"
@@ -309,21 +309,20 @@ export function AdminMenu({
                 Dodaj preostali razpored
               </button>
             )}
-            {canEdit && (
-              <button
-                className="ghost"
-                type="button"
-                title="CSV s stolpci kolo, datum, ura, domači, gostje. Doda tekme k sezoni."
-                onClick={() => csvRef.current?.click()}
-              >
-                Uvozi razpored (CSV)
-              </button>
-            )}
+            <button
+              className="ghost"
+              type="button"
+              disabled={seasons.length <= 1}
+              title={seasons.length <= 1 ? "Zadnje sezone ni mogoče izbrisati." : "Trajno odstrani izbrano sezono."}
+              onClick={() => void deleteCurrentSeason()}
+            >
+              Izbriši sezono
+            </button>
             <p className="muted admin-menu-hint">
               {remote
                 ? "Sezone se shranjujejo na strežnik — vsi vidijo isto."
                 : "Zdaj so sezone samo v tem brskalniku. Pred vklopom baze nujno Izvozi JSON, sicer se lanski vnosi ne prenesejo."}{" "}
-              JSON je varnostna kopija cele sezone. CSV: kolo, datum, ura, domači, gostje, opomba.
+              CSV: kolo, datum, ura, domači, gostje, opomba.
             </p>
           </>
         )}
