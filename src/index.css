@@ -2536,7 +2536,13 @@ button.linkish {
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
   line-height: 1.12;
-  font-size: clamp(1rem, 8cqi, 1.75rem);
+  font-size: clamp(1.15rem, 9.5cqi, 2.05rem);
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Predogled: prostor za spodnji overlay, da ne prekrije zadnje vrstice. */
@@ -2979,11 +2985,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-duel {
-  /* Ena vrstica; velikost sledi širini kola (okno) */
-  font-size: clamp(1rem, 8cqi, 1.75rem);
+  /* Polna imena v 2 vrsticah → malo večja pisava */
+  font-size: clamp(1.15rem, 9.5cqi, 2.05rem);
   column-gap: 8px;
   align-items: center;
-  line-height: 1.15;
+  line-height: 1.12;
 }
 
 .live-tv-mini-name.is-one-line {

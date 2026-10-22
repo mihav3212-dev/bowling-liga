@@ -529,21 +529,23 @@ function RoundCard({
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
           const dLead = duelLead(d.homePins, d.awayPins);
-          const homeLabel = enlarged ? d.homeName : shortTvPersonName(d.homeName);
-          const awayLabel = enlarged ? d.awayName : shortTvPersonName(d.awayName);
+          /** Kvadrati pregled: kratka ena vrstica; klasično + fokus: polno ime v 2 vrsticah. */
+          const shortOneLine = quad && !enlarged;
+          const homeLabel = shortOneLine ? shortTvPersonName(d.homeName) : d.homeName;
+          const awayLabel = shortOneLine ? shortTvPersonName(d.awayName) : d.awayName;
           return (
             <div key={d.lane} className="live-tv-mini-duel">
               <span className="live-tv-mini-lane" data-lane={d.lane}>
                 {quad || enlarged ? `Steza ${d.lane}` : `S${d.lane}`}
               </span>
-              {enlarged ? (
-                <TvStackedName name={homeLabel} side="home" lead={dLead === "home"} />
-              ) : (
+              {shortOneLine ? (
                 <span
                   className={`live-tv-mini-name is-home is-one-line${dLead === "home" ? " is-lead" : ""}`}
                 >
                   {homeLabel}
                 </span>
+              ) : (
+                <TvStackedName name={homeLabel} side="home" lead={dLead === "home"} />
               )}
               <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
                 {pinsLabel(d.homePins)}
@@ -552,14 +554,14 @@ function RoundCard({
               <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
                 {pinsLabel(d.awayPins)}
               </span>
-              {enlarged ? (
-                <TvStackedName name={awayLabel} side="away" lead={dLead === "away"} />
-              ) : (
+              {shortOneLine ? (
                 <span
                   className={`live-tv-mini-name is-away is-one-line${dLead === "away" ? " is-lead" : ""}`}
                 >
                   {awayLabel}
                 </span>
+              ) : (
+                <TvStackedName name={awayLabel} side="away" lead={dLead === "away"} />
               )}
             </div>
           );
