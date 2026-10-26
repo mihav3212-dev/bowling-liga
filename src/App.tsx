@@ -13,6 +13,7 @@ import { Login } from "./pages/Login";
 import { AdminMenu } from "./pages/AdminMenu";
 import { Setup } from "./pages/Setup";
 import { PdfButton } from "./pages/PdfButton";
+import { LeagueBoard } from "./pages/LeagueBoardDisplay";
 import { LiveMatchBoard, LiveMatchDisplay, TrainingLiveBoard } from "./pages/LiveMatchDisplay";
 import { MatchResultView } from "./pages/MatchResultView";
 import { MatchResultPage } from "./pages/MatchResultPage";
@@ -84,6 +85,9 @@ export function App() {
   const displayMode = params.get("display");
   if (displayMode === "live") {
     return <LiveMatchBoard />;
+  }
+  if (displayMode === "board") {
+    return <LeagueBoard />;
   }
   if (displayMode === "training") {
     const id = params.get("id");

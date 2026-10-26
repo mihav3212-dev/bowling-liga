@@ -14,17 +14,17 @@ html[data-theme="dark"] {
   --input-bg: #161515;
   --input-fg: #f4f2ef;
   --surface: #111;
-  /* Oranžna ↔ vijolična (razen na lestvicah / ogledu tekme — glej .board-view / .result-view). */
-  --copper: #b04fc4;
-  --copper-2: #e8a06a;
-  --accent: #b04fc4;
-  --round: #b04fc4;
+  /* Modra ↔ vijolična (isto kot TV board: #6b9cff / #b04fc4). */
+  --copper: #6b9cff;
+  --copper-2: #b04fc4;
+  --accent: #6b9cff;
+  --round: #6b9cff;
   --green: #7cffb2;
   --line: rgba(255, 255, 255, 0.1);
   --card: #141312;
   --row-alt: rgba(255, 255, 255, 0.03);
   --table-head: #161515;
-  --score: #e8a06a;
+  --score: #b04fc4;
 }
 
 html[data-theme="light"] {
@@ -42,16 +42,16 @@ html[data-theme="light"] {
   --input-bg: #ffffff;
   --input-fg: #111;
   --surface: #ffffff;
-  --copper: #0006ff;
-  --copper-2: #cc3366;
-  --accent: #af4b2f;
-  --round: #0006ff;
+  --copper: #6b9cff;
+  --copper-2: #b04fc4;
+  --accent: #3d7ae8;
+  --round: #6b9cff;
   --green: #0a7a3e;
   --line: rgba(0, 0, 0, 0.12);
   --card: #ffffff;
-  --row-alt: rgba(0, 6, 255, 0.06);
-  --table-head: #e4e6ff;
-  --score: #9a1f73;
+  --row-alt: rgba(107, 156, 255, 0.08);
+  --table-head: #e8efff;
+  --score: #b04fc4;
 }
 
 @media (prefers-color-scheme: light) {
@@ -70,16 +70,16 @@ html[data-theme="light"] {
     --input-bg: #ffffff;
     --input-fg: #111;
     --surface: #ffffff;
-    --copper: #0006ff;
-    --copper-2: #cc3366;
-    --accent: #af4b2f;
-    --round: #0006ff;
+    --copper: #6b9cff;
+    --copper-2: #b04fc4;
+    --accent: #3d7ae8;
+    --round: #6b9cff;
     --green: #0a7a3e;
     --line: rgba(0, 0, 0, 0.12);
     --card: #ffffff;
-    --row-alt: rgba(0, 6, 255, 0.06);
-    --table-head: #e4e6ff;
-    --score: #9a1f73;
+    --row-alt: rgba(107, 156, 255, 0.08);
+    --table-head: #e8efff;
+    --score: #b04fc4;
   }
 }
 
@@ -1541,7 +1541,7 @@ button.linkish {
 }
 
 .player-avg-chart-season {
-  stroke: var(--copper, #e8a06a);
+  stroke: var(--copper, #6b9cff);
   stroke-width: 1.5;
   stroke-dasharray: 5 4;
   opacity: 0.85;
@@ -1661,7 +1661,7 @@ button.linkish {
 }
 
 .live-tv-force-btn:hover {
-  border-color: var(--accent, #c45c26);
+  border-color: var(--accent, #6b9cff);
 }
 
 .live-tv-force-btn.is-on {
@@ -2278,7 +2278,7 @@ button.linkish {
   --tv-bg: #0c0b0b;
   --tv-ink: #f4f2ef;
   --tv-muted: #9a9690;
-  --tv-accent: #e8a06a;
+  --tv-accent: #6b9cff;
   --tv-live: #b04fc4;
   --tv-line: rgba(255, 255, 255, 0.1);
   position: relative;
@@ -2300,8 +2300,8 @@ button.linkish {
   inset: -20% 10% auto;
   height: 55%;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(232, 160, 106, 0.18), transparent 55%),
-    radial-gradient(ellipse at 70% 10%, rgba(0, 6, 255, 0.16), transparent 50%);
+    radial-gradient(ellipse at 30% 20%, rgba(107, 156, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at 70% 10%, rgba(176, 79, 196, 0.16), transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -2911,8 +2911,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-duel.is-open {
-  border-color: rgba(232, 160, 106, 0.28);
-  background: rgba(232, 160, 106, 0.06);
+  border-color: rgba(107, 156, 255, 0.28);
+  background: rgba(107, 156, 255, 0.06);
 }
 
 .live-tv-lane-num {
@@ -2971,7 +2971,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv.is-final .live-tv-glow {
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(232, 160, 106, 0.22), transparent 58%),
+    radial-gradient(ellipse at 50% 0%, rgba(107, 156, 255, 0.22), transparent 58%),
     radial-gradient(ellipse at 20% 30%, rgba(176, 79, 196, 0.12), transparent 45%);
 }
 
@@ -3265,7 +3265,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-layout-toggle button.is-on {
-  background: rgba(232, 160, 106, 0.18);
+  background: rgba(107, 156, 255, 0.18);
   color: var(--tv-accent);
 }
 
@@ -3931,7 +3931,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-preview-toggle button.is-on {
-  background: rgba(232, 160, 106, 0.2);
+  background: rgba(107, 156, 255, 0.2);
   color: var(--tv-ink);
 }
 
@@ -4297,14 +4297,14 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   --rv-bg: #0c0b0b;
   --rv-ink: #f4f2ef;
   --rv-muted: #9a9690;
-  --rv-accent: #e8a06a;
+  --rv-accent: #6b9cff;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
-  /* Lestvice / rezultat tekme: oranžna in vijolična ostanejo kot doslej. */
-  --copper: #e8a06a;
+  /* Lestvice / rezultat tekme: modra ↔ vijolična (kot board). */
+  --copper: #6b9cff;
   --copper-2: #b04fc4;
-  --accent: #e8a06a;
-  --round: #e8a06a;
+  --accent: #6b9cff;
+  --round: #6b9cff;
   --score: #b04fc4;
   position: relative;
   isolation: isolate;
@@ -4362,7 +4362,7 @@ body:has(.board-view) {
   inset: -10% 0 auto;
   height: 40%;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(232, 160, 106, 0.16), transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(107, 156, 255, 0.16), transparent 55%),
     radial-gradient(ellipse at 60% 20%, rgba(176, 79, 196, 0.12), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -4738,7 +4738,7 @@ body:has(.board-view) {
   text-transform: uppercase;
   font-size: 0.9rem;
   color: var(--rv-accent);
-  background: rgba(232, 160, 106, 0.08);
+  background: rgba(107, 156, 255, 0.08);
   padding-top: 12px;
   padding-bottom: 8px;
   text-align: left !important;
@@ -4971,14 +4971,14 @@ body:has(.board-view) {
   --rv-bg: #0c0b0b;
   --rv-ink: #f4f2ef;
   --rv-muted: #9a9690;
-  --rv-accent: #e8a06a;
+  --rv-accent: #6b9cff;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
-  /* Lestvice: oranžna in vijolična ostanejo kot doslej. */
-  --copper: #e8a06a;
+  /* Lestvice: modra ↔ vijolična (kot board). */
+  --copper: #6b9cff;
   --copper-2: #b04fc4;
-  --accent: #e8a06a;
-  --round: #e8a06a;
+  --accent: #6b9cff;
+  --round: #6b9cff;
   --score: #b04fc4;
   position: relative;
   isolation: isolate;
@@ -4997,7 +4997,7 @@ body:has(.board-view) {
   inset: -10% 0 auto;
   height: 36%;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(232, 160, 106, 0.14), transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(107, 156, 255, 0.14), transparent 55%),
     radial-gradient(ellipse at 70% 30%, rgba(176, 79, 196, 0.1), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -5363,5 +5363,1946 @@ body:has(.board-view) {
   .board-standings.teams th:nth-child(2),
   .board-standings.teams td:nth-child(2) {
     min-width: 8rem;
+  }
+}
+
+/* —— TV pregled lige (?display=board) —— */
+.liga-board {
+  --tv-bg: #07060a;
+  --tv-ink: #f4f2ef;
+  --tv-muted: #9a9690;
+  --tv-accent: #6b9cff;
+  --tv-live: #b04fc4;
+  --tv-line: rgba(255, 255, 255, 0.1);
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  height: 100dvh;
+  box-sizing: border-box;
+  padding:
+    max(clamp(18px, 3vh, 32px), env(safe-area-inset-top, 0px))
+    clamp(16px, 3.5vw, 40px)
+    max(clamp(16px, 2.5vh, 28px), env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 18px);
+  background: var(--tv-bg);
+  color: var(--tv-ink);
+  overflow: hidden;
+}
+
+.liga-board.is-fullscreen {
+  padding:
+    max(clamp(14px, 2.2vh, 24px), env(safe-area-inset-top, 0px))
+    clamp(14px, 3vw, 32px)
+    max(clamp(12px, 2vh, 22px), env(safe-area-inset-bottom, 0px));
+}
+
+.liga-board-glow {
+  position: absolute;
+  inset: -20% 10% auto;
+  height: 50%;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(107, 156, 255, 0.1), transparent 55%),
+    radial-gradient(ellipse at 70% 10%, rgba(176, 79, 196, 0.08), transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.liga-board-top,
+.liga-board-body,
+.liga-board-dots,
+.liga-board-nav {
+  position: relative;
+  z-index: 1;
+}
+
+.liga-board-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 0 0 auto;
+}
+
+.liga-board-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.liga-board-logo {
+  width: clamp(40px, 5vw, 56px);
+  height: auto;
+}
+
+.liga-board-brand-name {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  line-height: 1.05;
+}
+
+.liga-board-brand-sub {
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+}
+
+.liga-board-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px 18px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.liga-board-title {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+  line-height: 1;
+  color: var(--tv-ink);
+}
+
+.liga-board-progress {
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--tv-muted);
+  font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+}
+
+.liga-board-fs {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--tv-muted);
+  background: transparent;
+  border: 1px solid var(--tv-line);
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.liga-board-fs:hover {
+  color: var(--tv-ink);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.liga-board-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 16px;
+}
+
+.liga-board-body.is-fade {
+  animation: liga-board-in 0.45s ease both;
+}
+
+@keyframes liga-board-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.liga-board-slide {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liga-board-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.95rem, 1.85vw, 1.55rem);
+}
+
+.liga-board-table th,
+.liga-board-table td {
+  padding: clamp(5px, 1vh, 10px) clamp(6px, 1vw, 12px);
+  border-bottom: 1px solid var(--tv-line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.liga-board-table th {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-size: 0.78em;
+}
+
+.liga-board-table td.mono,
+.liga-board-table .mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.liga-board-table th:first-child,
+.liga-board-table td:first-child {
+  width: 2.5rem;
+  text-align: center;
+  color: var(--tv-muted);
+}
+
+.liga-board-name {
+  font-weight: 650;
+  max-width: 18rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.liga-board-team {
+  color: var(--tv-muted);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.liga-board-pts {
+  font-weight: 700;
+  color: var(--tv-accent);
+}
+
+.liga-board-table tr.is-top .liga-board-name,
+.liga-board-table tr.is-top .liga-board-pts {
+  color: var(--tv-live);
+}
+
+.liga-board-footnote {
+  margin: auto 0 0;
+  color: var(--tv-muted);
+  font-size: clamp(0.8rem, 1.3vw, 1rem);
+}
+
+.liga-board-section {
+  margin: 0 0 4px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  color: var(--tv-accent);
+  background: linear-gradient(90deg, #6b9cff 0%, #b04fc4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.liga-board-bye {
+  margin: 0;
+  color: var(--tv-muted);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+.liga-board-fixtures {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1.2vh, 12px);
+  flex: 1;
+  min-height: 0;
+  justify-content: space-evenly;
+}
+
+.liga-board-fixtures li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(8px, 1.2vh, 14px) 0;
+  border-bottom: 1px solid var(--tv-line);
+  font-size: clamp(1.15rem, 2.4vw, 2rem);
+}
+
+.liga-board-fixtures li.is-done {
+  opacity: 0.55;
+}
+
+.liga-board-when {
+  color: var(--tv-muted);
+  flex: 0 0 auto;
+  min-width: 10rem;
+  font-size: 0.85em;
+}
+
+.liga-board-fixture-names {
+  flex: 1;
+  min-width: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.liga-board-scores {
+  display: flex;
+  gap: 0.75em 1.25em;
+  flex: 0 0 auto;
+  color: var(--tv-muted);
+}
+
+.liga-board-scores .is-match {
+  color: var(--tv-live);
+  font-weight: 700;
+}
+
+.liga-board-empty,
+.liga-board-empty-wrap {
+  color: var(--tv-muted);
+  text-align: center;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+}
+
+.liga-board-empty-wrap {
+  flex: 1;
+  display: grid;
+  place-items: center;
+}
+
+.liga-board-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding-top: 4px;
+}
+
+.liga-board-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.liga-board-dots span.is-on {
+  background: var(--tv-accent);
+  box-shadow: 0 0 0 3px rgba(107, 156, 255, 0.22);
+}
+
+.liga-board-idle {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  text-align: center;
+  background: #0c0b0b;
+  color: #f4f2ef;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.liga-board-idle span {
+  color: #9a9690;
+  font-size: 0.7em;
+}
+
+@media (max-width: 700px) {
+  .liga-board-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .liga-board-when {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .liga-board-fixtures li {
+    flex-wrap: wrap;
+  }
+
+  .liga-board-table {
+    font-size: 0.85rem;
+  }
+}
+
+.liga-board-slide.is-players {
+  min-height: 0;
+}
+
+.liga-board-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 92%, transparent 100%);
+}
+
+.liga-board-table.is-sticky-head thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--tv-bg);
+  box-shadow: 0 1px 0 var(--tv-line);
+}
+
+.liga-board-slide.is-promo {
+  justify-content: center;
+}
+
+.liga-board-promo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.15fr) auto;
+  align-items: center;
+  gap: clamp(20px, 3.5vw, 40px);
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: 0;
+}
+
+.liga-board-promo-logo {
+  width: clamp(120px, 15vw, 200px);
+  height: auto;
+  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.4));
+}
+
+.liga-board-promo-copy {
+  min-width: 0;
+}
+
+.liga-board-promo-kicker {
+  margin: 0 0 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tv-accent);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+}
+
+.liga-board-promo-title {
+  margin: 0 0 8px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  line-height: 1.05;
+  color: var(--tv-ink);
+}
+
+.liga-board-promo-text {
+  margin: 0 0 10px;
+  color: var(--tv-muted);
+  font-size: clamp(1.05rem, 1.9vw, 1.45rem);
+  line-height: 1.3;
+  max-width: 28em;
+}
+
+.liga-board-promo-url {
+  margin: 0;
+  color: var(--tv-live);
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  word-break: break-all;
+}
+
+.liga-board-promo-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  align-self: stretch;
+}
+
+.liga-board-promo-qr img {
+  width: clamp(200px, 24vw, 320px);
+  height: auto;
+  border-radius: 10px;
+  background: #f4f2ef;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.liga-board-promo-qr span {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+}
+
+@media (max-width: 900px) {
+  .liga-board-promo {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .liga-board-promo-text {
+    max-width: none;
+  }
+}
+
+/* —— League board polish (v2) —— */
+.liga-board-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+  padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 16px);
+  overflow: hidden;
+}
+
+.liga-board-rank {
+  font-weight: 700;
+}
+
+.liga-board-table tr.is-gold td:first-child,
+.liga-board-table tr.is-gold .liga-board-pts {
+  color: #f0c14b;
+}
+
+.liga-board-table tr.is-silver td:first-child,
+.liga-board-table tr.is-silver .liga-board-pts {
+  color: #c5cdd8;
+}
+
+.liga-board-table tr.is-bronze td:first-child,
+.liga-board-table tr.is-bronze .liga-board-pts {
+  color: #d4a574;
+}
+
+.liga-board-table tr.is-gold .liga-board-name,
+.liga-board-table tr.is-silver .liga-board-name,
+.liga-board-table tr.is-bronze .liga-board-name {
+  color: var(--tv-ink);
+  font-weight: 750;
+}
+
+.liga-board-scroll-viewport {
+  position: relative;
+  overflow: hidden;
+}
+
+.liga-board-scroll-track {
+  will-change: transform;
+}
+
+.liga-board-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: clamp(10px, 1.5vh, 16px);
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+.liga-board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: clamp(12px, 1.8vh, 18px) clamp(14px, 1.8vw, 20px);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--tv-line);
+  border-radius: 12px;
+}
+
+.liga-board-card.is-done {
+  opacity: 0.62;
+}
+
+.liga-board-card .liga-board-fixture-names {
+  font-size: clamp(1.2rem, 2.2vw, 1.75rem);
+}
+
+.liga-board-vs {
+  color: var(--tv-muted);
+  font-weight: 500;
+}
+
+.liga-board-chip {
+  align-self: flex-start;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--tv-accent);
+  border: 1px solid rgba(107, 156, 255, 0.4);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.liga-board-slide.is-results-detail {
+  min-height: 0;
+}
+
+.liga-board-result-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: clamp(10px, 1.4vh, 16px);
+  overflow: auto;
+  align-content: start;
+}
+
+.liga-board-result-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.5vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liga-board-result-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.liga-board-result-team {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.liga-board-result-team.is-away {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.liga-board-result-side {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--tv-muted);
+}
+
+.liga-board-result-team strong {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: clamp(1.05rem, 1.9vw, 1.45rem);
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.liga-board-result-team.is-winner strong,
+.liga-board-result-score .is-winner {
+  color: var(--tv-live);
+}
+
+.liga-board-result-score {
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.liga-board-result-sep {
+  margin: 0 0.12em;
+  color: var(--tv-muted);
+}
+
+.liga-board-result-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em 1em;
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+}
+
+.liga-board-result-totals strong {
+  color: var(--tv-ink);
+  font-weight: 650;
+  margin-left: 0.25em;
+}
+
+.liga-board-result-rounds {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--tv-line);
+  padding-top: 8px;
+}
+
+.liga-board-result-round {
+  display: grid;
+  grid-template-columns: 4.5rem repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  align-items: baseline;
+  font-size: clamp(0.8rem, 1.25vw, 0.95rem);
+  color: var(--tv-muted);
+}
+
+.liga-board-result-round-num {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tv-accent);
+}
+
+.liga-board-nav {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.liga-board-progress-bar {
+  height: 3px;
+  border-radius: 999px;
+  background: var(--tv-accent);
+  transform-origin: left center;
+  animation-name: liga-board-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes liga-board-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.liga-board-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.liga-board-dot {
+  appearance: none;
+  border: 1px solid var(--tv-line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--tv-muted);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.liga-board-dot:hover {
+  color: var(--tv-ink);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.liga-board-dot.is-on {
+  color: #0c0b0b;
+  background: var(--tv-accent);
+  border-color: var(--tv-accent);
+  transform: translateY(-1px);
+}
+
+.liga-board-promo-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.liga-board-bowl {
+  width: min(280px, 32vw);
+  perspective: 520px;
+}
+
+.liga-board-bowl.is-3d .liga-board-bowl-stage {
+  transform: rotateX(28deg) rotateY(-8deg);
+  transform-style: preserve-3d;
+}
+
+.liga-board-bowl-lane {
+  position: relative;
+  height: 110px;
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.35), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.35)),
+    linear-gradient(180deg, #3a2a1a 0%, #6b4a2e 18%, #8b6238 55%, #5c3d24 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.liga-board-bowl-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(180deg, rgba(107, 156, 255, 0.55), rgba(176, 79, 196, 0.35));
+  opacity: 0.7;
+}
+.liga-board-bowl-rail.is-left {
+  left: 0;
+}
+.liga-board-bowl-rail.is-right {
+  right: 0;
+}
+
+.liga-board-bowl-shadow {
+  position: absolute;
+  left: 18%;
+  right: 12%;
+  bottom: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.liga-board-bowl-ball {
+  position: absolute;
+  left: 10%;
+  bottom: 18px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, #fff 0%, #d9b6ef 18%, #7a3d9b 52%, #2a1035 100%);
+  box-shadow:
+    0 6px 12px rgba(0, 0, 0, 0.45),
+    inset -3px -4px 8px rgba(0, 0, 0, 0.35),
+    0 0 0 2px rgba(176, 79, 196, 0.35);
+  animation: liga-board-ball 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 2;
+}
+
+.liga-board-bowl-pin {
+  position: absolute;
+  bottom: 16px;
+  width: 12px;
+  height: 34px;
+  border-radius: 6px 6px 4px 4px / 10px 10px 4px 4px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18), transparent 35%, transparent 65%, rgba(0, 0, 0, 0.12)),
+    linear-gradient(180deg, #fff 0%, #f2efe9 55%, #d8d2c8 100%);
+  box-shadow:
+    0 4px 8px rgba(0, 0, 0, 0.35),
+    inset 0 -8px 0 rgba(196, 40, 50, 0.55),
+    inset 0 -11px 0 rgba(196, 40, 50, 0.35);
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  z-index: 1;
+}
+
+.liga-board-bowl-pin.is-1 {
+  right: 30%;
+  animation: liga-board-pin 3s ease-in infinite 1.4s;
+}
+.liga-board-bowl-pin.is-2 {
+  right: 23%;
+  animation: liga-board-pin 3s ease-in infinite 1.48s;
+}
+.liga-board-bowl-pin.is-3 {
+  right: 16%;
+  animation: liga-board-pin 3s ease-in infinite 1.44s;
+}
+.liga-board-bowl-pin.is-4 {
+  right: 37%;
+  height: 30px;
+  animation: liga-board-pin 3s ease-in infinite 1.55s;
+}
+.liga-board-bowl-pin.is-5 {
+  right: 9%;
+  height: 30px;
+  animation: liga-board-pin 3s ease-in infinite 1.52s;
+}
+.liga-board-bowl-pin.is-6 {
+  right: 44%;
+  height: 28px;
+  width: 11px;
+  animation: liga-board-pin 3s ease-in infinite 1.6s;
+}
+.liga-board-bowl-pin.is-7 {
+  right: 3%;
+  height: 28px;
+  width: 11px;
+  animation: liga-board-pin 3s ease-in infinite 1.58s;
+}
+
+@keyframes liga-board-ball {
+  0%,
+  8% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(175px, -6px, 24px) rotate(480deg) scale(0.92);
+    opacity: 1;
+  }
+  68%,
+  100% {
+    transform: translate3d(190px, 2px, 8px) rotate(560deg) scale(0.86);
+    opacity: 0;
+  }
+}
+
+@keyframes liga-board-pin {
+  0%,
+  46% {
+    transform: rotate(0deg) translate3d(0, 0, 0);
+    opacity: 1;
+  }
+  58% {
+    transform: rotateX(-18deg) rotateZ(24deg) translate3d(4px, -8px, 8px);
+  }
+  74% {
+    transform: rotateX(-55deg) rotateZ(78deg) translate3d(14px, 10px, 4px);
+    opacity: 0.9;
+  }
+  100% {
+    transform: rotateX(-80deg) rotateZ(110deg) translate3d(18px, 16px, 0);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liga-board-bowl-ball,
+  .liga-board-bowl-pin,
+  .liga-board-progress-bar,
+  .liga-board-body.is-fade {
+    animation: none !important;
+  }
+
+  .liga-board-bowl.is-3d .liga-board-bowl-stage {
+    transform: none;
+  }
+}
+
+/* —— Standings + season best / player podium —— */
+.liga-board-slide.is-standings-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.85fr);
+  gap: clamp(12px, 1.8vw, 20px);
+  min-height: 0;
+}
+
+.liga-board-standings-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.liga-board-standings-main .liga-board-table {
+  flex: 1;
+}
+
+.liga-board-footnote.is-inline {
+  margin-top: 8px;
+}
+
+.liga-board-season-best {
+  min-height: 0;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--tv-line);
+  border-radius: 14px;
+  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.5vw, 18px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.liga-board-season-best-title {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  color: var(--tv-accent);
+}
+
+.liga-board-season-best-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.liga-board-season-best-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 2px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--tv-line);
+}
+
+.liga-board-season-best-label {
+  grid-column: 1 / -1;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  color: var(--tv-muted);
+}
+
+.liga-board-season-best-value {
+  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  color: var(--tv-live);
+  line-height: 1;
+}
+
+.liga-board-season-best-who {
+  align-self: end;
+  text-align: right;
+  font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  color: var(--tv-ink);
+}
+
+.liga-board-season-best-lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  min-height: 0;
+}
+
+.liga-board-season-best-lists h4 {
+  margin: 0 0 6px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  color: var(--tv-muted);
+}
+
+.liga-board-season-best-lists ol,
+.liga-board-season-best-ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liga-board-season-best-lists li,
+.liga-board-season-best-ol li {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: clamp(0.85rem, 1.25vw, 1rem);
+  color: var(--tv-ink);
+  line-height: 1.35;
+}
+
+.liga-board-season-best-lists .mono,
+.liga-board-season-best-score {
+  color: var(--tv-accent);
+  font-weight: 650;
+  padding-top: 0.1em;
+}
+
+.liga-board-season-best-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.liga-board-season-best-person {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.liga-board-season-best-person:not(:first-child) {
+  padding-left: 1.15em;
+  color: rgba(244, 242, 239, 0.88);
+}
+
+.liga-board-podium-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 1.5vw, 18px);
+  align-items: end;
+  flex: 0 0 auto;
+  margin-bottom: 10px;
+  padding-top: 22px;
+  overflow: visible;
+}
+
+.liga-board-podium {
+  position: relative;
+  text-align: center;
+  padding: clamp(22px, 2.8vh, 30px) clamp(12px, 1.5vw, 18px) clamp(14px, 1.8vh, 20px);
+  border-radius: 16px;
+  border: 1px solid var(--tv-line);
+  background: rgba(12, 10, 16, 0.55);
+  overflow: visible;
+}
+
+.liga-board-podium.is-place-1 {
+  padding-top: clamp(28px, 3.4vh, 40px);
+  padding-bottom: clamp(16px, 2.2vh, 24px);
+}
+
+.liga-board-podium.is-gold {
+  background: linear-gradient(165deg, rgba(240, 193, 75, 0.38) 0%, rgba(18, 14, 8, 0.78) 48%, rgba(12, 10, 16, 0.82) 100%);
+  border-color: rgba(240, 193, 75, 0.72);
+  box-shadow:
+    0 0 0 1px rgba(240, 193, 75, 0.22),
+    0 14px 36px rgba(240, 193, 75, 0.16),
+    inset 0 1px 0 rgba(255, 230, 160, 0.22);
+}
+
+.liga-board-podium.is-silver {
+  background: linear-gradient(165deg, rgba(200, 210, 224, 0.32) 0%, rgba(16, 18, 22, 0.78) 48%, rgba(12, 10, 16, 0.82) 100%);
+  border-color: rgba(197, 205, 216, 0.65);
+  box-shadow:
+    0 0 0 1px rgba(197, 205, 216, 0.18),
+    0 12px 32px rgba(160, 175, 195, 0.12),
+    inset 0 1px 0 rgba(230, 236, 245, 0.18);
+}
+
+.liga-board-podium.is-bronze {
+  background: linear-gradient(165deg, rgba(212, 165, 116, 0.34) 0%, rgba(22, 14, 10, 0.78) 48%, rgba(12, 10, 16, 0.82) 100%);
+  border-color: rgba(212, 165, 116, 0.65);
+  box-shadow:
+    0 0 0 1px rgba(212, 165, 116, 0.18),
+    0 12px 32px rgba(180, 120, 70, 0.14),
+    inset 0 1px 0 rgba(240, 200, 160, 0.16);
+}
+
+.liga-board-podium-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2.45rem;
+  height: 2.45rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #0c0b0b;
+  z-index: 2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  border: 2px solid rgba(12, 10, 16, 0.35);
+}
+
+.liga-board-podium.is-gold .liga-board-podium-badge {
+  background: linear-gradient(180deg, #ffe08a, #f0c14b 55%, #d4a017);
+}
+.liga-board-podium.is-silver .liga-board-podium-badge {
+  background: linear-gradient(180deg, #f0f3f7, #c5cdd8 55%, #9aa6b5);
+}
+.liga-board-podium.is-bronze .liga-board-podium-badge {
+  background: linear-gradient(180deg, #efc49a, #d4a574 55%, #b07a45);
+}
+
+.liga-board-podium-name {
+  margin: 1.15rem 0 2px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: clamp(1.15rem, 2.2vw, 1.7rem);
+  line-height: 1.1;
+}
+
+.liga-board-podium.is-gold .liga-board-podium-name {
+  color: #ffe7a8;
+}
+.liga-board-podium.is-silver .liga-board-podium-name {
+  color: #e8eef6;
+}
+.liga-board-podium.is-bronze .liga-board-podium-name {
+  color: #f0d0b0;
+}
+
+.liga-board-podium-team {
+  margin: 0 0 10px;
+  color: var(--tv-muted);
+  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+}
+
+.liga-board-podium-avg {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tv-live);
+}
+
+.liga-board-podium.is-gold .liga-board-podium-avg {
+  color: #f0c14b;
+  text-shadow: 0 0 24px rgba(240, 193, 75, 0.35);
+}
+.liga-board-podium.is-silver .liga-board-podium-avg {
+  color: #d7dee8;
+  text-shadow: 0 0 20px rgba(197, 205, 216, 0.25);
+}
+.liga-board-podium.is-bronze .liga-board-podium-avg {
+  color: #e0b486;
+  text-shadow: 0 0 20px rgba(212, 165, 116, 0.28);
+}
+
+.liga-board-podium-avg-label {
+  margin: 2px 0 12px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--tv-muted);
+}
+
+.liga-board-podium-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  text-align: left;
+  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  color: var(--tv-muted);
+}
+
+.liga-board-podium-stats span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.liga-board-podium-stats em {
+  font-style: normal;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72em;
+  color: var(--tv-muted);
+}
+
+.liga-board-podium-stats strong {
+  color: var(--tv-ink);
+  font-size: 1.05em;
+  line-height: 1.1;
+}
+
+.liga-board-scroll-viewport.is-rest {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.liga-board-result-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .liga-board-slide.is-standings-split {
+    grid-template-columns: 1fr;
+  }
+
+  .liga-board-result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .liga-board-podium-row {
+    grid-template-columns: 1fr;
+  }
+
+  .liga-board-podium.is-place-1 {
+    transform: none;
+    order: -1;
+  }
+}
+
+/* Promo slide: full-bleed bowling photo + glass content */
+.liga-board-slide.is-promo {
+  position: relative;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-promo-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.liga-board-promo-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  transform: scale(1.04);
+}
+
+.liga-board-promo-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 12, 0.78) 0%, rgba(8, 6, 12, 0.42) 45%, rgba(8, 6, 12, 0.72) 100%),
+    linear-gradient(180deg, rgba(8, 6, 12, 0.35) 0%, transparent 28%, rgba(8, 6, 12, 0.55) 100%);
+  pointer-events: none;
+}
+
+.liga-board-slide.is-promo .liga-board-promo {
+  position: relative;
+  z-index: 2;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: clamp(10px, 1.4vh, 14px) clamp(14px, 2vw, 22px);
+  border-radius: 16px;
+  background: rgba(12, 10, 16, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.liga-board-slide.is-promo .liga-board-promo-qr {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+.liga-board-slide.is-promo .liga-board-promo-title {
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+}
+
+.liga-board-slide.is-promo .liga-board-promo-text {
+  color: rgba(244, 242, 239, 0.86);
+}
+
+.liga-board-slide.is-promo .liga-board-promo-qr {
+  background: rgba(12, 10, 16, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 14px 10px;
+}
+
+/* Teams podium + photo bg (same glass treatment as promo) */
+.liga-board-slide.is-standings-teams {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-teams-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.liga-board-teams-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+  transform: scale(1.03);
+  opacity: 0.72;
+  filter: brightness(1.14) contrast(1.04);
+}
+
+.liga-board-teams-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 12, 0.48) 0%, rgba(8, 6, 12, 0.22) 48%, rgba(8, 6, 12, 0.46) 100%),
+    linear-gradient(180deg, rgba(8, 6, 12, 0.3) 0%, transparent 38%, rgba(8, 6, 12, 0.4) 100%);
+  pointer-events: none;
+}
+
+.liga-board-standings-content {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-panel,
+.liga-board-slide.is-standings-teams .liga-board-season-best {
+  background: rgba(12, 10, 16, 0.57);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+}
+
+.liga-board-slide.is-standings-teams .liga-board-podium,
+.liga-board-slide.is-players .liga-board-podium {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.liga-board-slide.is-standings-teams .liga-board-season-best-card {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Players slide — full 10-pin bg (same brighter treatment as teams) */
+.liga-board-slide.is-players {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-players-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.liga-board-players-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 48%;
+  transform: scale(1.04);
+  opacity: 0.9;
+  filter: brightness(1.12) contrast(1.2) saturate(1.05);
+}
+
+.liga-board-players-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 12, 0.55) 0%, rgba(8, 6, 12, 0.18) 50%, rgba(8, 6, 12, 0.55) 100%),
+    linear-gradient(180deg, rgba(8, 6, 12, 0.35) 0%, transparent 42%, rgba(8, 6, 12, 0.45) 100%);
+  pointer-events: none;
+}
+
+.liga-board-players-content {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.liga-board-slide.is-players .liga-board-players-content {
+  padding: 10px 4px 4px;
+  box-sizing: border-box;
+}
+
+.liga-board-slide.is-players .liga-board-podium-row {
+  margin-bottom: 8px;
+  padding-top: 22px;
+}
+
+.liga-board-slide.is-players .liga-board-scroll-viewport.is-rest {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 10px 14px;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
+}
+
+.liga-board-slide.is-players .liga-board-scroll-viewport.is-rest::-webkit-scrollbar {
+  display: none;
+}
+
+.liga-board-slide.is-players .liga-board-scroll-track {
+  padding-bottom: 32px;
+  padding-top: 0;
+}
+
+.liga-board-slide.is-players .liga-board-table tbody tr:last-child td {
+  padding-bottom: 14px;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-podium-row {
+  padding-top: 22px;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-standings-content {
+  padding-top: 8px;
+}
+
+.liga-board-slide.is-players .liga-board-panel {
+  background: rgba(12, 10, 16, 0.48);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
+}
+
+/* Results slide — strike / pins bg */
+.liga-board-slide.is-results-detail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-results-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.liga-board-results-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+  transform: scale(1.03);
+  opacity: 0.78;
+  filter: brightness(1.32) contrast(1.08) saturate(1.05);
+}
+
+.liga-board-results-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 12, 0.55) 0%, rgba(8, 6, 12, 0.22) 48%, rgba(8, 6, 12, 0.52) 100%),
+    linear-gradient(180deg, rgba(8, 6, 12, 0.32) 0%, transparent 36%, rgba(8, 6, 12, 0.45) 100%);
+  pointer-events: none;
+}
+
+.liga-board-results-content {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.liga-board-slide.is-results-detail .liga-board-result-card {
+  height: 100%;
+  background: rgba(12, 10, 16, 0.5);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28);
+}
+
+.liga-board-standings-bottom {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.9fr);
+  gap: clamp(10px, 1.5vw, 16px);
+  align-items: stretch;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-standings-main,
+.liga-board-slide.is-standings-teams .liga-board-season-best {
+  height: 100%;
+  min-height: 0;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-standings-main {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.liga-board-slide.is-standings-teams .liga-board-standings-main .liga-board-table {
+  flex: 1 1 auto;
+}
+
+.liga-board-table.is-compact th,
+.liga-board-table.is-compact td {
+  padding: 5px 8px;
+  font-size: clamp(0.9rem, 1.55vw, 1.25rem);
+}
+
+.liga-board-table.is-teams-board th.is-num,
+.liga-board-table.is-teams-board td.is-num,
+.liga-board-table.is-players-board th:nth-child(n + 4),
+.liga-board-table.is-players-board td:nth-child(n + 4),
+.liga-board-table.is-players-board th:first-child,
+.liga-board-table.is-players-board td:first-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.liga-board-table.is-teams-board th.is-name,
+.liga-board-table.is-teams-board td.is-name,
+.liga-board-table.is-players-board th:nth-child(2),
+.liga-board-table.is-players-board td:nth-child(2),
+.liga-board-table.is-players-board th:nth-child(3),
+.liga-board-table.is-players-board td:nth-child(3) {
+  text-align: left;
+}
+
+.liga-board-table.is-teams-board th.is-num,
+.liga-board-table.is-teams-board td.is-num {
+  width: 1%;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.liga-board-table.is-sticky-head thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #121016;
+  background-clip: padding-box;
+  box-shadow:
+    0 1px 0 var(--tv-line),
+    0 10px 18px -6px rgba(12, 10, 16, 0.95);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.liga-board-table.is-sticky-head thead th::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 8px;
+  background: #121016;
+  pointer-events: none;
+}
+
+.liga-board-slide.is-players .liga-board-scroll-viewport.is-rest {
+  background: rgba(12, 10, 16, 0.42);
+}
+
+.liga-board-podium-stats.is-team {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: clamp(0.88rem, 1.35vw, 1.08rem);
+}
+
+.liga-board-podium-stats.is-player {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.liga-board-podium.is-team .liga-board-podium-name {
+  font-size: clamp(1.35rem, 2.6vw, 2.05rem);
+  margin-top: 1.35rem;
+}
+
+.liga-board-podium.is-team .liga-board-podium-avg {
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+}
+
+.liga-board-podium.is-team .liga-board-podium-avg-label {
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.liga-board-slide.is-schedule-grid {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vh, 16px);
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-schedule-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.liga-board-schedule-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 55%;
+  transform: scale(1.02);
+  opacity: 0.7;
+  filter: brightness(1.05) contrast(1.05) saturate(1.08);
+}
+
+.liga-board-schedule-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, rgba(8, 6, 12, 0.55) 0%, rgba(8, 6, 12, 0.28) 48%, rgba(8, 6, 12, 0.52) 100%),
+    linear-gradient(180deg, rgba(8, 6, 12, 0.4) 0%, rgba(8, 6, 12, 0.15) 45%, rgba(8, 6, 12, 0.5) 100%);
+  pointer-events: none;
+}
+
+.liga-board-schedule-content {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.5vh, 16px);
+}
+
+.liga-board-slide.is-schedule-grid .liga-board-card {
+  background: rgba(12, 10, 16, 0.62);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+  height: 100%;
+  justify-content: center;
+}
+
+.liga-board-schedule-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.liga-board-schedule-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.liga-board-schedule-head .liga-board-section {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.9vw, 2.25rem);
+}
+
+.liga-board-cards.is-3col {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: clamp(8px, 1.2vh, 12px);
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: stretch;
+}
+
+.liga-board-card.is-compact {
+  padding: 12px 14px;
+  gap: 6px;
+}
+
+.liga-board-card.is-compact .liga-board-when {
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  color: var(--tv-accent);
+  letter-spacing: 0.02em;
+}
+
+.liga-board-card.is-compact .liga-board-fixture-names {
+  font-size: clamp(1.5rem, 2.8vw, 2.15rem);
+  line-height: 1.1;
+}
+
+.liga-board-card-score {
+  color: var(--tv-live);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+}
+
+.liga-board-card-score-sub {
+  color: var(--tv-muted);
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+.liga-board-chip.is-open {
+  color: var(--tv-ink);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.liga-board-result-grid.is-3x2 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: clamp(8px, 1.2vh, 12px);
+  height: 100%;
+  overflow: hidden;
+  align-content: stretch;
+}
+
+.liga-board-result-card.is-compact {
+  padding: clamp(12px, 1.6vh, 18px) clamp(12px, 1.5vw, 18px);
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+  justify-content: space-between;
+}
+
+.liga-board-result-when {
+  margin: 0;
+  color: var(--tv-accent);
+  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  letter-spacing: 0.02em;
+}
+
+.liga-board-result-card.is-compact .liga-board-result-team strong {
+  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  line-height: 1.1;
+}
+
+.liga-board-result-card.is-compact .liga-board-result-score {
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
+}
+
+.liga-board-result-card.is-compact .liga-board-result-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.liga-board-result-card.is-compact .liga-board-result-totals span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-size: 0.78em;
+}
+
+.liga-board-result-card.is-compact .liga-board-result-totals strong {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.35em;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--tv-ink);
+}
+
+.liga-board-result-card.is-compact .liga-board-result-round {
+  grid-template-columns: 2.6rem minmax(0, 1.3fr) minmax(0, 0.9fr);
+  font-size: clamp(0.95rem, 1.45vw, 1.2rem);
+  gap: 8px;
+  align-items: center;
+  padding: 4px 2px;
+}
+
+.liga-board-result-card.is-compact .liga-board-result-rounds {
+  padding-top: 2px;
+  gap: 4px;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+.liga-board-result-round.is-pins,
+.liga-board-result-round .is-pins {
+  font-weight: 700;
+  color: var(--tv-live);
+  font-size: 1.08em;
+}
+
+.liga-board-result-round.is-labels {
+  color: var(--tv-muted);
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.78em;
+  border-bottom: 1px solid var(--tv-line);
+  padding-bottom: 5px;
+  margin-bottom: 2px;
+}
+
+@media (max-width: 1100px) {
+  .liga-board-standings-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .liga-board-cards.is-3col,
+  .liga-board-result-grid.is-3x2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    height: auto;
+    overflow: auto;
   }
 }

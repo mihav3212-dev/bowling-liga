@@ -160,6 +160,17 @@ export function AdminMenu({
             >
               Dovoljenja ekip
             </button>
+            <button
+              className="ghost"
+              type="button"
+              title="TV: lestvica, igralci, razpored, rezultati zadnjega kola — samodejna menjava."
+              onClick={() => {
+                closeMenu();
+                window.open("/?display=board", "_blank", "noopener,noreferrer");
+              }}
+            >
+              TV pregled lige
+            </button>
             <button className="primary" type="button" onClick={() => setPanel("seasons")}>
               Urejaj sezone
             </button>
