@@ -1,24 +1,33 @@
 import type { Player } from "./types";
+import { playerDisplayName, shortTvPersonNameFromParts, splitPlayerName } from "./playerName";
 
 export function playerTag(player: Player): string {
+  const label = playerDisplayName(player);
   const bits = [];
   if (player.gender === "F") bits.push("+8");
   if (player.bzsMember) bits.push("BZS −8");
-  return bits.length ? `${player.name} (${bits.join(", ")})` : player.name;
+  return bits.length ? `${label} (${bits.join(", ")})` : label;
 }
 
 /**
- * TV pregled: „Novak David“ → „N. David“ (prva beseda začetnica, ostalo polno).
- * Če je že „N. David“ / ena beseda, pusti.
+ * TV pregled iz enega niza: „Miha Novak“ → „Miha N.“
+ * Raje uporabi shortTvPersonNameFromParts, ko sta polji ločeni.
  */
 export function shortTvPersonName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "—";
-  if (parts.length === 1) return parts[0]!;
-  const first = parts[0]!;
-  if (/^[^\s.]{1,3}\.$/u.test(first)) return parts.join(" ");
-  const initial = [...first][0]?.toUpperCase() ?? first.charAt(0).toUpperCase();
-  return `${initial}. ${parts.slice(1).join(" ")}`;
+  const { firstName, surname } = splitPlayerName(name);
+  return shortTvPersonNameFromParts(firstName, surname);
+}
+
+export { playerDisplayName, shortTvPersonNameFromParts, splitPlayerName } from "./playerName";
+
+/** Kolo sezone (razpored / rezultati): „3. kolo“ / „3. KOLO“. */
+export function formatSeasonRound(n: number, style: "lower" | "upper" = "lower"): string {
+  return style === "upper" ? `${n}. KOLO` : `${n}. kolo`;
+}
+
+/** Krog znotraj tekme (4 igre): „3. krog“ / „3. KROG“. */
+export function formatMatchRound(n: number, style: "lower" | "upper" = "lower"): string {
+  return style === "upper" ? `${n}. KROG` : `${n}. krog`;
 }
 
 const WEEKDAYS_SL = ["NED", "PON", "TOR", "SRE", "ČET", "PET", "SOB"];

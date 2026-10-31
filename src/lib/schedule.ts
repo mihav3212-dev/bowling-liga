@@ -197,16 +197,16 @@ export function parseScheduleCsv(text: string): { rows: FixtureRow[]; error?: st
   const delim = lines[0].includes(";") ? ";" : ",";
   const header = splitCsvLine(lines[0], delim).map((c) => c.trim().toLowerCase());
   const col = (names: string[]) => header.findIndex((h) => names.some((n) => h.includes(n)));
-  const iRound = col(["kolo", "round"]);
+  const iRound = col(["kolo", "krog", "round"]);
   const iHome = col(["doma", "home"]);
   const iAway = col(["gost", "away"]);
   const iDate = col(["datum", "date"]);
   const iTime = col(["ura", "time", "cas", "čas"]);
   const iNote = col(["opomba", "note", "pavza", "pocitnic", "počitnic"]);
   if (iRound < 0) {
-    return { rows: [], error: "V prvi vrstici potrebuješ stolpec kolo. Za tekme še domači in gostje, za pavzo stolpec opomba." };
+    return { rows: [], error: "V prvi vrstici potrebuješ stolpec kolo ali krog. Za tekme še domači in gostje, za pavzo stolpec opomba." };
   }
-  const start = header.some((h) => /kolo|round|doma|opomba/.test(h)) ? 1 : 0;
+  const start = header.some((h) => /kolo|krog|round|doma|opomba/.test(h)) ? 1 : 0;
   const rows: FixtureRow[] = [];
   for (const line of lines.slice(start)) {
     const cells = splitCsvLine(line, delim);

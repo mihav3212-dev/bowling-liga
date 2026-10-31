@@ -8,6 +8,7 @@ import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
 import { DeleteMatchDialog } from "./DeleteMatchDialog";
+import { RescheduleMatchDialog } from "./RescheduleMatchDialog";
 import { SwapMatchHomeAwayDialog } from "./SwapMatchHomeAwayDialog";
 import { SwapMatchTimesDialog } from "./SwapMatchTimesDialog";
 
@@ -44,6 +45,7 @@ export function AdminMenu({
   const csvRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState<"home" | "seasons" | "edit">("home");
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
   const [deleteMatchOpen, setDeleteMatchOpen] = useState(false);
@@ -58,14 +60,14 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (swapOpen || swapHomeAwayOpen || deleteMatchOpen) return;
+      if (rescheduleOpen || swapOpen || swapHomeAwayOpen || deleteMatchOpen) return;
       if (panel === "edit") setPanel("seasons");
       else if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel, swapOpen, swapHomeAwayOpen, deleteMatchOpen]);
+  }, [open, panel, rescheduleOpen, swapOpen, swapHomeAwayOpen, deleteMatchOpen]);
 
   const downloadSeasonJson = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -250,6 +252,24 @@ export function AdminMenu({
               <button
                 className="ghost"
                 type="button"
+                disabled={state.matches.length < 1}
+                title={
+                  state.matches.length < 1
+                    ? "Najprej mora biti razpored s tekmami."
+                    : "Prestavi eno tekmo na nov datum/uro."
+                }
+                onClick={() => {
+                  setRescheduleOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Spremeni termin
+              </button>
+            )}
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
                 disabled={state.matches.length < 2}
                 title={
                   state.matches.length < 2
@@ -340,7 +360,7 @@ export function AdminMenu({
               <button
                 className="ghost"
                 type="button"
-                title="CSV s stolpci kolo, datum, ura, domači, gostje. Doda tekme k sezoni."
+                title="CSV s stolpci kolo/krog, datum, ura, domači, gostje. Doda tekme k sezoni."
                 onClick={() => csvRef.current?.click()}
               >
                 Uvozi CSV
@@ -444,6 +464,7 @@ export function AdminMenu({
       </div>
       )}
     </div>
+    {rescheduleOpen && <RescheduleMatchDialog onClose={() => setRescheduleOpen(false)} />}
     {swapOpen && <SwapMatchTimesDialog onClose={() => setSwapOpen(false)} />}
     {swapHomeAwayOpen && <SwapMatchHomeAwayDialog onClose={() => setSwapHomeAwayOpen(false)} />}
     {deleteMatchOpen && <DeleteMatchDialog onClose={() => setDeleteMatchOpen(false)} />}

@@ -579,14 +579,31 @@ function save_team_roster(PDO $pdo, $teamId, $roster, $seasonId)
     }
     $cleaned = [];
     foreach (is_array($roster) ? $roster : [] as $player) {
-        $name = trim((string) ($player['name'] ?? ''));
         $id = (string) ($player['id'] ?? '');
+        $firstName = trim((string) ($player['firstName'] ?? ''));
+        $surname = trim((string) ($player['surname'] ?? ''));
+        $legacy = trim((string) ($player['name'] ?? ''));
+        if ($firstName === '' && $surname === '' && $legacy !== '') {
+            $parts = preg_split('/\s+/u', $legacy, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            if (count($parts) === 1) {
+                $firstName = $parts[0];
+            } elseif (count($parts) > 1) {
+                $surname = array_pop($parts);
+                $firstName = implode(' ', $parts);
+            }
+        }
+        $name = trim(implode(' ', array_filter([$surname, $firstName], static fn ($p) => $p !== '')));
+        if ($name === '') {
+            $name = $legacy;
+        }
         if ($name === '' || $id === '') {
             continue;
         }
         $cleaned[] = [
             'id' => $id,
             'teamId' => $teamId,
+            'firstName' => $firstName,
+            'surname' => $surname,
             'name' => $name,
             'gender' => (($player['gender'] ?? '') === 'F') ? 'F' : 'M',
             'bzsMember' => !empty($player['bzsMember']),

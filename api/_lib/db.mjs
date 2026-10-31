@@ -573,14 +573,32 @@ export async function saveTeamRoster(pool, teamId, roster, seasonId) {
   if (!teamPerms(team).roster || !teamRosterWindowOpen(current.data.matches)) return null;
   const incoming = Array.isArray(roster) ? roster : [];
   const cleaned = incoming
-    .filter((player) => player && player.name)
-    .map((player) => ({
-      id: String(player.id || ""),
-      teamId,
-      name: String(player.name).trim(),
-      gender: player.gender === "F" ? "F" : "M",
-      bzsMember: Boolean(player.bzsMember),
-    }))
+    .filter((player) => player && (player.name || player.firstName || player.surname))
+    .map((player) => {
+      const firstName = String(player.firstName ?? "").trim();
+      const surname = String(player.surname ?? "").trim();
+      const legacy = String(player.name ?? "").trim();
+      let f = firstName;
+      let s = surname;
+      if (!f && !s && legacy) {
+        const parts = legacy.split(/\s+/).filter(Boolean);
+        if (parts.length === 1) f = parts[0];
+        else if (parts.length > 1) {
+          f = parts.slice(0, -1).join(" ");
+          s = parts[parts.length - 1];
+        }
+      }
+      const name = [s, f].filter(Boolean).join(" ") || legacy;
+      return {
+        id: String(player.id || ""),
+        teamId,
+        firstName: f,
+        surname: s,
+        name,
+        gender: player.gender === "F" ? "F" : "M",
+        bzsMember: Boolean(player.bzsMember),
+      };
+    })
     .filter((player) => player.id && player.name);
   const others = (current.data.players ?? []).filter((player) => player.teamId !== teamId);
   const ok = await saveSeason(pool, current.id, { ...current.data, players: [...others, ...cleaned] });

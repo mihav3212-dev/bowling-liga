@@ -14,14 +14,14 @@ const teams: Team[] = [
 ];
 
 const players: Player[] = [
-  { id: "p1", teamId: "h", name: "M. Novak", gender: "M", bzsMember: false },
-  { id: "p2", teamId: "h", name: "J. Horvat", gender: "M", bzsMember: false },
-  { id: "p3", teamId: "h", name: "T. Kralj", gender: "M", bzsMember: false },
-  { id: "p4", teamId: "h", name: "S. Breznik", gender: "M", bzsMember: false },
-  { id: "p5", teamId: "a", name: "A. Kovač", gender: "M", bzsMember: false },
-  { id: "p6", teamId: "a", name: "P. Zupan", gender: "M", bzsMember: false },
-  { id: "p7", teamId: "a", name: "L. Vidmar", gender: "M", bzsMember: false },
-  { id: "p8", teamId: "a", name: "M. Hribar", gender: "M", bzsMember: false },
+  { id: "p1", teamId: "h", firstName: "", surname: "", name: "M. Novak", gender: "M", bzsMember: false },
+  { id: "p2", teamId: "h", firstName: "", surname: "", name: "J. Horvat", gender: "M", bzsMember: false },
+  { id: "p3", teamId: "h", firstName: "", surname: "", name: "T. Kralj", gender: "M", bzsMember: false },
+  { id: "p4", teamId: "h", firstName: "", surname: "", name: "S. Breznik", gender: "M", bzsMember: false },
+  { id: "p5", teamId: "a", firstName: "", surname: "", name: "A. Kovač", gender: "M", bzsMember: false },
+  { id: "p6", teamId: "a", firstName: "", surname: "", name: "P. Zupan", gender: "M", bzsMember: false },
+  { id: "p7", teamId: "a", firstName: "", surname: "", name: "L. Vidmar", gender: "M", bzsMember: false },
+  { id: "p8", teamId: "a", firstName: "", surname: "", name: "M. Hribar", gender: "M", bzsMember: false },
 ];
 
 function matchAt(startsAt: string, patch?: Partial<Match>): Match {
@@ -137,19 +137,21 @@ describe("buildLiveMatchView", () => {
     expect(view.complete).toBe(false);
     expect(view.homeMatch).toBeNull();
     expect(view.roundSummaries).toHaveLength(4);
-    expect(view.roundSummaries[0]?.duels[0]?.homeName).toBe("M. Novak");
+    expect(view.roundSummaries[0]?.duels[0]?.homeName).toBe("NOVAK M.");
+    expect(view.roundSummaries[0]?.duels[0]?.homeFirstName).toBe("M.");
+    expect(view.roundSummaries[0]?.duels[0]?.homeSurname).toBe("NOVAK");
   });
 
   it("shows duel pins with +8 / −8 applied", () => {
     const roster: Player[] = [
-      { id: "p1", teamId: "h", name: "A. Ženska", gender: "F", bzsMember: false },
-      { id: "p2", teamId: "h", name: "B. BZS", gender: "M", bzsMember: true },
-      { id: "p3", teamId: "h", name: "C. Navadni", gender: "M", bzsMember: false },
-      { id: "p4", teamId: "h", name: "D. Navadni", gender: "M", bzsMember: false },
-      { id: "p5", teamId: "a", name: "E. Navadni", gender: "M", bzsMember: false },
-      { id: "p6", teamId: "a", name: "F. Navadni", gender: "M", bzsMember: false },
-      { id: "p7", teamId: "a", name: "G. Navadni", gender: "M", bzsMember: false },
-      { id: "p8", teamId: "a", name: "H. Navadni", gender: "M", bzsMember: false },
+      { id: "p1", teamId: "h", firstName: "", surname: "", name: "A. Ženska", gender: "F", bzsMember: false },
+      { id: "p2", teamId: "h", firstName: "", surname: "", name: "B. BZS", gender: "M", bzsMember: true },
+      { id: "p3", teamId: "h", firstName: "", surname: "", name: "C. Navadni", gender: "M", bzsMember: false },
+      { id: "p4", teamId: "h", firstName: "", surname: "", name: "D. Navadni", gender: "M", bzsMember: false },
+      { id: "p5", teamId: "a", firstName: "", surname: "", name: "E. Navadni", gender: "M", bzsMember: false },
+      { id: "p6", teamId: "a", firstName: "", surname: "", name: "F. Navadni", gender: "M", bzsMember: false },
+      { id: "p7", teamId: "a", firstName: "", surname: "", name: "G. Navadni", gender: "M", bzsMember: false },
+      { id: "p8", teamId: "a", firstName: "", surname: "", name: "H. Navadni", gender: "M", bzsMember: false },
     ];
     const m = matchAt("2026-10-13T17:00:00.000Z");
     m.rounds[0]!.games[0] = {

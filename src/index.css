@@ -1442,9 +1442,15 @@ html[data-theme="light"] .live-now .list button.row:hover {
 }
 
 .roster-player-name-input {
-  flex: 1 1 12rem;
-  min-width: 10rem;
+  flex: 1 1 8rem;
+  min-width: 7rem;
   font-weight: 600;
+}
+
+.roster-add-form input[aria-label="Priimek"],
+.roster-add-form input[aria-label="Ime"] {
+  flex: 1 1 8rem;
+  min-width: 7rem;
 }
 
 .invite-code-block {
@@ -1602,6 +1608,18 @@ button.linkish {
 
 .swap-times-preview p {
   margin: 0;
+}
+
+.reschedule-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.reschedule-slots .ghost.is-on {
+  border-color: var(--accent, #6b9cff);
+  color: var(--accent, #6b9cff);
 }
 
 .player-detail-table {
@@ -2274,6 +2292,63 @@ button.linkish {
 }
 
 /* —— TV / monitor: tekma v živo —— */
+/* TV scale-to-fit: 1920×1080 platno, enakomerno na monitor. */
+.tv-scale-shell {
+  position: relative;
+  width: 100vw;
+  width: 100dvw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #0c0b0b;
+  box-sizing: border-box;
+}
+
+.tv-scale-shell.is-fluid {
+  overflow: auto;
+  overflow-x: hidden;
+}
+
+.tv-scale-shell.is-scaled {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tv-scale-stage {
+  position: relative;
+  flex: 0 0 auto;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center center;
+  container-type: size;
+  container-name: tv;
+  background: #0c0b0b;
+  overflow: hidden;
+}
+
+/* TV brskalnik: fiksen logo (brez zanašanja na cqw). */
+html[data-device="tv"] .live-tv-logo,
+.tv-scale-shell.is-device-tv .live-tv-logo {
+  width: 64px !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+}
+
+html[data-device="tv"] .liga-board-logo,
+.tv-scale-shell.is-device-tv .liga-board-logo {
+  width: 56px !important;
+  max-width: 56px !important;
+  max-height: 56px !important;
+}
+
+html[data-device="tv"] .liga-board-promo-logo,
+.tv-scale-shell.is-device-tv .liga-board-promo-logo {
+  width: 160px !important;
+  max-width: 200px !important;
+  max-height: 200px !important;
+}
+
 .live-tv {
   --tv-bg: #0c0b0b;
   --tv-ink: #f4f2ef;
@@ -2283,16 +2358,22 @@ button.linkish {
   --tv-line: rgba(255, 255, 255, 0.1);
   position: relative;
   isolation: isolate;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100cqh;
+  height: 100cqh;
   box-sizing: border-box;
-  padding: clamp(16px, 3vw, 36px) clamp(18px, 4vw, 48px) clamp(20px, 3vw, 40px);
+  padding: clamp(16px, 3cqw, 36px) clamp(18px, 4cqw, 48px) clamp(20px, 3cqw, 40px);
   display: flex;
   flex-direction: column;
-  gap: clamp(18px, 3.5vh, 36px);
+  gap: clamp(18px, 3.5cqh, 36px);
   background: var(--tv-bg);
   color: var(--tv-ink);
   overflow: hidden;
+}
+
+.live-tv.is-tv-scaled {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .live-tv-glow {
@@ -2330,7 +2411,12 @@ button.linkish {
 }
 
 .live-tv-logo {
-  width: clamp(44px, 6vw, 64px);
+  /* px najprej: TV brskalniki brez cqw sicer vzamejo intrinsik (~1024px). */
+  width: 64px;
+  max-width: 64px;
+  max-height: 64px;
+  object-fit: contain;
+  width: clamp(44px, 6cqw, 64px);
   height: auto;
   display: block;
 }
@@ -2338,7 +2424,7 @@ button.linkish {
 .live-tv-brand-name {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.25rem, 2.4cqw, 1.75rem);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1;
@@ -2347,7 +2433,7 @@ button.linkish {
 .live-tv-brand-sub {
   margin-top: 4px;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1rem);
+  font-size: clamp(0.85rem, 1.4cqw, 1rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2373,7 +2459,7 @@ button.linkish {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: clamp(0.85rem, 1.3vw, 1rem);
+  font-size: clamp(0.85rem, 1.3cqw, 1rem);
   padding: 6px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -2400,8 +2486,8 @@ button.linkish {
 /* Klasično: polna višina 16:9 (npr. 1920×1080) — zgornji del + kola zapolnijo zaslon */
 .live-tv:not(.is-quad) {
   justify-content: flex-start;
-  gap: clamp(6px, 1.2vh, 14px);
-  padding: clamp(8px, 1.4vh, 18px) clamp(14px, 3vw, 36px) clamp(8px, 1.2vh, 16px);
+  gap: clamp(6px, 1.2cqh, 14px);
+  padding: clamp(8px, 1.4cqh, 18px) clamp(14px, 3cqw, 36px) clamp(8px, 1.2cqh, 16px);
 }
 
 .live-tv:not(.is-quad) .live-tv-top {
@@ -2410,37 +2496,37 @@ button.linkish {
 
 .live-tv:not(.is-quad) .live-tv-scoreboard {
   flex: 0 0 auto;
-  padding: clamp(4px, 1vh, 14px) 0;
-  gap: clamp(8px, 2vw, 24px);
+  padding: clamp(4px, 1cqh, 14px) 0;
+  gap: clamp(8px, 2cqw, 24px);
   min-height: 0;
 }
 
 .live-tv:not(.is-quad) .live-tv-side-label {
-  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-size: clamp(1.05rem, 1.7cqw, 1.35rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-team {
-  font-size: clamp(2.5rem, 6.8vw, 5.25rem);
+  font-size: clamp(2.5rem, 6.8cqw, 5.25rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-score-label {
-  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.35rem, 2.4cqw, 1.75rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-score {
-  font-size: clamp(4rem, 10.5vw, 8.25rem);
+  font-size: clamp(4rem, 10.5cqw, 8.25rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stat-label {
-  font-size: clamp(1.3rem, 2.15vw, 1.6rem);
+  font-size: clamp(1.3rem, 2.15cqw, 1.6rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stat-block strong {
-  font-size: clamp(2rem, 3.8vw, 3.1rem);
+  font-size: clamp(2rem, 3.8cqw, 3.1rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stats-minor {
-  font-size: clamp(1.35rem, 2.15vw, 1.65rem);
+  font-size: clamp(1.35rem, 2.15cqw, 1.65rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stats-featured {
@@ -2455,7 +2541,7 @@ button.linkish {
   height: auto;
   max-height: none;
   min-height: 0;
-  margin-top: clamp(6px, 1.2vh, 16px);
+  margin-top: clamp(6px, 1.2cqh, 16px);
   display: flex;
   flex-direction: column;
 }
@@ -2467,7 +2553,7 @@ button.linkish {
 
 .live-tv:not(.is-quad) .live-tv-round-head h2 {
   /* Ista velikost kot »1. kolo« */
-  font-size: clamp(1.25rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.25rem, 2.4cqw, 2.25rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-rounds-wrap {
@@ -2476,7 +2562,7 @@ button.linkish {
   width: 100%;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
-  gap: 0 clamp(10px, 1.4vw, 18px);
+  gap: 0 clamp(10px, 1.4cqw, 18px);
   align-items: stretch;
 }
 
@@ -2493,7 +2579,7 @@ button.linkish {
   visibility: hidden;
   pointer-events: none;
   flex: 0 0 auto;
-  padding: clamp(5px, 0.9vh, 10px) 0 0;
+  padding: clamp(5px, 0.9cqh, 10px) 0 0;
   /* Ne širi stolpca — samo rezervira višino glave kartice. */
   overflow: hidden;
   max-width: 2.5em;
@@ -2511,9 +2597,18 @@ button.linkish {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
-  gap: clamp(4px, 0.9vh, 10px);
+  gap: clamp(4px, 0.9cqh, 10px);
   padding-top: 6px;
   border-top: 1px solid transparent;
+}
+
+.live-tv:not(.is-quad) {
+  /*
+   * S1–S4 in vsaka vrstica imena/priimka — ista fs.
+   * cqh glede na .live-tv (size), ne cqw glede na kartico.
+   * Klasika: 0,75× od 2× velikosti (fokus ima svojo fs).
+   */
+  --live-tv-lane-fs: clamp(1.7rem, 3.6cqh, 2.3rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-rounds-lane-tag {
@@ -2522,7 +2617,7 @@ button.linkish {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1.45rem, 2.8vw, 2.75rem);
+  font-size: var(--live-tv-lane-fs);
   line-height: 1.12;
   text-align: left;
   padding: 0;
@@ -2541,7 +2636,7 @@ button.linkish {
 
 .live-tv:not(.is-quad) .live-tv-round-card {
   height: 100%;
-  padding: clamp(5px, 0.9vh, 10px) clamp(6px, 1vw, 10px);
+  padding: clamp(5px, 0.9cqh, 10px) clamp(6px, 1cqw, 10px);
   container-type: inline-size;
   container-name: tv-round-card;
 }
@@ -2554,46 +2649,49 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-totals {
-  /* Ista velikost kot »1. kolo« */
-  font-size: clamp(1.25rem, 11cqi, 2.25rem);
+  /* Manjše od naslova kola — vse v eni vrstici (Velike / Male / keglji). */
+  font-size: clamp(0.72rem, 4.8cqi, 1.05rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
   flex: 1 1 auto;
-  gap: clamp(4px, 0.9vh, 10px);
-  padding-top: 6px;
+  gap: clamp(2px, 0.5cqh, 6px);
+  padding-top: 4px;
   justify-content: space-evenly;
   min-height: 0;
+  overflow: hidden;
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-duel {
-  line-height: 1.08;
+  line-height: 1.05;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Klasično okno (tudi predogled): polna višina, ne sredina */
 .live-tv:not(.is-quad):not(.is-fullscreen) {
   justify-content: flex-start;
-  gap: clamp(4px, 1vh, 12px);
-  padding-top: clamp(8px, 1.2vh, 16px);
-  padding-bottom: clamp(6px, 1vh, 14px);
+  gap: clamp(4px, 1cqh, 12px);
+  padding-top: clamp(8px, 1.2cqh, 16px);
+  padding-bottom: clamp(6px, 1cqh, 14px);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-scoreboard {
-  padding: clamp(2px, 0.6vh, 10px) 0;
+  padding: clamp(2px, 0.6cqh, 10px) 0;
   flex: 0 0 auto;
   min-height: 0;
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-team {
-  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  font-size: clamp(2.2rem, 6cqw, 4.5rem);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-score {
-  font-size: clamp(3.2rem, 8.5vw, 6.5rem);
+  font-size: clamp(3.2rem, 8.5cqw, 6.5rem);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stat-block strong {
-  font-size: clamp(1.65rem, 3.2vw, 2.55rem);
+  font-size: clamp(1.65rem, 3.2cqw, 2.55rem);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stats-featured {
@@ -2611,7 +2709,7 @@ button.linkish {
   height: auto;
   max-height: none;
   min-height: 0;
-  margin-top: clamp(6px, 1.2vh, 14px);
+  margin-top: clamp(6px, 1.2cqh, 14px);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-head {
@@ -2619,11 +2717,11 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-head h2 {
-  font-size: clamp(1.25rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.25rem, 2.4cqw, 2.25rem);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card {
-  padding: clamp(4px, 0.65vh, 8px) clamp(5px, 0.9vw, 9px);
+  padding: clamp(4px, 0.65cqh, 8px) clamp(5px, 0.9cqw, 9px);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-num {
@@ -2632,7 +2730,7 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
-  font-size: clamp(1.25rem, 11cqi, 2.25rem);
+  font-size: clamp(0.72rem, 4.8cqi, 1.05rem);
   margin-bottom: 4px;
 }
 
@@ -2643,8 +2741,8 @@ button.linkish {
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
-  line-height: 1.12;
-  font-size: clamp(1.45rem, 14cqi, 2.75rem);
+  line-height: 1.05;
+  font-size: var(--live-tv-lane-fs);
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-name-line {
@@ -2669,20 +2767,20 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-live {
   color: var(--tv-live);
-  font-size: clamp(1rem, 1.8vw, 1.25rem);
+  font-size: clamp(1rem, 1.8cqw, 1.25rem);
 }
 
 .live-tv-when {
   color: var(--tv-muted);
-  font-size: clamp(0.95rem, 1.6vw, 1.15rem);
+  font-size: clamp(0.95rem, 1.6cqw, 1.15rem);
 }
 
 .live-tv-scoreboard {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: clamp(12px, 3vw, 40px);
-  padding: clamp(12px, 2vh, 20px) 0;
+  gap: clamp(12px, 3cqw, 40px);
+  padding: clamp(12px, 2cqh, 20px) 0;
   animation: live-tv-in 0.65s ease 0.08s both;
 }
 
@@ -2696,7 +2794,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-side-label {
   color: var(--tv-muted);
-  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-size: clamp(0.8rem, 1.3cqw, 1rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-bottom: 6px;
@@ -2705,7 +2803,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-team {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
-  font-size: clamp(2.4rem, 7vw, 5.5rem);
+  font-size: clamp(2.4rem, 7cqw, 5.5rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -2714,14 +2812,14 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-center {
   text-align: center;
-  padding: 0 clamp(8px, 2vw, 24px);
+  padding: 0 clamp(8px, 2cqw, 24px);
 }
 
 .live-tv-score-label {
   color: var(--tv-accent);
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1rem, 1.8vw, 1.3rem);
+  font-size: clamp(1rem, 1.8cqw, 1.3rem);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -2734,7 +2832,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   gap: 0.08em;
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(4rem, 11vw, 8.25rem);
+  font-size: clamp(4rem, 11cqw, 8.25rem);
   line-height: 1;
   letter-spacing: -0.04em;
 }
@@ -2776,11 +2874,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-stats-row.is-live-hero .live-tv-stats-row-item {
-  font-size: clamp(1.35rem, 2.6vw, 1.85rem);
+  font-size: clamp(1.35rem, 2.6cqw, 1.85rem);
 }
 
 .live-tv-stats-row.is-live-hero .live-tv-stats-row-item strong {
-  font-size: clamp(3.4rem, 9vw, 6.5rem);
+  font-size: clamp(3.4rem, 9cqw, 6.5rem);
   line-height: 1;
 }
 
@@ -2791,11 +2889,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-stats-row.is-final-sub .live-tv-stats-row-item {
-  font-size: clamp(1.15rem, 2.1vw, 1.55rem);
+  font-size: clamp(1.15rem, 2.1cqw, 1.55rem);
 }
 
 .live-tv-stats-row.is-final-sub .live-tv-stats-row-item strong {
-  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-size: clamp(2rem, 4cqw, 3.1rem);
   line-height: 1.05;
 }
 
@@ -2826,13 +2924,13 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-size: clamp(1rem, 1.6cqw, 1.2rem);
 }
 
 .live-tv-stat-block strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.85rem, 3.6vw, 2.75rem);
+  font-size: clamp(1.85rem, 3.6cqw, 2.75rem);
   letter-spacing: -0.03em;
   line-height: 1.1;
   color: var(--tv-ink);
@@ -2841,7 +2939,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-stats-minor {
   margin-top: 10px;
   color: var(--tv-muted);
-  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  font-size: clamp(1.05rem, 1.6cqw, 1.25rem);
 }
 
 .live-tv-stats-minor strong {
@@ -2876,7 +2974,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-round-head h2 {
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  font-size: clamp(1.4rem, 2.8cqw, 2rem);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -2884,7 +2982,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-round-head p {
   margin: 0;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.3vw, 1rem);
+  font-size: clamp(0.85rem, 1.3cqw, 1rem);
 }
 
 .live-tv-duels {
@@ -2904,7 +3002,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     minmax(0, 1.6fr);
   align-items: center;
   gap: 8px 12px;
-  padding: clamp(10px, 1.6vh, 16px) clamp(12px, 2vw, 20px);
+  padding: clamp(10px, 1.6cqh, 16px) clamp(12px, 2cqw, 20px);
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid transparent;
   border-radius: 4px;
@@ -2921,11 +3019,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  font-size: clamp(0.9rem, 1.4cqw, 1.1rem);
 }
 
 .live-tv-duel-name {
-  font-size: clamp(1.05rem, 2vw, 1.55rem);
+  font-size: clamp(1.05rem, 2cqw, 1.55rem);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -2946,7 +3044,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv-duel-pins {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.35rem, 2.8vw, 2.1rem);
+  font-size: clamp(1.35rem, 2.8cqw, 2.1rem);
   text-align: center;
   letter-spacing: -0.02em;
 }
@@ -2966,7 +3064,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-final {
   color: var(--tv-accent);
-  font-size: clamp(1rem, 1.8vw, 1.25rem);
+  font-size: clamp(1rem, 1.8cqw, 1.25rem);
 }
 
 .live-tv.is-final .live-tv-glow {
@@ -2997,7 +3095,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-round-card {
-  padding: clamp(12px, 1.8vh, 18px) clamp(10px, 1.4vw, 16px);
+  padding: clamp(12px, 1.8cqh, 18px) clamp(10px, 1.4cqw, 16px);
   text-align: center;
   background: rgba(255, 255, 255, 0.035);
   border-radius: 4px;
@@ -3021,23 +3119,34 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  font-size: clamp(1.35rem, 2.2cqw, 1.75rem);
   margin-bottom: 6px;
 }
 
 .live-tv-round-card-totals {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.35em 1em;
+  display: block;
   margin-top: 2px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   color: var(--tv-muted);
-  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-size: clamp(0.85rem, 1.35cqw, 1.15rem);
   font-family: "IBM Plex Mono", monospace;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1.2;
+  min-width: 0;
+  text-align: center;
+}
+
+.live-tv-round-card-totals-line {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.live-tv-totals-sep {
+  margin: 0 0.45em;
+  opacity: 0.55;
 }
 
 .live-tv-round-card-totals strong {
@@ -3074,13 +3183,13 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-fullscreen:not(.is-quad) .live-tv-round-duels {
-  gap: clamp(3px, 0.8vh, 8px);
+  gap: clamp(3px, 0.8cqh, 8px);
   justify-content: space-evenly;
-  padding-top: clamp(4px, 0.8vh, 8px);
+  padding-top: clamp(4px, 0.8cqh, 8px);
 }
 
 .live-tv.is-fullscreen:not(.is-quad) .live-tv-mini-duel {
-  font-size: clamp(1.45rem, 14cqi, 2.75rem);
+  font-size: var(--live-tv-lane-fs);
 }
 
 .live-tv-mini-duel {
@@ -3088,16 +3197,54 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   grid-template-columns: 2.1em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   align-items: center;
   gap: 4px 6px;
-  font-size: clamp(1.05rem, 1.75vw, 1.45rem);
+  font-size: clamp(1.05rem, 1.75cqw, 1.45rem);
   line-height: 1.3;
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-duel {
-  /* Ista lestvica kot kvadrati (cqi × ožji stolpec → višji %) */
-  font-size: clamp(1.45rem, 14cqi, 2.75rem);
-  column-gap: 8px;
+  font-size: var(--live-tv-lane-fs);
+  column-gap: 3px;
   align-items: center;
-  line-height: 1.12;
+  line-height: 1.05;
+}
+
+/* Domači levo, gostje desno — ob robu kvadratka */
+.live-tv:not(.is-quad) .live-tv-mini-name.is-home,
+.live-tv:not(.is-quad) .live-tv-mini-name.is-home:has(.live-tv-mini-name-line) {
+  text-align: left;
+  align-items: flex-start;
+  justify-self: stretch;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name.is-away,
+.live-tv:not(.is-quad) .live-tv-mini-name.is-away:has(.live-tv-mini-name-line) {
+  text-align: right;
+  align-items: flex-end;
+  justify-self: stretch;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name:has(.live-tv-mini-name-line) {
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name,
+.live-tv:not(.is-quad) .live-tv-mini-name.is-one-line {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: var(--live-tv-lane-fs);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.live-tv:not(.is-quad) .live-tv-mini-name-line {
+  /* Vsaka vrstica = S1, a skupaj se mora stiči v kartico */
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: var(--live-tv-lane-fs);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .live-tv-mini-name.is-one-line {
@@ -3183,19 +3330,20 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-pins {
-  /* Kot pri kvadratkih */
-  font-size: 1.12em;
-  min-width: 2em;
+  /* ~0,75× od 1.12em — keglji v sredini */
+  font-size: 0.84em;
+  min-width: 1.75em;
   text-align: center;
   justify-self: center;
 }
 
 .live-tv:not(.is-quad) .live-tv-mini-sep {
-  font-size: 1em;
+  font-size: 0.84em;
+  padding: 0 1px;
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-totals {
-  font-size: clamp(1.1rem, 1.7vw, 1.4rem);
+  font-size: clamp(0.72rem, 4.8cqi, 1.05rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
@@ -3232,7 +3380,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   margin: 0;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-size: clamp(1.8rem, 4cqw, 2.8rem);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -3259,7 +3407,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  font-size: clamp(0.8rem, 1.2cqw, 0.95rem);
   padding: 5px 10px;
   cursor: pointer;
 }
@@ -3277,7 +3425,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: clamp(10px, 1.8vh, 20px) clamp(8px, 1.2vw, 18px);
+  padding: clamp(10px, 1.8cqh, 20px) clamp(8px, 1.2cqw, 18px);
   background: rgba(12, 11, 11, 0.55);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -3293,7 +3441,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-focus-overlay-panel {
-  width: min(1600px, 99vw);
+  width: min(1600px, 99cqw);
   max-height: none;
   height: 100%;
   display: flex;
@@ -3337,7 +3485,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-size: clamp(1rem, 1.8cqw, 1.35rem);
   text-align: center;
 }
 
@@ -3346,7 +3494,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   min-height: 0;
   height: auto;
   max-height: 100%;
-  padding: clamp(16px, 2.5vh, 28px) clamp(18px, 2.8vw, 32px);
+  padding: clamp(16px, 2.5cqh, 28px) clamp(18px, 2.8cqw, 32px);
   background: rgba(18, 16, 15, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
@@ -3354,26 +3502,31 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-round-card-num {
-  font-size: clamp(2.2rem, 4vw, 3.2rem);
+  font-size: clamp(2.2rem, 4cqw, 3.2rem);
   color: var(--tv-ink);
   margin-bottom: 10px;
 }
 
 .live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-round-card-totals {
-  font-size: clamp(1.6rem, 3vw, 2.3rem);
-  margin-bottom: 16px;
+  font-size: clamp(1.2rem, 2.2cqw, 1.75rem);
+  margin-bottom: 12px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-mini-duel {
-  /* ~2× večje od pregleda — polna imena, širše stolpci */
-  font-size: clamp(2.4rem, 4.4vw, 3.6rem);
+  /* 0,5× od prejšnje (prevelike) fokus velikosti — STEZA + keglji */
+  font-size: clamp(2.4rem, 4.4cqw, 3.6rem);
   gap: 8px 20px;
   grid-template-columns: 5.5em minmax(0, 1.35fr) auto auto auto minmax(0, 1.35fr);
 }
 
+.live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-mini-name,
+.live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-mini-name.is-one-line,
 .live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-mini-name-line {
+  /* Enaka fs kot STEZA (ne --live-tv-lane-fs s pregleda) */
   font-size: 1em;
-  line-height: 1.15;
+  line-height: 1.12;
   overflow: visible;
   text-overflow: unset;
 }
@@ -3389,8 +3542,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 /* —— TV layout: kvadrati (2×2 + sredinska hrbtenica), iste barve kot klasični TV —— */
 .live-tv.is-quad {
-  gap: clamp(4px, 0.9vh, 10px);
-  padding: clamp(6px, 1.2vh, 12px) clamp(10px, 2.2vw, 28px) clamp(6px, 1.2vh, 12px);
+  gap: clamp(4px, 0.9cqh, 10px);
+  padding: clamp(6px, 1.2cqh, 12px) clamp(10px, 2.2cqw, 28px) clamp(6px, 1.2cqh, 12px);
 }
 
 .live-tv.is-quad .live-tv-glow {
@@ -3420,7 +3573,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     "r1 top r2"
     "home mid away"
     "r3 bot r4";
-  gap: clamp(8px, 1.4vh, 14px) clamp(6px, 1.1vw, 12px);
+  gap: clamp(8px, 1.4cqh, 14px) clamp(6px, 1.1cqw, 12px);
   align-items: stretch;
   transform-origin: center center;
   transition:
@@ -3482,8 +3635,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   z-index: 6;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: clamp(10px, 1.8vh, 18px);
-  padding: clamp(4px, 0.8vh, 10px);
+  gap: clamp(10px, 1.8cqh, 18px);
+  padding: clamp(4px, 0.8cqh, 10px);
   /* Malenkost manj prosojno + toplejši ton kot klasični fokus */
   background: rgba(16, 12, 18, 0.62);
   backdrop-filter: blur(5px);
@@ -3504,7 +3657,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-quad-focus-banner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: clamp(10px, 2vw, 24px);
+  gap: clamp(10px, 2cqw, 24px);
   align-items: center;
 }
 
@@ -3516,11 +3669,11 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-quad-focus-team .live-quad-mid-side {
-  font-size: clamp(1.55rem, 2.8vw, 2.2rem);
+  font-size: clamp(1.55rem, 2.8cqw, 2.2rem);
 }
 
 .live-quad-focus-team .live-quad-mid-team {
-  font-size: clamp(1.7rem, 3.2vw, 2.6rem);
+  font-size: clamp(1.7rem, 3.2cqw, 2.6rem);
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -3556,7 +3709,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  font-size: clamp(1.35rem, 2.6cqw, 2rem);
   white-space: nowrap;
 }
 
@@ -3572,27 +3725,29 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged {
   min-height: 0;
   height: 100%;
-  padding: clamp(14px, 2.2vh, 22px) clamp(16px, 2.5vw, 28px);
+  padding: clamp(14px, 2.2cqh, 22px) clamp(16px, 2.5cqw, 28px);
   background: rgba(14, 12, 16, 0.92);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-num {
-  font-size: clamp(2.4rem, 4.2vw, 3.4rem);
+  font-size: clamp(2.4rem, 4.2cqw, 3.4rem);
   margin-bottom: 10px;
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-totals {
-  /* Ista velikost kot »1. kolo« */
-  font-size: clamp(2.4rem, 4.2vw, 3.4rem);
-  margin-bottom: 16px;
-  gap: 0.4em 1.25em;
+  /* Ena vrstica, manjše od naslova kola */
+  font-size: clamp(1.35rem, 2.5cqw, 2rem);
+  margin-bottom: 12px;
+  gap: 0.4em 1em;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-mini-duel {
   /* ~2× večje od pregleda — polna imena (enako kot klasični fokus) */
-  font-size: clamp(2.6rem, 5vw, 4rem);
+  font-size: clamp(2.6rem, 5cqw, 4rem);
   gap: 8px 16px;
   grid-template-columns: 5em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
 }
@@ -3615,8 +3770,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   background: rgba(255, 255, 255, 0.05);
   color: var(--tv-ink);
   border: 1px solid var(--tv-line);
-  border-radius: clamp(10px, 1.5vw, 16px);
-  padding: clamp(8px, 1.1vh, 12px) clamp(10px, 1.4vw, 16px) clamp(10px, 1.3vh, 14px);
+  border-radius: clamp(10px, 1.5cqw, 16px);
+  padding: clamp(8px, 1.1cqh, 12px) clamp(10px, 1.4cqw, 16px) clamp(10px, 1.3cqh, 14px);
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -3639,13 +3794,12 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad .live-tv-round-card-totals {
-  justify-content: flex-start;
+  text-align: left;
   color: var(--tv-muted);
-  /* Ista velikost kot »1. kolo« */
-  font-size: clamp(1.45rem, 7.5cqi, 2.75rem);
+  /* Manjše od naslova kola — vse v eni vrstici. */
+  font-size: clamp(0.85rem, 4.2cqi, 1.35rem);
   margin-top: 0;
-  margin-bottom: 6px;
-  gap: 0.3em 0.9em;
+  margin-bottom: 4px;
 }
 
 .live-tv.is-quad .live-tv-round-card-totals strong {
@@ -3657,7 +3811,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad .live-tv-round-duels {
-  gap: clamp(3px, 0.7vh, 6px);
+  gap: clamp(3px, 0.7cqh, 6px);
   padding-top: 5px;
   flex: 1;
   min-width: 0;
@@ -3668,9 +3822,9 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv.is-quad .live-tv-mini-duel {
   grid-template-columns: 3.4em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   align-items: center;
-  gap: 2px 10px;
-  /* Med male/velike v sredini, sledi širini kvadratka */
-  font-size: clamp(1.45rem, 7.5cqi, 2.75rem);
+  gap: 2px 8px;
+  /* Dovolj majhno, da so 4 steze + ena vrstica imen vidne */
+  font-size: clamp(1.05rem, 5.8cqi, 2rem);
   line-height: 1.12;
 }
 
@@ -3727,7 +3881,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   justify-content: center;
   align-self: stretch;
   min-height: 0;
-  padding: clamp(4px, 0.8vh, 10px) 2px;
+  padding: clamp(4px, 0.8cqh, 10px) 2px;
 }
 
 .live-quad-final-stats {
@@ -3735,7 +3889,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   flex-direction: column;
   justify-content: space-evenly;
   align-items: center;
-  gap: clamp(10px, 1.8vh, 22px);
+  gap: clamp(10px, 1.8cqh, 22px);
   width: 100%;
   height: 100%;
   min-height: 0;
@@ -3750,16 +3904,16 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-quad-stat.is-inline > span {
-  font-size: clamp(1.45rem, 2.5vw, 2.05rem);
+  font-size: clamp(1.45rem, 2.5cqw, 2.05rem);
 }
 
 .live-quad-stat.is-inline.is-match strong {
-  font-size: clamp(4.05rem, 8.4vw, 6.3rem);
+  font-size: clamp(4.05rem, 8.4cqw, 6.3rem);
 }
 
 /* Štirimestni keglji — malo manjši, da ostanejo v sredinskem stolpcu. */
 .live-quad-stat.is-inline.is-match.is-pins strong {
-  font-size: clamp(2.35rem, 4.6vw, 3.55rem);
+  font-size: clamp(2.35rem, 4.6cqw, 3.55rem);
 }
 
 .live-quad-stat {
@@ -3775,13 +3929,13 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1.4rem, 2.35vw, 1.85rem);
+  font-size: clamp(1.4rem, 2.35cqw, 1.85rem);
 }
 
 .live-quad-stat strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(2.55rem, 5vw, 3.85rem);
+  font-size: clamp(2.55rem, 5cqw, 3.85rem);
   line-height: 1;
   color: var(--tv-ink);
 }
@@ -3795,33 +3949,33 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-quad-stat.is-featured > span {
-  font-size: clamp(1.55rem, 2.6vw, 2.05rem);
+  font-size: clamp(1.55rem, 2.6cqw, 2.05rem);
 }
 
 .live-quad-stat.is-featured strong {
-  font-size: clamp(3.05rem, 6vw, 4.55rem);
+  font-size: clamp(3.05rem, 6cqw, 4.55rem);
 }
 
 /* Velikost po mestu: sredina ostane velika, spodaj manjša — tudi po zamenjavi. */
 .live-quad-stat.is-slot-large > span {
-  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
+  font-size: clamp(1.35rem, 2.4cqw, 1.9rem);
 }
 
 .live-quad-stat.is-slot-large strong {
-  font-size: clamp(2.7rem, 5.6vw, 4.2rem);
+  font-size: clamp(2.7rem, 5.6cqw, 4.2rem);
 }
 
 /* Po koncu: končne točke v velikem slotu še 1.5×. */
 .live-quad-stat.is-slot-large.is-match strong {
-  font-size: clamp(4.05rem, 8.4vw, 6.3rem);
+  font-size: clamp(4.05rem, 8.4cqw, 6.3rem);
 }
 
 .live-quad-stat.is-slot-small > span {
-  font-size: clamp(1.05rem, 1.7vw, 1.35rem);
+  font-size: clamp(1.05rem, 1.7cqw, 1.35rem);
 }
 
 .live-quad-stat.is-slot-small strong {
-  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.7rem, 3.2cqw, 2.5rem);
 }
 
 .live-quad-stat.is-match .is-winner {
@@ -3844,7 +3998,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: clamp(1.8rem, 4vw, 3.25rem);
+  font-size: clamp(1.8rem, 4cqw, 3.25rem);
   line-height: 1.05;
   color: var(--tv-ink);
   overflow: hidden;
@@ -3855,7 +4009,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-size: clamp(1.25rem, 2.2cqw, 1.75rem);
   line-height: 1.05;
   white-space: nowrap;
 }
@@ -4013,15 +4167,15 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 @media (max-width: 820px) {
-  .live-tv {
+  .tv-scale-shell.is-fluid .live-tv {
     height: auto;
     min-height: 100dvh;
     overflow: auto;
     overflow-x: hidden;
   }
 
-  .live-tv:not(.is-quad),
-  .live-tv:not(.is-quad):not(.is-fullscreen) {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad),
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) {
     height: auto;
     min-height: 100dvh;
     gap: 14px;
@@ -4029,8 +4183,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   /* Mobilno: kola drug pod drugim, polna višina + scroll — brez prekrivanja */
-  .live-tv:not(.is-quad) .live-tv-round,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round {
     flex: 0 0 auto;
     height: auto;
     max-height: none;
@@ -4039,131 +4193,131 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     gap: 10px;
   }
 
-  .live-tv.is-quad {
+  .tv-scale-shell.is-fluid .live-tv.is-quad {
     height: auto;
     min-height: 100dvh;
     gap: 10px;
     padding: 10px 12px 16px;
   }
 
-  .live-quad-board {
+  .tv-scale-shell.is-fluid .live-quad-board {
     grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.38fr) minmax(0, 1fr);
     gap: 8px 6px;
   }
 
-  .live-quad-board.is-complete {
+  .tv-scale-shell.is-fluid .live-quad-board.is-complete {
     grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 0.5fr) minmax(0, 1fr);
   }
 
-  .live-quad-mid-label {
+  .tv-scale-shell.is-fluid .live-quad-mid-label {
     font-size: 1.15rem;
   }
 
-  .live-quad-stat > span {
+  .tv-scale-shell.is-fluid .live-quad-stat > span {
     font-size: 0.75rem;
   }
 
-  .live-quad-stat strong,
-  .live-quad-stat.is-featured strong,
-  .live-quad-stat.is-slot-large strong {
+  .tv-scale-shell.is-fluid .live-quad-stat strong,
+  .tv-scale-shell.is-fluid .live-quad-stat.is-featured strong,
+  .tv-scale-shell.is-fluid .live-quad-stat.is-slot-large strong {
     font-size: 1.25rem;
   }
 
-  .live-quad-stat.is-slot-large.is-match strong,
-  .live-quad-stat.is-inline.is-match strong {
+  .tv-scale-shell.is-fluid .live-quad-stat.is-slot-large.is-match strong,
+  .tv-scale-shell.is-fluid .live-quad-stat.is-inline.is-match strong {
     font-size: 1.875rem;
   }
 
-  .live-quad-stat.is-inline.is-match.is-pins strong {
+  .tv-scale-shell.is-fluid .live-quad-stat.is-inline.is-match.is-pins strong {
     font-size: 1.25rem;
   }
 
-  .live-quad-stat.is-inline > span {
+  .tv-scale-shell.is-fluid .live-quad-stat.is-inline > span {
     font-size: 0.8rem;
   }
 
-  .live-quad-stat.is-slot-small strong {
+  .tv-scale-shell.is-fluid .live-quad-stat.is-slot-small strong {
     font-size: 1rem;
   }
 
-  .live-tv.is-quad .live-tv-mini-name {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-name {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .live-tv.is-quad .live-tv-mini-duel {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-duel {
     grid-template-columns: 1.6em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
     gap: 1px 2px;
     font-size: 0.72rem;
   }
 
-  .live-tv.is-quad .live-tv-round-card.is-quad {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-round-card.is-quad {
     border-radius: 16px;
     padding: 8px 6px;
   }
 
-  .live-tv.is-quad .live-tv-round-card-num {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-round-card-num {
     font-size: 1.05rem;
   }
 
-  .live-tv.is-quad .live-tv-round-card-totals {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-round-card-totals {
     font-size: 1.05rem;
     margin-top: 2px;
     margin-bottom: 4px;
     gap: 0.25em 0.55em;
   }
 
-  .live-tv.is-quad .live-tv-round-duels {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-round-duels {
     gap: 4px;
     padding-top: 4px;
   }
 
-  .live-tv.is-quad .live-tv-mini-lane {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-lane {
     font-size: 0.7em;
   }
 
-  .live-tv.is-quad .live-tv-mini-pins {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-pins {
     min-width: 1.4em;
     font-size: 1.05em;
   }
 
   /* Telefon: samo klasično — skrij izbiro layouta */
-  .live-tv-layout-toggle {
+  .tv-scale-shell.is-fluid .live-tv-layout-toggle {
     display: none;
   }
 
-  .live-tv-scoreboard {
+  .tv-scale-shell.is-fluid .live-tv-scoreboard {
     grid-template-columns: 1fr;
     text-align: center;
     gap: 18px;
     flex: 0 0 auto;
   }
 
-  .live-tv:not(.is-quad) .live-tv-scoreboard,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-scoreboard {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-scoreboard,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-scoreboard {
     flex: 0 0 auto;
   }
 
-  .live-tv-side.is-away,
-  .live-tv-side.is-home {
+  .tv-scale-shell.is-fluid .live-tv-side.is-away,
+  .tv-scale-shell.is-fluid .live-tv-side.is-home {
     text-align: center;
   }
 
   /* Telefon: S1–S4 spet v vrstici; zunanji stolpec skrij */
-  .live-tv:not(.is-quad) .live-tv-rounds-wrap {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-rounds-wrap {
     display: block;
   }
 
-  .live-tv:not(.is-quad) .live-tv-rounds-lanes {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-rounds-lanes {
     display: none;
   }
 
-  .live-tv:not(.is-quad) .live-tv-round-card.is-no-lane .live-tv-mini-duel {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-card.is-no-lane .live-tv-mini-duel {
     grid-template-columns: 2.1em minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   }
 
-  .live-tv:not(.is-quad) .live-tv-mini-duel.is-no-lane::before {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-mini-duel.is-no-lane::before {
     content: "S" attr(data-lane);
     font-family: "Barlow Condensed", sans-serif;
     font-weight: 700;
@@ -4174,7 +4328,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   }
 
   /* Kola drug pod drugim, polna širina — berljive steze/imena */
-  .live-tv-rounds-grid {
+  .tv-scale-shell.is-fluid .live-tv-rounds-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 16px;
     flex: none;
@@ -4183,27 +4337,27 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     align-items: start;
   }
 
-  .live-tv:not(.is-quad) .live-tv-round-card,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-card,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card {
     height: auto;
     min-height: 0;
     overflow: visible;
     padding: 14px 12px;
   }
 
-  .live-tv:not(.is-quad) .live-tv-round-card-num,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-num {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-card-num,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-num {
     font-size: 1.35rem;
     margin-bottom: 6px;
   }
 
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
     font-size: 1.05rem;
     margin-bottom: 8px;
   }
 
-  .live-tv:not(.is-quad) .live-tv-round-duels,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-duels {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-duels,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-duels {
     flex: none;
     gap: 12px;
     justify-content: flex-start;
@@ -4211,35 +4365,35 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     min-height: 0;
   }
 
-  .live-tv:not(.is-quad) .live-tv-mini-duel,
-  .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-mini-duel,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-mini-duel {
     font-size: 1.05rem;
     line-height: 1.3;
     align-items: center;
   }
 
-  .live-tv:not(.is-quad) .live-tv-mini-name,
-  .live-tv:not(.is-quad) .live-tv-mini-name.is-one-line {
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-mini-name,
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-mini-name.is-one-line {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .live-tv-preview-overlay {
+  .tv-scale-shell.is-fluid .live-tv-preview-overlay {
     position: static;
     background: #0c0b0b;
     padding: 12px 16px 28px;
   }
 
-  .live-tv-preview-note {
+  .tv-scale-shell.is-fluid .live-tv-preview-note {
     display: none;
   }
 
-  body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
+  body:has(.live-tv-preview-overlay) .tv-scale-shell.is-fluid .live-tv:not(.is-fullscreen) {
     padding-bottom: clamp(6px, 0.9vh, 12px);
   }
 
-  .live-tv-duel {
+  .tv-scale-shell.is-fluid .live-tv-duel {
     grid-template-columns:
       minmax(0, 1fr)
       auto
@@ -4251,38 +4405,38 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
       "hname hpins vs apins aname";
   }
 
-  .live-tv-lane-num {
+  .tv-scale-shell.is-fluid .live-tv-lane-num {
     grid-area: lane;
   }
 
-  .live-tv-duel-name.is-home {
+  .tv-scale-shell.is-fluid .live-tv-duel-name.is-home {
     grid-area: hname;
   }
 
-  .live-tv-duel-name.is-away {
+  .tv-scale-shell.is-fluid .live-tv-duel-name.is-away {
     grid-area: aname;
   }
 
-  .live-tv-duel-pins.is-home {
+  .tv-scale-shell.is-fluid .live-tv-duel-pins.is-home {
     grid-area: hpins;
   }
 
-  .live-tv-duel-vs {
+  .tv-scale-shell.is-fluid .live-tv-duel-vs {
     grid-area: vs;
   }
 
-  .live-tv-duel-pins.is-away {
+  .tv-scale-shell.is-fluid .live-tv-duel-pins.is-away {
     grid-area: apins;
   }
 }
 
 /* Kvadrati na ozkem zaslonu: krajša oznaka steze. Klasično pusti »S1«. */
 @media (max-width: 820px) {
-  .live-tv.is-quad .live-tv-mini-lane {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-lane {
     font-size: 0;
   }
 
-  .live-tv.is-quad .live-tv-mini-lane::before {
+  .tv-scale-shell.is-fluid .live-tv.is-quad .live-tv-mini-lane::before {
     content: "S" attr(data-lane);
     font-size: 0.7rem;
     font-family: "Barlow Condensed", sans-serif;
@@ -5376,26 +5530,32 @@ body:has(.board-view) {
   --tv-line: rgba(255, 255, 255, 0.1);
   position: relative;
   isolation: isolate;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100cqh;
+  height: 100cqh;
   box-sizing: border-box;
   padding:
-    max(clamp(18px, 3vh, 32px), env(safe-area-inset-top, 0px))
-    clamp(16px, 3.5vw, 40px)
-    max(clamp(16px, 2.5vh, 28px), env(safe-area-inset-bottom, 0px));
+    max(clamp(18px, 3cqh, 32px), env(safe-area-inset-top, 0px))
+    clamp(16px, 3.5cqw, 40px)
+    max(clamp(16px, 2.5cqh, 28px), env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.8vh, 18px);
+  gap: clamp(10px, 1.8cqh, 18px);
   background: var(--tv-bg);
   color: var(--tv-ink);
   overflow: hidden;
 }
 
+.liga-board.is-tv-scaled {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
 .liga-board.is-fullscreen {
   padding:
-    max(clamp(14px, 2.2vh, 24px), env(safe-area-inset-top, 0px))
-    clamp(14px, 3vw, 32px)
-    max(clamp(12px, 2vh, 22px), env(safe-area-inset-bottom, 0px));
+    max(clamp(14px, 2.2cqh, 24px), env(safe-area-inset-top, 0px))
+    clamp(14px, 3cqw, 32px)
+    max(clamp(12px, 2cqh, 22px), env(safe-area-inset-bottom, 0px));
 }
 
 .liga-board-glow {
@@ -5433,7 +5593,12 @@ body:has(.board-view) {
 }
 
 .liga-board-logo {
-  width: clamp(40px, 5vw, 56px);
+  /* px najprej: TV brskalniki brez cqw sicer vzamejo intrinsik (~1024px). */
+  width: 56px;
+  max-width: 56px;
+  max-height: 56px;
+  object-fit: contain;
+  width: clamp(40px, 5cqw, 56px);
   height: auto;
 }
 
@@ -5442,13 +5607,13 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: clamp(1.15rem, 2.2vw, 1.65rem);
+  font-size: clamp(1.15rem, 2.2cqw, 1.65rem);
   line-height: 1.05;
 }
 
 .liga-board-brand-sub {
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-size: clamp(0.85rem, 1.4cqw, 1.05rem);
 }
 
 .liga-board-meta {
@@ -5465,7 +5630,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-size: clamp(1.6rem, 3.4vw, 2.6rem);
+  font-size: clamp(1.6rem, 3.4cqw, 2.6rem);
   line-height: 1;
   color: var(--tv-ink);
 }
@@ -5473,7 +5638,7 @@ body:has(.board-view) {
 .liga-board-progress {
   font-family: "IBM Plex Mono", monospace;
   color: var(--tv-muted);
-  font-size: clamp(0.95rem, 1.6vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.6cqw, 1.2rem);
 }
 
 .liga-board-fs {
@@ -5530,12 +5695,12 @@ body:has(.board-view) {
 .liga-board-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: clamp(0.95rem, 1.85vw, 1.55rem);
+  font-size: clamp(0.95rem, 1.85cqw, 1.55rem);
 }
 
 .liga-board-table th,
 .liga-board-table td {
-  padding: clamp(5px, 1vh, 10px) clamp(6px, 1vw, 12px);
+  padding: clamp(5px, 1cqh, 10px) clamp(6px, 1cqw, 12px);
   border-bottom: 1px solid var(--tv-line);
   text-align: left;
   white-space: nowrap;
@@ -5591,7 +5756,7 @@ body:has(.board-view) {
 .liga-board-footnote {
   margin: auto 0 0;
   color: var(--tv-muted);
-  font-size: clamp(0.8rem, 1.3vw, 1rem);
+  font-size: clamp(0.8rem, 1.3cqw, 1rem);
 }
 
 .liga-board-section {
@@ -5600,7 +5765,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  font-size: clamp(1.5rem, 3cqw, 2.4rem);
   color: var(--tv-accent);
   background: linear-gradient(90deg, #6b9cff 0%, #b04fc4 100%);
   -webkit-background-clip: text;
@@ -5611,7 +5776,7 @@ body:has(.board-view) {
 .liga-board-bye {
   margin: 0;
   color: var(--tv-muted);
-  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-size: clamp(1rem, 1.8cqw, 1.35rem);
 }
 
 .liga-board-fixtures {
@@ -5620,7 +5785,7 @@ body:has(.board-view) {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1.2vh, 12px);
+  gap: clamp(6px, 1.2cqh, 12px);
   flex: 1;
   min-height: 0;
   justify-content: space-evenly;
@@ -5631,9 +5796,9 @@ body:has(.board-view) {
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: clamp(8px, 1.2vh, 14px) 0;
+  padding: clamp(8px, 1.2cqh, 14px) 0;
   border-bottom: 1px solid var(--tv-line);
-  font-size: clamp(1.15rem, 2.4vw, 2rem);
+  font-size: clamp(1.15rem, 2.4cqw, 2rem);
 }
 
 .liga-board-fixtures li.is-done {
@@ -5672,7 +5837,7 @@ body:has(.board-view) {
 .liga-board-empty-wrap {
   color: var(--tv-muted);
   text-align: center;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  font-size: clamp(1.2rem, 2.5cqw, 1.8rem);
 }
 
 .liga-board-empty-wrap {
@@ -5702,7 +5867,7 @@ body:has(.board-view) {
 }
 
 .liga-board-idle {
-  min-height: 100dvh;
+  min-height: 100cqh;
   display: grid;
   place-content: center;
   gap: 8px;
@@ -5710,7 +5875,7 @@ body:has(.board-view) {
   background: #0c0b0b;
   color: #f4f2ef;
   font-family: "Barlow Condensed", sans-serif;
-  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-size: clamp(1.5rem, 3cqw, 2.2rem);
 }
 
 .liga-board-idle span {
@@ -5719,21 +5884,21 @@ body:has(.board-view) {
 }
 
 @media (max-width: 700px) {
-  .liga-board-top {
+  .liga-board:not(.is-tv-scaled) .liga-board-top {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .liga-board-when {
+  .liga-board:not(.is-tv-scaled) .liga-board-when {
     min-width: 0;
     width: 100%;
   }
 
-  .liga-board-fixtures li {
+  .liga-board:not(.is-tv-scaled) .liga-board-fixtures li {
     flex-wrap: wrap;
   }
 
-  .liga-board-table {
+  .liga-board:not(.is-tv-scaled) .liga-board-table {
     font-size: 0.85rem;
   }
 }
@@ -5765,14 +5930,18 @@ body:has(.board-view) {
   display: grid;
   grid-template-columns: auto minmax(0, 1.15fr) auto;
   align-items: center;
-  gap: clamp(20px, 3.5vw, 40px);
+  gap: clamp(20px, 3.5cqw, 40px);
   width: min(1180px, 100%);
   margin: 0 auto;
   padding: 0;
 }
 
 .liga-board-promo-logo {
-  width: clamp(120px, 15vw, 200px);
+  width: 160px;
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  width: clamp(120px, 15cqw, 200px);
   height: auto;
   filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.4));
 }
@@ -5788,7 +5957,7 @@ body:has(.board-view) {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--tv-accent);
-  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-size: clamp(1rem, 1.8cqw, 1.35rem);
 }
 
 .liga-board-promo-title {
@@ -5797,7 +5966,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  font-size: clamp(1.9rem, 4cqw, 3.2rem);
   line-height: 1.05;
   color: var(--tv-ink);
 }
@@ -5805,7 +5974,7 @@ body:has(.board-view) {
 .liga-board-promo-text {
   margin: 0 0 10px;
   color: var(--tv-muted);
-  font-size: clamp(1.05rem, 1.9vw, 1.45rem);
+  font-size: clamp(1.05rem, 1.9cqw, 1.45rem);
   line-height: 1.3;
   max-width: 28em;
 }
@@ -5813,7 +5982,7 @@ body:has(.board-view) {
 .liga-board-promo-url {
   margin: 0;
   color: var(--tv-live);
-  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.5cqw, 1.2rem);
   word-break: break-all;
 }
 
@@ -5828,7 +5997,7 @@ body:has(.board-view) {
 }
 
 .liga-board-promo-qr img {
-  width: clamp(200px, 24vw, 320px);
+  width: clamp(200px, 24cqw, 320px);
   height: auto;
   border-radius: 10px;
   background: #f4f2ef;
@@ -5842,17 +6011,17 @@ body:has(.board-view) {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+  font-size: clamp(0.85rem, 1.4cqw, 1.1rem);
 }
 
 @media (max-width: 900px) {
-  .liga-board-promo {
+  .liga-board:not(.is-tv-scaled) .liga-board-promo {
     grid-template-columns: 1fr;
     justify-items: center;
     text-align: center;
   }
 
-  .liga-board-promo-text {
+  .liga-board:not(.is-tv-scaled) .liga-board-promo-text {
     max-width: none;
   }
 }
@@ -5864,7 +6033,7 @@ body:has(.board-view) {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--tv-line);
   border-radius: 14px;
-  padding: clamp(6px, 1vh, 12px) clamp(8px, 1.2vw, 16px);
+  padding: clamp(6px, 1cqh, 12px) clamp(8px, 1.2cqw, 16px);
   overflow: hidden;
 }
 
@@ -5906,7 +6075,7 @@ body:has(.board-view) {
 .liga-board-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: clamp(10px, 1.5vh, 16px);
+  gap: clamp(10px, 1.5cqh, 16px);
   flex: 1;
   min-height: 0;
   align-content: start;
@@ -5916,7 +6085,7 @@ body:has(.board-view) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: clamp(12px, 1.8vh, 18px) clamp(14px, 1.8vw, 20px);
+  padding: clamp(12px, 1.8cqh, 18px) clamp(14px, 1.8cqw, 20px);
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid var(--tv-line);
   border-radius: 12px;
@@ -5927,7 +6096,7 @@ body:has(.board-view) {
 }
 
 .liga-board-card .liga-board-fixture-names {
-  font-size: clamp(1.2rem, 2.2vw, 1.75rem);
+  font-size: clamp(1.2rem, 2.2cqw, 1.75rem);
 }
 
 .liga-board-vs {
@@ -5957,7 +6126,7 @@ body:has(.board-view) {
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
-  gap: clamp(10px, 1.4vh, 16px);
+  gap: clamp(10px, 1.4cqh, 16px);
   overflow: auto;
   align-content: start;
 }
@@ -5966,7 +6135,7 @@ body:has(.board-view) {
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid var(--tv-line);
   border-radius: 14px;
-  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.5vw, 18px);
+  padding: clamp(10px, 1.4cqh, 16px) clamp(12px, 1.5cqw, 18px);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -6005,7 +6174,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  font-size: clamp(1.05rem, 1.9vw, 1.45rem);
+  font-size: clamp(1.05rem, 1.9cqw, 1.45rem);
   line-height: 1.1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6019,7 +6188,7 @@ body:has(.board-view) {
 }
 
 .liga-board-result-score {
-  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  font-size: clamp(1.8rem, 3.4cqw, 2.6rem);
   font-weight: 700;
   line-height: 1;
 }
@@ -6034,7 +6203,7 @@ body:has(.board-view) {
   flex-wrap: wrap;
   gap: 0.35em 1em;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-size: clamp(0.85rem, 1.4cqw, 1.05rem);
 }
 
 .liga-board-result-totals strong {
@@ -6056,7 +6225,7 @@ body:has(.board-view) {
   grid-template-columns: 4.5rem repeat(3, minmax(0, 1fr));
   gap: 6px;
   align-items: baseline;
-  font-size: clamp(0.8rem, 1.25vw, 0.95rem);
+  font-size: clamp(0.8rem, 1.25cqw, 0.95rem);
   color: var(--tv-muted);
 }
 
@@ -6115,7 +6284,7 @@ body:has(.board-view) {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: clamp(0.8rem, 1.3vw, 0.95rem);
+  font-size: clamp(0.8rem, 1.3cqw, 0.95rem);
   transition:
     background 0.15s ease,
     color 0.15s ease,
@@ -6143,7 +6312,7 @@ body:has(.board-view) {
 }
 
 .liga-board-bowl {
-  width: min(280px, 32vw);
+  width: min(280px, 32cqw);
   perspective: 520px;
 }
 
@@ -6316,7 +6485,7 @@ body:has(.board-view) {
 .liga-board-slide.is-standings-split {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.85fr);
-  gap: clamp(12px, 1.8vw, 20px);
+  gap: clamp(12px, 1.8cqw, 20px);
   min-height: 0;
 }
 
@@ -6340,7 +6509,7 @@ body:has(.board-view) {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--tv-line);
   border-radius: 14px;
-  padding: clamp(10px, 1.4vh, 16px) clamp(12px, 1.5vw, 18px);
+  padding: clamp(10px, 1.4cqh, 16px) clamp(12px, 1.5cqw, 18px);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -6352,7 +6521,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: clamp(1.1rem, 2vw, 1.45rem);
+  font-size: clamp(1.1rem, 2cqw, 1.45rem);
   color: var(--tv-accent);
 }
 
@@ -6383,7 +6552,7 @@ body:has(.board-view) {
 }
 
 .liga-board-season-best-value {
-  font-size: clamp(1.5rem, 2.8vw, 2.1rem);
+  font-size: clamp(1.5rem, 2.8cqw, 2.1rem);
   color: var(--tv-live);
   line-height: 1;
 }
@@ -6391,7 +6560,7 @@ body:has(.board-view) {
 .liga-board-season-best-who {
   align-self: end;
   text-align: right;
-  font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  font-size: clamp(0.85rem, 1.3cqw, 1.05rem);
   color: var(--tv-ink);
 }
 
@@ -6428,7 +6597,7 @@ body:has(.board-view) {
   grid-template-columns: 3.4rem minmax(0, 1fr);
   gap: 8px;
   align-items: start;
-  font-size: clamp(0.85rem, 1.25vw, 1rem);
+  font-size: clamp(0.85rem, 1.25cqw, 1rem);
   color: var(--tv-ink);
   line-height: 1.35;
 }
@@ -6462,7 +6631,7 @@ body:has(.board-view) {
 .liga-board-podium-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(10px, 1.5vw, 18px);
+  gap: clamp(10px, 1.5cqw, 18px);
   align-items: end;
   flex: 0 0 auto;
   margin-bottom: 10px;
@@ -6473,7 +6642,7 @@ body:has(.board-view) {
 .liga-board-podium {
   position: relative;
   text-align: center;
-  padding: clamp(22px, 2.8vh, 30px) clamp(12px, 1.5vw, 18px) clamp(14px, 1.8vh, 20px);
+  padding: clamp(22px, 2.8cqh, 30px) clamp(12px, 1.5cqw, 18px) clamp(14px, 1.8cqh, 20px);
   border-radius: 16px;
   border: 1px solid var(--tv-line);
   background: rgba(12, 10, 16, 0.55);
@@ -6481,8 +6650,8 @@ body:has(.board-view) {
 }
 
 .liga-board-podium.is-place-1 {
-  padding-top: clamp(28px, 3.4vh, 40px);
-  padding-bottom: clamp(16px, 2.2vh, 24px);
+  padding-top: clamp(28px, 3.4cqh, 40px);
+  padding-bottom: clamp(16px, 2.2cqh, 24px);
 }
 
 .liga-board-podium.is-gold {
@@ -6547,7 +6716,7 @@ body:has(.board-view) {
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  font-size: clamp(1.15rem, 2.2vw, 1.7rem);
+  font-size: clamp(1.15rem, 2.2cqw, 1.7rem);
   line-height: 1.1;
 }
 
@@ -6564,12 +6733,12 @@ body:has(.board-view) {
 .liga-board-podium-team {
   margin: 0 0 10px;
   color: var(--tv-muted);
-  font-size: clamp(0.85rem, 1.4vw, 1.05rem);
+  font-size: clamp(0.85rem, 1.4cqw, 1.05rem);
 }
 
 .liga-board-podium-avg {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-size: clamp(2rem, 4cqw, 3.1rem);
   font-weight: 700;
   line-height: 1;
   color: var(--tv-live);
@@ -6602,19 +6771,22 @@ body:has(.board-view) {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px 12px;
-  text-align: left;
-  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  text-align: center;
+  font-size: clamp(0.9rem, 1.4cqw, 1.1rem);
   color: var(--tv-muted);
 }
 
 .liga-board-podium-stats span {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 2px;
   padding: 6px 8px;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
 }
 
 .liga-board-podium-stats em {
@@ -6643,19 +6815,19 @@ body:has(.board-view) {
 }
 
 @media (max-width: 1100px) {
-  .liga-board-slide.is-standings-split {
+  .liga-board:not(.is-tv-scaled) .liga-board-slide.is-standings-split {
     grid-template-columns: 1fr;
   }
 
-  .liga-board-result-grid {
+  .liga-board:not(.is-tv-scaled) .liga-board-result-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .liga-board-podium-row {
+  .liga-board:not(.is-tv-scaled) .liga-board-podium-row {
     grid-template-columns: 1fr;
   }
 
-  .liga-board-podium.is-place-1 {
+  .liga-board:not(.is-tv-scaled) .liga-board-podium.is-place-1 {
     transform: none;
     order: -1;
   }
@@ -6699,7 +6871,7 @@ body:has(.board-view) {
   z-index: 2;
   width: min(1180px, 100%);
   margin: 0 auto;
-  padding: clamp(10px, 1.4vh, 14px) clamp(14px, 2vw, 22px);
+  padding: clamp(10px, 1.4cqh, 14px) clamp(14px, 2cqw, 22px);
   border-radius: 16px;
   background: rgba(12, 10, 16, 0.48);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -6962,7 +7134,7 @@ body:has(.board-view) {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.9fr);
-  gap: clamp(10px, 1.5vw, 16px);
+  gap: clamp(10px, 1.5cqw, 16px);
   align-items: stretch;
 }
 
@@ -6985,7 +7157,7 @@ body:has(.board-view) {
 .liga-board-table.is-compact th,
 .liga-board-table.is-compact td {
   padding: 5px 8px;
-  font-size: clamp(0.9rem, 1.55vw, 1.25rem);
+  font-size: clamp(0.9rem, 1.55cqw, 1.25rem);
 }
 
 .liga-board-table.is-teams-board th.is-num,
@@ -7045,7 +7217,7 @@ body:has(.board-view) {
 .liga-board-podium-stats.is-team {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  font-size: clamp(0.88rem, 1.35vw, 1.08rem);
+  font-size: clamp(0.88rem, 1.35cqw, 1.08rem);
 }
 
 .liga-board-podium-stats.is-player {
@@ -7053,25 +7225,13 @@ body:has(.board-view) {
   gap: 8px;
 }
 
-.liga-board-podium.is-team .liga-board-podium-name {
-  font-size: clamp(1.35rem, 2.6vw, 2.05rem);
-  margin-top: 1.35rem;
-}
-
-.liga-board-podium.is-team .liga-board-podium-avg {
-  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
-}
-
-.liga-board-podium.is-team .liga-board-podium-avg-label {
-  font-size: 0.9rem;
-  margin-bottom: 12px;
-}
+/* Top 3 ekipe: isto ime + točke kot top 3 igralci (.liga-board-podium-name / -avg). */
 
 .liga-board-slide.is-schedule-grid {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.5vh, 16px);
+  gap: clamp(10px, 1.5cqh, 16px);
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
@@ -7115,7 +7275,7 @@ body:has(.board-view) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.5vh, 16px);
+  gap: clamp(10px, 1.5cqh, 16px);
 }
 
 .liga-board-slide.is-schedule-grid .liga-board-card {
@@ -7146,14 +7306,14 @@ body:has(.board-view) {
 
 .liga-board-schedule-head .liga-board-section {
   margin: 0;
-  font-size: clamp(1.55rem, 2.9vw, 2.25rem);
+  font-size: clamp(1.55rem, 2.9cqw, 2.25rem);
 }
 
 .liga-board-cards.is-3col {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-auto-rows: 1fr;
-  gap: clamp(8px, 1.2vh, 12px);
+  gap: clamp(8px, 1.2cqh, 12px);
   flex: 1 1 auto;
   min-height: 0;
   align-content: stretch;
@@ -7165,20 +7325,20 @@ body:has(.board-view) {
 }
 
 .liga-board-card.is-compact .liga-board-when {
-  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-size: clamp(1.2rem, 2cqw, 1.55rem);
   color: var(--tv-accent);
   letter-spacing: 0.02em;
 }
 
 .liga-board-card.is-compact .liga-board-fixture-names {
-  font-size: clamp(1.5rem, 2.8vw, 2.15rem);
+  font-size: clamp(1.5rem, 2.8cqw, 2.15rem);
   line-height: 1.1;
 }
 
 .liga-board-card-score {
   color: var(--tv-live);
   font-weight: 700;
-  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+  font-size: clamp(0.95rem, 1.5cqw, 1.15rem);
 }
 
 .liga-board-card-score-sub {
@@ -7196,14 +7356,14 @@ body:has(.board-view) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: clamp(8px, 1.2vh, 12px);
+  gap: clamp(8px, 1.2cqh, 12px);
   height: 100%;
   overflow: hidden;
   align-content: stretch;
 }
 
 .liga-board-result-card.is-compact {
-  padding: clamp(12px, 1.6vh, 18px) clamp(12px, 1.5vw, 18px);
+  padding: clamp(12px, 1.6cqh, 18px) clamp(12px, 1.5cqw, 18px);
   gap: 10px;
   min-height: 0;
   overflow: hidden;
@@ -7213,24 +7373,24 @@ body:has(.board-view) {
 .liga-board-result-when {
   margin: 0;
   color: var(--tv-accent);
-  font-size: clamp(0.95rem, 1.5vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.5cqw, 1.2rem);
   letter-spacing: 0.02em;
 }
 
 .liga-board-result-card.is-compact .liga-board-result-team strong {
-  font-size: clamp(1.15rem, 2vw, 1.55rem);
+  font-size: clamp(1.15rem, 2cqw, 1.55rem);
   line-height: 1.1;
 }
 
 .liga-board-result-card.is-compact .liga-board-result-score {
-  font-size: clamp(2rem, 3.6vw, 2.8rem);
+  font-size: clamp(2rem, 3.6cqw, 2.8rem);
 }
 
 .liga-board-result-card.is-compact .liga-board-result-totals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  font-size: clamp(0.85rem, 1.3vw, 1.05rem);
+  font-size: clamp(0.85rem, 1.3cqw, 1.05rem);
   padding: 8px 10px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.28);
@@ -7259,7 +7419,7 @@ body:has(.board-view) {
 
 .liga-board-result-card.is-compact .liga-board-result-round {
   grid-template-columns: 2.6rem minmax(0, 1.3fr) minmax(0, 0.9fr);
-  font-size: clamp(0.95rem, 1.45vw, 1.2rem);
+  font-size: clamp(0.95rem, 1.45cqw, 1.2rem);
   gap: 8px;
   align-items: center;
   padding: 4px 2px;
@@ -7294,12 +7454,12 @@ body:has(.board-view) {
 }
 
 @media (max-width: 1100px) {
-  .liga-board-standings-bottom {
+  .liga-board:not(.is-tv-scaled) .liga-board-standings-bottom {
     grid-template-columns: 1fr;
   }
 
-  .liga-board-cards.is-3col,
-  .liga-board-result-grid.is-3x2 {
+  .liga-board:not(.is-tv-scaled) .liga-board-cards.is-3col,
+  .liga-board:not(.is-tv-scaled) .liga-board-result-grid.is-3x2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: none;
     height: auto;

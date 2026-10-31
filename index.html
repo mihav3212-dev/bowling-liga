@@ -6,6 +6,25 @@
     <meta name="theme-color" content="#000000" />
     <script>
       document.documentElement.dataset.theme = "dark";
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search).get("device");
+          if (q === "phone" || q === "tablet" || q === "desktop" || q === "tv") {
+            document.documentElement.dataset.device = q;
+            return;
+          }
+          var ua = navigator.userAgent || "";
+          if (/Tizen|SmartTV|SMART-TV|SamsungBrowser|Web0S|WebOS|Viera|NetCast|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari/i.test(ua)) {
+            document.documentElement.dataset.device = "tv";
+            return;
+          }
+          var w = window.innerWidth || 0;
+          document.documentElement.dataset.device =
+            w <= 820 ? "phone" : w <= 1200 ? "tablet" : "desktop";
+        } catch (e) {
+          document.documentElement.dataset.device = "desktop";
+        }
+      })();
     </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <title>Liga - Bowling Lenart</title>
@@ -18,7 +37,50 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <style>
+      /* Če JS ne naloži (star TV), naj ne bo bela prazna stran. */
+      html, body { margin: 0; min-height: 100%; background: #0c0b0b; color: #f4f2ef; }
+      #boot-msg {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-content: center;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        gap: 8px;
+        padding: 24px;
+      }
+      #boot-msg small { color: #9a9690; }
+    </style>
+    <div id="root">
+      <p id="boot-msg">Nalaganje…<br /><small>Bowling Lenart Liga</small></p>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function () {
+        var lastErr = "";
+        function showFail(extra) {
+          var el = document.getElementById("boot-msg");
+          if (!el || !document.body || document.body.dataset.appReady === "1") return;
+          el.innerHTML =
+            "Prikaz se ni naložil.<br/><small>Poskusi drug brskalnik na TV ali odpri na telefonu.</small>" +
+            (extra
+              ? "<br/><small style='opacity:.7;word-break:break-word'>" + extra + "</small>"
+              : "");
+        }
+        window.addEventListener("error", function (e) {
+          lastErr = (e && e.message) || "script error";
+          if (e && e.filename) lastErr += " @ " + String(e.filename).split("/").pop();
+        });
+        window.addEventListener("unhandledrejection", function (e) {
+          lastErr =
+            (e && e.reason && (e.reason.message || String(e.reason))) || "promise error";
+        });
+        setTimeout(function () {
+          if (document.body && document.body.dataset.appReady === "1") return;
+          showFail(lastErr || "timeout · " + (navigator.userAgent || "").slice(0, 90));
+        }, 12000);
+      })();
+    </script>
   </body>
 </html>

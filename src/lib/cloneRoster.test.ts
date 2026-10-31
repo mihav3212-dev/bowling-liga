@@ -9,9 +9,9 @@ const teams: Team[] = [
 ];
 
 const players: Player[] = [
-  { id: "p1", teamId: "t1", name: "NOVAK", gender: "M", bzsMember: false },
-  { id: "p2", teamId: "t2", name: "ŽENSKA", gender: "F", bzsMember: true },
-  { id: "p3", teamId: "t3", name: "X", gender: "M", bzsMember: false },
+  { id: "p1", teamId: "t1", firstName: "", surname: "", name: "NOVAK", gender: "M", bzsMember: false },
+  { id: "p2", teamId: "t2", firstName: "", surname: "", name: "ŽENSKA", gender: "F", bzsMember: true },
+  { id: "p3", teamId: "t3", firstName: "", surname: "", name: "X", gender: "M", bzsMember: false },
 ];
 
 describe("cloneTeamsAndPlayers", () => {

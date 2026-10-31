@@ -1,6 +1,7 @@
 import { cpSync, copyFileSync, mkdirSync } from "node:fs";
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
+import legacy from "@vitejs/plugin-legacy";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
 function send(res: ServerResponse, status: number, body: unknown, cookies?: string) {
@@ -80,6 +81,21 @@ export default defineConfig(({ mode }) => {
   if (env.MYSQL_DATABASE) process.env.MYSQL_DATABASE = env.MYSQL_DATABASE;
   if (env.MYSQL_SOCKET) process.env.MYSQL_SOCKET = env.MYSQL_SOCKET;
   return {
-    plugins: [react(), adminApi(), copyPhpApi()],
+    build: {
+      cssTarget: "chrome75",
+    },
+    plugins: [
+      react(),
+      // LG webOS ~Chrome 79 vzame “modern” bundle — modernTargets mora biti
+      // dovolj nizek, da se ?. / ?? prepišeta (sicer bela stran).
+      legacy({
+        targets: ["chrome >= 63", "safari >= 11", "ios >= 11"],
+        modernTargets: ["chrome >= 75", "safari >= 13", "firefox >= 70"],
+        modernPolyfills: true,
+        additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+      }),
+      adminApi(),
+      copyPhpApi(),
+    ],
   };
 });

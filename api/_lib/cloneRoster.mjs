@@ -29,10 +29,27 @@ export function cloneTeamsAndPlayers(teams, players, selectedTeamIds, includePla
   for (const player of players ?? []) {
     const teamId = idMap.get(player.teamId);
     if (!teamId) continue;
+    const firstName = String(player.firstName ?? "").trim();
+    const surname = String(player.surname ?? "").trim();
+    const name = String(player.name ?? "").trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    let f = firstName;
+    let s = surname;
+    if (!f && !s && parts.length) {
+      if (parts.length === 1) {
+        f = parts[0];
+      } else {
+        f = parts.slice(0, -1).join(" ");
+        s = parts[parts.length - 1];
+      }
+    }
+    const composed = [s, f].filter(Boolean).join(" ") || name;
     nextPlayers.push({
       id: uid("p"),
       teamId,
-      name: player.name,
+      firstName: f,
+      surname: s,
+      name: composed,
       gender: player.gender === "F" ? "F" : "M",
       bzsMember: Boolean(player.bzsMember),
     });

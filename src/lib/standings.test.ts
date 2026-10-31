@@ -7,7 +7,7 @@ function team(id: string, name = id): Team {
 }
 
 function player(id: string, teamId: string): Player {
-  return { id, teamId, name: id, gender: "M", bzsMember: false };
+  return { id, teamId, firstName: "", surname: "", name: id, gender: "M", bzsMember: false };
 }
 
 /** Polna 4×4 tekma z enakimi keglji na vseh stezah → zmagovalec ima 2:0. */

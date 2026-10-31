@@ -36,7 +36,7 @@ describe("computePlayerTrainingStats", () => {
     const player: Player = {
       id: "p1",
       teamId: "t1",
-      name: "TEST",
+      firstName: "", surname: "", name: "TEST",
       gender: "M",
       bzsMember: false,
     };
@@ -73,7 +73,7 @@ describe("computePlayerTrainingStats", () => {
     const player: Player = {
       id: "p1",
       teamId: "t1",
-      name: "TEST",
+      firstName: "", surname: "", name: "TEST",
       gender: "M",
       bzsMember: false,
     };
@@ -106,8 +106,8 @@ describe("syncLigaTrainingMirrors", () => {
         { id: "t2", name: "B" },
       ],
       players: [
-        { id: "p1", teamId: "t1", name: "P1", gender: "M", bzsMember: false },
-        { id: "p2", teamId: "t2", name: "P2", gender: "M", bzsMember: false },
+        { id: "p1", teamId: "t1", firstName: "", surname: "", name: "P1", gender: "M", bzsMember: false },
+        { id: "p2", teamId: "t2", firstName: "", surname: "", name: "P2", gender: "M", bzsMember: false },
       ],
       matches: [],
       trainingSessions: [
@@ -133,7 +133,7 @@ describe("syncLigaTrainingMirrors", () => {
   it("compactTrainings sinhronizira zrcaljenja", () => {
     const state: LeagueState = {
       teams: [{ id: "t1", name: "A" }],
-      players: [{ id: "p1", teamId: "t1", name: "P1", gender: "M", bzsMember: false }],
+      players: [{ id: "p1", teamId: "t1", firstName: "", surname: "", name: "P1", gender: "M", bzsMember: false }],
       matches: [],
       trainingSessions: [
         {

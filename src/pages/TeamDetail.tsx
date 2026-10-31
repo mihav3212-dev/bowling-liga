@@ -39,7 +39,8 @@ export function TeamDetail({
   } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
   const players = state.players.filter((p) => p.teamId === teamId);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [surname, setSurname] = useState("");
   const [gender, setGender] = useState<Gender>("M");
   const [bzs, setBzs] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -164,7 +165,9 @@ export function TeamDetail({
             return (
               <div key={p.id} className="roster-player-row-view">
                 <div className="roster-player-main">
-                  <strong className="roster-player-name">{p.name}</strong>
+                  <strong className="roster-player-name">
+                    {[p.surname, p.firstName].filter(Boolean).join(" ") || p.name}
+                  </strong>
                   <span className="muted roster-player-gender">
                     {p.gender === "F" ? "ženska" : "moški"}
                     {p.bzsMember ? " · BZS" : ""}
@@ -467,21 +470,30 @@ export function TeamDetail({
                 </p>
                 {editRoster && (
                   <form
-                    className="form-row"
+                    className="form-row roster-add-form"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      if (!name.trim()) return;
-                      addPlayer(team.id, name, gender, bzs);
-                      setName("");
+                      if (!firstName.trim() && !surname.trim()) return;
+                      addPlayer(team.id, firstName, surname, gender, bzs);
+                      setFirstName("");
+                      setSurname("");
                       setGender("M");
                       setBzs(false);
                     }}
                   >
                     <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value.toLocaleUpperCase("sl"))}
-                      placeholder="Priimek in ime igralca"
-                      aria-label="Priimek in ime igralca"
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value.toLocaleUpperCase("sl"))}
+                      placeholder="Priimek"
+                      aria-label="Priimek"
+                      autoComplete="family-name"
+                    />
+                    <input
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value.toLocaleUpperCase("sl"))}
+                      placeholder="Ime"
+                      aria-label="Ime"
+                      autoComplete="given-name"
                     />
                     <select
                       value={gender}
@@ -510,18 +522,37 @@ export function TeamDetail({
                         <>
                           <input
                             className="roster-player-name-input"
-                            value={p.name}
-                            aria-label="Priimek in ime igralca"
+                            value={p.surname}
+                            aria-label="Priimek"
+                            placeholder="Priimek"
                             onChange={(e) =>
                               updatePlayer({
                                 ...p,
-                                name: e.target.value.toLocaleUpperCase("sl"),
+                                surname: e.target.value.toLocaleUpperCase("sl"),
                               })
                             }
                             onBlur={(e) => {
                               const trimmed = e.target.value.trim().toLocaleUpperCase("sl");
-                              if (trimmed !== p.name) {
-                                updatePlayer({ ...p, name: trimmed || p.name });
+                              if (trimmed !== p.surname) {
+                                updatePlayer({ ...p, surname: trimmed });
+                              }
+                            }}
+                          />
+                          <input
+                            className="roster-player-name-input"
+                            value={p.firstName}
+                            aria-label="Ime"
+                            placeholder="Ime"
+                            onChange={(e) =>
+                              updatePlayer({
+                                ...p,
+                                firstName: e.target.value.toLocaleUpperCase("sl"),
+                              })
+                            }
+                            onBlur={(e) => {
+                              const trimmed = e.target.value.trim().toLocaleUpperCase("sl");
+                              if (trimmed !== p.firstName) {
+                                updatePlayer({ ...p, firstName: trimmed });
                               }
                             }}
                           />
@@ -557,7 +588,9 @@ export function TeamDetail({
                           </button>
                         </>
                       ) : (
-                        <strong className="roster-player-name">{p.name}</strong>
+                        <strong className="roster-player-name">
+                          {[p.surname, p.firstName].filter(Boolean).join(" ") || p.name}
+                        </strong>
                       )}
                     </div>
                   ))}

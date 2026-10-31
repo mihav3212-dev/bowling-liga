@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { TvScaleStage } from "../components/TvScaleStage";
+import { useDisplayDevice } from "../lib/displayDevice";
 import { fetchLeague } from "../lib/leagueApi";
 import {
   buildLiveMatchView,
@@ -7,7 +9,8 @@ import {
   type LiveBoardHold,
   type LiveMatchView,
 } from "../lib/liveBoard";
-import { shortTvPersonName } from "../lib/labels";
+import { formatMatchRound, formatSeasonRound } from "../lib/labels";
+import { shortTvPersonNameFromParts, splitPlayerName } from "../lib/playerName";
 import { findTrainingSession, formatTrainingDate, trainingAsMatch } from "../lib/training";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
@@ -77,26 +80,21 @@ function duelLead(home: number | null, away: number | null): "home" | "away" | "
   return "tie";
 }
 
-/** Ime in priimek v dveh vrsticah (klasični TV). */
-function splitPersonName(name: string): string[] {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return ["—"];
-  if (parts.length === 1) return [parts[0]!];
-  return [parts[0]!, parts.slice(1).join(" ")];
-}
-
 function TvStackedName({
-  name,
+  firstName,
+  surname,
   side,
   lead,
 }: {
-  name: string;
+  firstName: string;
+  surname: string;
   side: "home" | "away";
   lead?: boolean;
 }) {
+  const lines = [firstName.trim() || "—", surname.trim()].filter((line, i) => i === 0 || line);
   return (
     <span className={`live-tv-mini-name is-${side}${lead ? " is-lead" : ""}`}>
-      {splitPersonName(name).map((line, i) => (
+      {lines.map((line, i) => (
         <span key={i} className="live-tv-mini-name-line">
           {line}
         </span>
@@ -105,16 +103,30 @@ function TvStackedName({
   );
 }
 
-const emptyDuels = (names: [string, string][]): DuelRow[] =>
-  names.map(([homeName, awayName], i) => ({
-    lane: i + 1,
+function duelFromNames(
+  homeName: string,
+  awayName: string,
+  extra: Partial<DuelRow> & { lane: number },
+): DuelRow {
+  const home = splitPlayerName(homeName);
+  const away = splitPlayerName(awayName);
+  return {
     homeName,
     awayName,
+    homeFirstName: home.firstName || homeName,
+    homeSurname: home.surname,
+    awayFirstName: away.firstName || awayName,
+    awaySurname: away.surname,
     homePins: null,
     awayPins: null,
     homeSmall: null,
     awaySmall: null,
-  }));
+    ...extra,
+  };
+}
+
+const emptyDuels = (names: [string, string][]): DuelRow[] =>
+  names.map(([homeName, awayName], i) => duelFromNames(homeName, awayName, { lane: i + 1 }));
 
 const LINEUPS: [string, string][][] = [
   [
@@ -370,25 +382,6 @@ function roundHasAnyPins(r: RoundSummary): boolean {
   return r.duels.some((d) => d.homePins != null || d.awayPins != null);
 }
 
-/**
- * Ozek zaslon (telefon) — samo klasični TV, brez fokusa kola in brez kvadratov.
- * Namerno brez pointer:coarse, da fokus deluje tudi na touch laptopih / tablicah v širokem oknu.
- */
-function useIsHandheldTv(): boolean {
-  const query = "(max-width: 820px)";
-  const [handheld, setHandheld] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia(query).matches : false,
-  );
-  useEffect(() => {
-    const mq = window.matchMedia(query);
-    const sync = () => setHandheld(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  return handheld;
-}
-
 type RoundFocusPhase = {
   mode: "focus" | "overview";
   focusRound: number;
@@ -516,26 +509,34 @@ function RoundCard({
     <div
       className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}${hideLane ? " is-no-lane" : ""}`}
     >
-      <div className="live-tv-round-card-num">{r.round}. kolo</div>
+      <div className="live-tv-round-card-num">{formatMatchRound(r.round)}</div>
       <div className="live-tv-round-card-totals">
-        <span>
+        <span className="live-tv-round-card-totals-line">
           Velike{" "}
           <strong>
             <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
             <span className="live-tv-duel-vs">:</span>
             <span className={bigLead === "away" ? "is-lead" : undefined}>{r.awayBig ?? "·"}</span>
           </strong>
+          <span className="live-tv-totals-sep" aria-hidden>
+            ·
+          </span>
+          Male {pairLabel(r.homeSmall, r.awaySmall)}
+          <span className="live-tv-totals-sep" aria-hidden>
+            ·
+          </span>
+          {pinsText}
         </span>
-        <span>Male {pairLabel(r.homeSmall, r.awaySmall)}</span>
-        <span>{pinsText}</span>
       </div>
       <div className="live-tv-round-duels">
         {r.duels.map((d) => {
           const dLead = duelLead(d.homePins, d.awayPins);
-          /** Kvadrati pregled: kratka ena vrstica; klasično + fokus: polno ime v 2 vrsticah. */
-          const shortOneLine = quad && !enlarged;
-          const homeLabel = shortOneLine ? shortTvPersonName(d.homeName) : d.homeName;
-          const awayLabel = shortOneLine ? shortTvPersonName(d.awayName) : d.awayName;
+          const homeFirst = d.homeFirstName || splitPlayerName(d.homeName).firstName || d.homeName;
+          const homeSur = d.homeSurname || splitPlayerName(d.homeName).surname;
+          const awayFirst = d.awayFirstName || splitPlayerName(d.awayName).firstName || d.awayName;
+          const awaySur = d.awaySurname || splitPlayerName(d.awayName).surname;
+          /** Klasično + fokus: ime / priimek v 2 vrsticah. Kvadrati pregled: kratko v 1 vrstici. */
+          const stackNames = !quad || enlarged;
           return (
             <div
               key={d.lane}
@@ -547,14 +548,19 @@ function RoundCard({
                   {quad || enlarged ? `Steza ${d.lane}` : `S${d.lane}`}
                 </span>
               )}
-              {shortOneLine ? (
+              {stackNames ? (
+                <TvStackedName
+                  firstName={homeFirst}
+                  surname={homeSur}
+                  side="home"
+                  lead={dLead === "home"}
+                />
+              ) : (
                 <span
                   className={`live-tv-mini-name is-home is-one-line${dLead === "home" ? " is-lead" : ""}`}
                 >
-                  {homeLabel}
+                  {shortTvPersonNameFromParts(homeFirst, homeSur)}
                 </span>
-              ) : (
-                <TvStackedName name={homeLabel} side="home" lead={dLead === "home"} />
               )}
               <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
                 {pinsLabel(d.homePins)}
@@ -563,14 +569,19 @@ function RoundCard({
               <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
                 {pinsLabel(d.awayPins)}
               </span>
-              {shortOneLine ? (
+              {stackNames ? (
+                <TvStackedName
+                  firstName={awayFirst}
+                  surname={awaySur}
+                  side="away"
+                  lead={dLead === "away"}
+                />
+              ) : (
                 <span
                   className={`live-tv-mini-name is-away is-one-line${dLead === "away" ? " is-lead" : ""}`}
                 >
-                  {awayLabel}
+                  {shortTvPersonNameFromParts(awayFirst, awaySur)}
                 </span>
-              ) : (
-                <TvStackedName name={awayLabel} side="away" lead={dLead === "away"} />
               )}
             </div>
           );
@@ -601,12 +612,20 @@ function LiveMatchScreen({
   brandSub,
   matchKey,
 }: ScreenProps) {
-  const sub = brandSub ?? `Liga · ${m.round}. kolo`;
-  const rootRef = useRef<HTMLDivElement>(null);
-  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
-  const handheld = useIsHandheldTv();
-  /** Telefon/tablica vedno klasično; računalnik lahko še kvadrate. */
+  const sub = brandSub ?? `Liga · ${formatSeasonRound(m.round)}`;
+  const shellRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(shellRef);
+  const device = useDisplayDevice();
+  const handheld = device === "phone" || device === "tablet";
+  const scaleTv = device !== "phone";
+  /** Telefon/tablica vedno klasično; računalnik/TV lahko še kvadrate. */
   const effectiveLayout: LiveTvLayout = handheld ? "classic" : layout;
+
+  const wrapTv = (node: ReactNode) => (
+    <TvScaleStage shellRef={shellRef} enabled={scaleTv}>
+      {node}
+    </TvScaleStage>
+  );
   const complete = m.complete || badge === "final";
   const homeWins = complete && (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = complete && (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
@@ -677,7 +696,7 @@ function LiveMatchScreen({
           <span className="live-tv-live">V živo</span>
           {showRoundFocus || focusOverlayVisible ? (
             <span className="live-tv-when">
-              {(focusOverlay?.round.round ?? roundPhase.focusRound)}. kolo
+              {formatMatchRound(focusOverlay?.round.round ?? roundPhase.focusRound)}
               {(focusOverlay?.kind ?? roundPhase.kind) === "intro" ? " · steze" : " · vpis"}
             </span>
           ) : null}
@@ -690,11 +709,12 @@ function LiveMatchScreen({
     </div>
   );
 
+  const scaleClass = scaleTv ? " is-tv-scaled" : "";
+
   if (effectiveLayout === "quad") {
-    return (
+    return wrapTv(
       <div
-        ref={rootRef}
-        className={`live-tv is-quad${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
+        className={`live-tv is-quad${scaleClass}${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
       >
         <div className="live-tv-glow" aria-hidden />
         <header className="live-tv-top">
@@ -826,10 +846,9 @@ function LiveMatchScreen({
     );
   }
 
-  return (
+  return wrapTv(
     <div
-      ref={rootRef}
-      className={`live-tv${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus-overlay" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
+      className={`live-tv${scaleClass}${complete ? " is-final" : ""}${fullscreen ? " is-fullscreen" : ""}${focusOverlayVisible ? " is-round-focus-overlay" : ""}${focusOverlayExiting ? " is-round-focus-exit" : ""}`}
     >
       <div className="live-tv-glow" aria-hidden />
       <div className="live-tv-lane" aria-hidden />
@@ -928,7 +947,7 @@ function LiveMatchScreen({
           <div className="live-tv-focus-overlay-panel">
             <div className="live-tv-focus-overlay-label">
               {focusOverlay.kind === "intro" ? "Steze · kdo igra" : "Vpis kegljev"} ·{" "}
-              {focusOverlay.round.round}. kolo
+              {formatMatchRound(focusOverlay.round.round)}
             </div>
             <RoundCard r={overlayRound} enlarged />
           </div>
@@ -939,30 +958,36 @@ function LiveMatchScreen({
 }
 
 function LiveIdleScreen() {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(rootRef);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(shellRef);
+  const device = useDisplayDevice();
+  const scaleTv = device !== "phone";
 
   return (
-    <div ref={rootRef} className={`live-tv${fullscreen ? " is-fullscreen" : ""}`}>
-      <div className="live-tv-glow" aria-hidden />
-      <div className="live-tv-lane" aria-hidden />
-      <header className="live-tv-top">
-        <div className="live-tv-brand">
-          <img src="/logo-bowling-lenart.png" alt="" className="live-tv-logo" />
-          <div>
-            <div className="live-tv-brand-name">Bowling Lenart</div>
-            <div className="live-tv-brand-sub">Liga</div>
+    <TvScaleStage shellRef={shellRef} enabled={scaleTv}>
+      <div
+        className={`live-tv${scaleTv ? " is-tv-scaled" : ""}${fullscreen ? " is-fullscreen" : ""}`}
+      >
+        <div className="live-tv-glow" aria-hidden />
+        <div className="live-tv-lane" aria-hidden />
+        <header className="live-tv-top">
+          <div className="live-tv-brand">
+            <img src="/logo-bowling-lenart.png" alt="" className="live-tv-logo" />
+            <div>
+              <div className="live-tv-brand-name">Bowling Lenart</div>
+              <div className="live-tv-brand-sub">Liga</div>
+            </div>
           </div>
+          <div className="live-tv-meta">
+            <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
+          </div>
+        </header>
+        <div className="live-tv-idle">
+          <p className="live-tv-idle-title">Trenutno ni tekme v živo</p>
+          <p className="live-tv-idle-sub">Prikaz se osveži samodejno.</p>
         </div>
-        <div className="live-tv-meta">
-          <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
-        </div>
-      </header>
-      <div className="live-tv-idle">
-        <p className="live-tv-idle-title">Trenutno ni tekme v živo</p>
-        <p className="live-tv-idle-sub">Prikaz se osveži samodejno.</p>
       </div>
-    </div>
+    </TvScaleStage>
   );
 }
 
@@ -1019,23 +1044,27 @@ export function LiveMatchBoard() {
 
   if (booting && !hasData) {
     return (
-      <div className="live-tv">
-        <div className="live-tv-idle">
-          <p className="live-tv-idle-title">Nalaganje…</p>
-          <p className="live-tv-idle-sub">Prikaz tekem v živo</p>
+      <TvScaleStage>
+        <div className="live-tv is-tv-scaled">
+          <div className="live-tv-idle">
+            <p className="live-tv-idle-title">Nalaganje…</p>
+            <p className="live-tv-idle-sub">Prikaz tekem v živo</p>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 
   if (error && !hasData && !remote) {
     return (
-      <div className="live-tv">
-        <div className="live-tv-idle">
-          <p className="live-tv-idle-title">Ni povezave</p>
-          <p className="live-tv-idle-sub">Poskusim znova samodejno.</p>
+      <TvScaleStage>
+        <div className="live-tv is-tv-scaled">
+          <div className="live-tv-idle">
+            <p className="live-tv-idle-title">Ni povezave</p>
+            <p className="live-tv-idle-sub">Poskusim znova samodejno.</p>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 
@@ -1118,23 +1147,27 @@ export function TrainingLiveBoard({ sessionId }: { sessionId: string }) {
 
   if (booting && !session) {
     return (
-      <div className="live-tv">
-        <div className="live-tv-idle">
-          <p className="live-tv-idle-title">Nalaganje…</p>
-          <p className="live-tv-idle-sub">Trening TV</p>
+      <TvScaleStage>
+        <div className="live-tv is-tv-scaled">
+          <div className="live-tv-idle">
+            <p className="live-tv-idle-title">Nalaganje…</p>
+            <p className="live-tv-idle-sub">Trening TV</p>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 
   if (!session?.match) {
     return (
-      <div className="live-tv">
-        <div className="live-tv-idle">
-          <p className="live-tv-idle-title">Trening ni najden</p>
-          <p className="live-tv-idle-sub">Preveri, da je seja odprta in shranjena.</p>
+      <TvScaleStage>
+        <div className="live-tv is-tv-scaled">
+          <div className="live-tv-idle">
+            <p className="live-tv-idle-title">Trening ni najden</p>
+            <p className="live-tv-idle-sub">Preveri, da je seja odprta in shranjena.</p>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 

@@ -27,6 +27,11 @@ export type Team = {
 export type Player = {
   id: string;
   teamId: string;
+  /** Ime (dano ime). */
+  firstName: string;
+  /** Priimek. */
+  surname: string;
+  /** Združeno »PRIIMEK IME« — za sortiranje / starejšo kodo. */
   name: string;
   gender: Gender;
   bzsMember: boolean;

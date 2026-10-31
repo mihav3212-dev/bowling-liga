@@ -1,4 +1,5 @@
 import { exportPlayersPdf } from "../lib/exportPdf";
+import { playerDisplayName } from "../lib/playerName";
 import { computePlayerStandings, playersByAverage, seasonRoundCount } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
@@ -49,7 +50,7 @@ export function PlayerStandings() {
             {players.map((row, i) => (
               <tr key={row.player.id} className={i === 0 ? "is-lead" : undefined}>
                 <td className="mono board-rank">{i + 1}</td>
-                <td className="board-name">{row.player.name}</td>
+                <td className="board-name">{playerDisplayName(row.player)}</td>
                 <td className="board-team">{row.teamName}</td>
                 {row.byRound.map((games, ri) => {
                   const pins = games.reduce((sum, n) => sum + n, 0);

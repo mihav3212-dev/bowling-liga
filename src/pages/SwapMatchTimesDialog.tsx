@@ -41,7 +41,7 @@ export function SwapMatchTimesDialog({ onClose }: { onClose: () => void }) {
       >
         <h2 id="swap-times-title">Zamenjaj termin</h2>
         <p className="muted">
-          Izberi dve tekmi — zamenjata si datum in uro. Ekipe in krog ostaneta enaka.
+          Izberi dve tekmi — zamenjata si datum in uro. Ekipe in kolo ostaneta enaka.
         </p>
 
         <label className="dialog-field">

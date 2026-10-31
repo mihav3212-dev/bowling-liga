@@ -1,5 +1,6 @@
 import { formatMatchWhen } from "./labels";
 import { matchesInPlay, nextSlotMatches } from "./live";
+import { normalizePlayer, playerDisplayName } from "./playerName";
 import { matchTotals, playerById, scoreGame, scoredPins } from "./scoring";
 import { pairingTemplate, slotLabel } from "./pairings";
 import type { LeagueState, Match, Player } from "./types";
@@ -15,6 +16,10 @@ export type LiveDuelRow = {
   lane: number;
   homeName: string;
   awayName: string;
+  homeFirstName?: string;
+  homeSurname?: string;
+  awayFirstName?: string;
+  awaySurname?: string;
   homePins: number | null;
   awayPins: number | null;
   /** Male točke iz tega dvoboja (duel + bonus). */
@@ -54,9 +59,23 @@ export type LiveBoardPick =
   | { status: "live" | "next"; match: Match; siblings: number; index: number }
   | { status: "idle" };
 
-function nameFor(players: Player[], id: string, side: "home" | "away", slot: number): string {
+function personFor(
+  players: Player[],
+  id: string,
+  side: "home" | "away",
+  slot: number,
+): { name: string; firstName: string; surname: string } {
   const player = id ? playerById(players, id) : undefined;
-  return player?.name || slotLabel(side, slot);
+  if (!player) {
+    const label = slotLabel(side, slot);
+    return { name: label, firstName: label, surname: "" };
+  }
+  const n = normalizePlayer(player);
+  return {
+    name: playerDisplayName(n),
+    firstName: n.firstName,
+    surname: n.surname,
+  };
 }
 
 /** Koliko časa po zapolnitvi vseh kegljev še držimo TV na »Končne točke«, preden preklopimo. */
@@ -156,10 +175,16 @@ export function buildLiveMatchView(
       .map((game, gi) => {
         const pair = templates[ri]?.[gi];
         const scored = scoreGame(game, state.players);
+        const home = personFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi);
+        const away = personFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi);
         return {
           lane: game.lane || pair?.lane || gi + 1,
-          homeName: nameFor(state.players, game.homePlayerId, "home", pair?.homeSlot ?? gi),
-          awayName: nameFor(state.players, game.awayPlayerId, "away", pair?.awaySlot ?? gi),
+          homeName: home.name,
+          awayName: away.name,
+          homeFirstName: home.firstName,
+          homeSurname: home.surname,
+          awayFirstName: away.firstName,
+          awaySurname: away.surname,
           homePins: displayPins(game.homePins, game.homePlayerId, state.players),
           awayPins: displayPins(game.awayPins, game.awayPlayerId, state.players),
           homeSmall: scored?.homeTotal ?? null,
@@ -193,15 +218,23 @@ export function buildLiveMatchView(
       awayBig: null,
       homePins: null,
       awayPins: null,
-      duels: Array.from({ length: size }, (_, i) => ({
-        lane: i + 1,
-        homeName: slotLabel("home", i),
-        awayName: slotLabel("away", i),
-        homePins: null,
-        awayPins: null,
-        homeSmall: null,
-        awaySmall: null,
-      })),
+      duels: Array.from({ length: size }, (_, i) => {
+        const homeName = slotLabel("home", i);
+        const awayName = slotLabel("away", i);
+        return {
+          lane: i + 1,
+          homeName,
+          awayName,
+          homeFirstName: homeName,
+          homeSurname: "",
+          awayFirstName: awayName,
+          awaySurname: "",
+          homePins: null,
+          awayPins: null,
+          homeSmall: null,
+          awaySmall: null,
+        };
+      }),
     });
   }
 

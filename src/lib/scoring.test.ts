@@ -19,11 +19,13 @@ import type { LeagueState, Match, Player } from "./types";
 
 function player(over: Partial<Player> & { id: string }): Player {
   return {
-    teamId: "t",
-    name: over.id,
-    gender: "M",
-    bzsMember: false,
-    ...over,
+    id: over.id,
+    teamId: over.teamId ?? "t",
+    firstName: over.firstName ?? "",
+    surname: over.surname ?? "",
+    name: over.name ?? over.id,
+    gender: over.gender ?? "M",
+    bzsMember: over.bzsMember ?? false,
   };
 }
 

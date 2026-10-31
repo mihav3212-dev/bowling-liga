@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { TvScaleStage } from "../components/TvScaleStage";
 import { leagueSeasonTitle, officialRoundMeta, inferSeasonKey } from "../lib/fixtures";
 import { fetchLeague } from "../lib/leagueApi";
-import { formatMatchWhen } from "../lib/labels";
+import { formatMatchWhen, formatSeasonRound } from "../lib/labels";
+import { playerDisplayName } from "../lib/playerName";
 import { MATCH_SLOT_MS, matchesShowingLive } from "../lib/live";
 import { byeTeamName } from "../lib/schedule";
 import { matchTotals } from "../lib/scoring";
@@ -332,7 +334,7 @@ function PlayerPodium({ row, place }: { row: PlayerStandingRow; place: 1 | 2 | 3
       <div className="liga-board-podium-badge" aria-hidden>
         {place}
       </div>
-      <h3 className="liga-board-podium-name">{row.player.name}</h3>
+      <h3 className="liga-board-podium-name">{playerDisplayName(row.player)}</h3>
       <p className="liga-board-podium-team">{row.teamName}</p>
       <p className="liga-board-podium-avg mono">{row.avg.toFixed(1)}</p>
       <p className="liga-board-podium-avg-label">povprečje</p>
@@ -446,7 +448,7 @@ function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }
                   {rest.map((row, i) => (
                     <tr key={row.player.id}>
                       <td className="mono liga-board-rank">{i + 4}</td>
-                      <td className="liga-board-name">{row.player.name}</td>
+                      <td className="liga-board-name">{playerDisplayName(row.player)}</td>
                       <td className="liga-board-team">{row.teamName}</td>
                       <td className="mono">{row.pins}</td>
                       <td className="mono">{row.games}</td>
@@ -478,7 +480,7 @@ function PromoSlide() {
           <p className="liga-board-promo-kicker">Bowling Lenart · Liga</p>
           <h2 className="liga-board-promo-title">Spremljajte nas v živo</h2>
           <p className="liga-board-promo-text">
-            Od letos lahko tekme spremljate tudi prek spleta — rezultati se osvežujejo v živo.
+            Od letos lahko tekme spremljajte tudi preko spleta
           </p>
           <p className="liga-board-promo-url mono">liga.bowlinglenart.si</p>
         </div>
@@ -531,7 +533,8 @@ function ScheduleSlide({ state, now }: { state: LeagueState; now: number }) {
             <section key={round} className="liga-board-schedule-block">
               <div className="liga-board-schedule-head">
                 <h2 className="liga-board-section">
-                  {round}. kolo{label ? ` — ${label}` : ""}
+                  {formatSeasonRound(round)}
+                  {label ? ` — ${label}` : ""}
                 </h2>
                 {bye ? <p className="liga-board-bye">Počiva: {bye}</p> : null}
               </div>
@@ -677,8 +680,8 @@ function slideTitle(id: SlideId, state: LeagueState, now: number): string {
 }
 
 function LeagueBoardScreen({ state }: { state: LeagueState }) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const { active: fullscreen, toggle } = useFullscreen(rootRef);
+  const shellRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle } = useFullscreen(shellRef);
   const [now, setNow] = useState(() => Date.now());
   const slides = useMemo(() => slideList(state, now), [state, now]);
   const slideKey = slides.join("|");
@@ -719,45 +722,47 @@ function LeagueBoardScreen({ state }: { state: LeagueState }) {
   const season = leagueSeasonTitle(state);
 
   return (
-    <div ref={rootRef} className={`liga-board${fullscreen ? " is-fullscreen" : ""}`}>
-      <div className="liga-board-glow" aria-hidden />
-      <BoardHeader
-        title={slideTitle(slide, state, now)}
-        sub={season}
-        fullscreen={fullscreen}
-        onFullscreen={toggle}
-      />
-      <div key={`${slide}-${progressKey}`} className="liga-board-body is-fade">
-        {slide === "standings" && <StandingsSlide state={state} />}
-        {slide === "players" && <PlayersSlide state={state} active />}
-        {slide === "schedule" && <ScheduleSlide state={state} now={now} />}
-        {slide === "results" && <ResultsSlide state={state} />}
-        {slide === "promo" && <PromoSlide />}
-      </div>
-      <div className="liga-board-nav">
-        <div
-          key={progressKey}
-          className="liga-board-progress-bar"
-          style={{ animationDuration: `${duration}ms` }}
-          aria-hidden
+    <TvScaleStage shellRef={shellRef}>
+      <div className={`liga-board is-tv-scaled${fullscreen ? " is-fullscreen" : ""}`}>
+        <div className="liga-board-glow" aria-hidden />
+        <BoardHeader
+          title={slideTitle(slide, state, now)}
+          sub={season}
+          fullscreen={fullscreen}
+          onFullscreen={toggle}
         />
-        <div className="liga-board-dots" role="tablist" aria-label="Zasloni">
-          {slides.map((id, i) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={i === safeIndex}
-              className={`liga-board-dot${i === safeIndex ? " is-on" : ""}`}
-              onClick={() => goTo(i)}
-              title={SLIDE_LABEL[id]}
-            >
-              <span className="liga-board-dot-label">{SLIDE_LABEL[id]}</span>
-            </button>
-          ))}
+        <div key={`${slide}-${progressKey}`} className="liga-board-body is-fade">
+          {slide === "standings" && <StandingsSlide state={state} />}
+          {slide === "players" && <PlayersSlide state={state} active />}
+          {slide === "schedule" && <ScheduleSlide state={state} now={now} />}
+          {slide === "results" && <ResultsSlide state={state} />}
+          {slide === "promo" && <PromoSlide />}
+        </div>
+        <div className="liga-board-nav">
+          <div
+            key={progressKey}
+            className="liga-board-progress-bar"
+            style={{ animationDuration: `${duration}ms` }}
+            aria-hidden
+          />
+          <div className="liga-board-dots" role="tablist" aria-label="Zasloni">
+            {slides.map((id, i) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={i === safeIndex}
+                className={`liga-board-dot${i === safeIndex ? " is-on" : ""}`}
+                onClick={() => goTo(i)}
+                title={SLIDE_LABEL[id]}
+              >
+                <span className="liga-board-dot-label">{SLIDE_LABEL[id]}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </TvScaleStage>
   );
 }
 
@@ -801,22 +806,26 @@ export function LeagueBoard() {
 
   if (booting && !hasData) {
     return (
-      <div className="liga-board">
-        <div className="liga-board-idle">
-          <p>Nalaganje…</p>
+      <TvScaleStage>
+        <div className="liga-board is-tv-scaled">
+          <div className="liga-board-idle">
+            <p>Nalaganje…</p>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 
   if (error && !hasData && !remote) {
     return (
-      <div className="liga-board">
-        <div className="liga-board-idle">
-          <p>Ni povezave</p>
-          <span>Poskusim znova samodejno.</span>
+      <TvScaleStage>
+        <div className="liga-board is-tv-scaled">
+          <div className="liga-board-idle">
+            <p>Ni povezave</p>
+            <span>Poskusim znova samodejno.</span>
+          </div>
         </div>
-      </div>
+      </TvScaleStage>
     );
   }
 

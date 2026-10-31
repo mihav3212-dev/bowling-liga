@@ -1,4 +1,5 @@
 import { uid } from "./ids";
+import { normalizePlayer } from "./playerName";
 import type { Player, Team } from "./types";
 
 /** Kopija ekip (in igralcev) za novo sezono — brez tekem/rezultatov. */
@@ -35,13 +36,18 @@ export function cloneTeamsAndPlayers(
   for (const player of players) {
     const teamId = idMap.get(player.teamId);
     if (!teamId) continue;
-    nextPlayers.push({
-      id: uid("p"),
-      teamId,
-      name: player.name,
-      gender: player.gender,
-      bzsMember: player.bzsMember,
-    });
+    const n = normalizePlayer(player);
+    nextPlayers.push(
+      normalizePlayer({
+        id: uid("p"),
+        teamId,
+        firstName: n.firstName,
+        surname: n.surname,
+        name: n.name,
+        gender: n.gender,
+        bzsMember: n.bzsMember,
+      }),
+    );
   }
   return { teams: nextTeams, players: nextPlayers };
 }

@@ -66,6 +66,7 @@ import { useAuth } from "./auth";
 import { cloneTeamsAndPlayers } from "./cloneRoster";
 import { uid } from "./ids";
 import { hashPassword } from "./passwords";
+import { normalizeLeagueState, normalizePlayer } from "./playerName";
 import {
   compactGames,
   compactTrainings,
@@ -90,7 +91,7 @@ type Store = {
   addTeam: (name: string, contact?: { captain?: string; phone?: string; email?: string }) => void;
   renameTeam: (id: string, name: string) => void;
   updateTeam: (id: string, patch: Partial<Omit<Team, "id">>) => void;
-  addPlayer: (teamId: string, name: string, gender: Gender, bzsMember: boolean) => void;
+  addPlayer: (teamId: string, firstName: string, surname: string, gender: Gender, bzsMember: boolean) => void;
   updatePlayer: (player: Player) => void;
   removePlayer: (id: string) => void;
   generateSchedule: () => void;
@@ -224,13 +225,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const opening = vaultRef.current.seasons.find((s) => s.id === vaultRef.current!.currentId)
     ?? vaultRef.current.seasons[0];
 
-  const [state, setState] = useState<LeagueState>(opening.data);
+  const [state, setState] = useState<LeagueState>(() => normalizeLeagueState(opening.data));
   const [remote, setRemote] = useState(false);
   const [archived, setArchived] = useState(opening.archived);
   const [seasonId, setSeasonId] = useState<string | null>(opening.id);
   const [label, setLabel] = useState(opening.label);
   const [seasons, setSeasons] = useState<SeasonInfo[]>(() => vaultInfos(vaultRef.current!));
-  const stateRef = useRef(opening.data);
+  const stateRef = useRef(normalizeLeagueState(opening.data));
   const remoteRef = useRef(false);
   const archivedRef = useRef(opening.archived);
   const seasonIdRef = useRef<string | null>(opening.id);
@@ -264,12 +265,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSeasonId(season.id);
     setLabel(season.label);
     setSeasons(vaultInfos(stored));
-    setState(season.data);
-    stateRef.current = season.data;
+    const data = normalizeLeagueState(season.data);
+    setState(data);
+    stateRef.current = data;
   };
 
   const persist = (next: LeagueState): LeagueState => {
-    const packed = compactTrainings(next);
+    const packed = compactTrainings(normalizeLeagueState(next));
     if (remoteRef.current && !archivedRef.current && seasonIdRef.current) {
       const id = seasonIdRef.current;
       const team = viewerTeamRef.current;
@@ -309,7 +311,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     noteEdit();
     setState((s) => {
       if (archivedRef.current) return s;
-      const packed = compactTrainings(recipe(s));
+      const packed = compactTrainings(normalizeLeagueState(recipe(s)));
       stateRef.current = packed;
       if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
         vaultRef.current = writeCurrent(vaultRef.current, packed);
@@ -355,9 +357,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSeasonId(payload.current.id);
     setLabel(payload.current.label);
     setSeasons(payload.seasons ?? []);
-    setState(payload.current.data);
-    stateRef.current = payload.current.data;
-    saveState(payload.current.data);
+    const data = normalizeLeagueState(payload.current.data);
+    setState(data);
+    stateRef.current = data;
+    saveState(data);
   };
 
   const openSeason = async (label: string, data: LeagueState) => {
@@ -420,23 +423,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           teams: s.teams.map((t) => (t.id === id ? { ...t, ...patch } : t)),
         })),
-      addPlayer: (teamId, name, gender, bzsMember) => {
+      addPlayer: (teamId, firstName, surname, gender, bzsMember) => {
         const viewer = viewerTeamRef.current;
         if (viewer && (viewer !== teamId || !viewerMayRoster())) {
           return;
         }
+        if (!firstName.trim() && !surname.trim()) return;
         update((s) => {
           const next = {
             ...s,
             players: [
               ...s.players,
-              {
+              normalizePlayer({
                 id: uid("p"),
                 teamId,
-                name: name.trim().toLocaleUpperCase("sl"),
+                firstName,
+                surname,
+                name: "",
                 gender,
                 bzsMember,
-              },
+              }),
             ],
           };
           flushRoster(next);
@@ -448,10 +454,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (viewer && (player.teamId !== viewer || !viewerMayRoster())) {
           return;
         }
-        const normalized = {
-          ...player,
-          name: player.name.toLocaleUpperCase("sl"),
-        };
+        const normalized = normalizePlayer(player);
         update((s) => {
           const next = {
             ...s,
@@ -953,13 +956,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const existing = s.players.find(
             (p) => p.name.toLowerCase() === trimmed.toLowerCase() && (!rosterId || p.teamId === rosterId),
           );
-          const player = existing ?? {
-            id: uid("p"),
-            teamId: rosterId || s.teams[0]?.id || TRAINING_TEAM_ID,
-            name: trimmed,
-            gender,
-            bzsMember,
-          };
+          const player =
+            existing ??
+            normalizePlayer({
+              id: uid("p"),
+              teamId: rosterId || s.teams[0]?.id || TRAINING_TEAM_ID,
+              name: trimmed,
+              firstName: "",
+              surname: "",
+              gender,
+              bzsMember,
+            });
           if (session.kind === "match") {
             if (existing) return s;
             return { ...s, players: [...s.players, player] };
@@ -1180,36 +1187,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         return { url: inviteLink(token), token, expiresAt };
       },
       importState: (next) =>
-        update(() => ({
-          seasonKey: next.seasonKey,
-          seasonTitle: next.seasonTitle,
-          teams: next.teams ?? [],
-          players: next.players ?? [],
-          matches: next.matches ?? [],
-          roundNotes: next.roundNotes,
-          roundLabels: next.roundLabels,
-          trainingSessions: next.trainingSessions,
-          teamTrainings: next.teamTrainings,
-        })),
+        update(() =>
+          normalizeLeagueState({
+            seasonKey: next.seasonKey,
+            seasonTitle: next.seasonTitle,
+            teams: next.teams ?? [],
+            players: next.players ?? [],
+            matches: next.matches ?? [],
+            roundNotes: next.roundNotes,
+            roundLabels: next.roundLabels,
+            trainingSessions: next.trainingSessions,
+            teamTrainings: next.teamTrainings,
+          }),
+        ),
       importSeason: async (next) => {
         const title = next.seasonTitle?.trim() || "Uvožena sezona";
-        await openSeason(title, {
-          seasonKey: next.seasonKey,
-          seasonTitle: title,
-          training: next.training,
-          teams: next.teams ?? [],
-          players: next.players ?? [],
-          matches: next.matches ?? [],
-          roundNotes: next.roundNotes,
-          roundLabels: next.roundLabels,
-          trainingSessions: next.trainingSessions,
-          teamTrainings: next.teamTrainings,
-        });
+        await openSeason(
+          title,
+          normalizeLeagueState({
+            seasonKey: next.seasonKey,
+            seasonTitle: title,
+            training: next.training,
+            teams: next.teams ?? [],
+            players: next.players ?? [],
+            matches: next.matches ?? [],
+            roundNotes: next.roundNotes,
+            roundLabels: next.roundLabels,
+            trainingSessions: next.trainingSessions,
+            teamTrainings: next.teamTrainings,
+          }),
+        );
       },
       replaceSeason: async (id, next, label) => {
         const existing = seasons.find((s) => s.id === id);
         const title = (label || next.seasonTitle || existing?.label || "Uvožena sezona").trim();
-        const data: LeagueState = {
+        const data: LeagueState = normalizeLeagueState({
           seasonKey: next.seasonKey,
           seasonTitle: title,
           training: Boolean(existing?.training),
@@ -1220,7 +1232,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           roundLabels: next.roundLabels,
           trainingSessions: next.trainingSessions,
           teamTrainings: next.teamTrainings,
-        };
+        });
         if (remoteRef.current) {
           applyRemote(await replaceLeague(id, data, title));
           return;
