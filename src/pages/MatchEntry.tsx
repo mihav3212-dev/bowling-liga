@@ -252,6 +252,7 @@ export function MatchEntry({
     state,
     remote,
     seasonId,
+    syncStatus,
     setLineup,
     setPins,
     setRoundPlayer,
@@ -498,6 +499,19 @@ export function MatchEntry({
             {canForceTv && match.liveOnTv && totals.complete && (
               <p className="muted" style={{ marginTop: 8 }}>
                 Tekma je končana — TV force se ugasne sam.
+              </p>
+            )}
+            {remote && !readOnly && syncStatus !== "idle" && (
+              <p
+                className={syncStatus === "error" ? "save-sync is-error" : "save-sync"}
+                style={{ marginTop: 8, marginBottom: 0 }}
+                aria-live="polite"
+              >
+                {syncStatus === "saving"
+                  ? "Shranjujem…"
+                  : syncStatus === "saved"
+                    ? "Shranjeno"
+                    : "Ni shranjeno — preveri povezavo"}
               </p>
             )}
           </div>
@@ -885,11 +899,26 @@ export function MatchEntry({
             >
               {saving ? "Shranjujem…" : "Shrani"}
             </button>
-            <span className="muted">
+            <span
+              className={
+                syncStatus === "error" || saveNote
+                  ? "save-sync is-error"
+                  : syncStatus === "saving" || syncStatus === "saved"
+                    ? "save-sync"
+                    : "muted"
+              }
+              aria-live="polite"
+            >
               {saveNote ||
-                (teamLineup
-                  ? "Sestava se sproti zapiše; gumb te vrne na razpored."
-                  : "Shrani zapiše sestavo in keglje. TV jih pokaže v paru sekundah.")}
+                (remote && syncStatus === "saving"
+                  ? "Shranjujem…"
+                  : remote && syncStatus === "saved"
+                    ? "Shranjeno"
+                    : remote && syncStatus === "error"
+                      ? "Ni shranjeno — preveri povezavo (poskusil bom znova ob naslednjem vnosu)."
+                      : teamLineup
+                        ? "Sestava se sproti zapiše; gumb te vrne na razpored."
+                        : "Shrani zapiše sestavo in keglje. TV jih pokaže v paru sekundah.")}
             </span>
           </>
         )}

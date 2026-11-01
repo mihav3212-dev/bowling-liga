@@ -353,6 +353,17 @@ button.danger {
   border: 1px solid var(--copper-2);
 }
 
+.save-sync {
+  color: var(--fg);
+  opacity: 0.85;
+}
+
+.save-sync.is-error {
+  color: #c44;
+  opacity: 1;
+  font-weight: 600;
+}
+
 input,
 select {
   background: var(--input-bg);
