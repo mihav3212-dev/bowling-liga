@@ -267,3 +267,85 @@ export async function deleteLeague(id: string): Promise<LeaguePayload> {
   if (!res.ok) throw new Error("delete");
   return (await res.json()) as LeaguePayload;
 }
+
+export type MatchEditLockResult = {
+  ok: boolean;
+  held?: boolean;
+  conflict?: { label: string; updatedAt?: string };
+  error?: string;
+};
+
+async function postEditLock(
+  action: "claimEditLock" | "heartbeatEditLock" | "releaseEditLock",
+  body: {
+    id?: string;
+    matchId: string;
+    token: string;
+    label?: string;
+    force?: boolean;
+  },
+): Promise<MatchEditLockResult> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...body }),
+  });
+  if (!res.ok) return { ok: false };
+  try {
+    return (await res.json()) as MatchEditLockResult;
+  } catch {
+    return { ok: false };
+  }
+}
+
+export function claimMatchEditLock(opts: {
+  id?: string;
+  matchId: string;
+  token: string;
+  label: string;
+  force?: boolean;
+}): Promise<MatchEditLockResult> {
+  return postEditLock("claimEditLock", opts);
+}
+
+export function heartbeatMatchEditLock(opts: {
+  id?: string;
+  matchId: string;
+  token: string;
+  label: string;
+}): Promise<MatchEditLockResult> {
+  return postEditLock("heartbeatEditLock", opts);
+}
+
+export function releaseMatchEditLock(opts: {
+  id?: string;
+  matchId: string;
+  token: string;
+}): Promise<MatchEditLockResult> {
+  return postEditLock("releaseEditLock", opts);
+}
+
+/** Ob zaprtju zavihka — brez čakanja na odgovor. */
+export function releaseMatchEditLockBeacon(opts: {
+  id?: string;
+  matchId: string;
+  token: string;
+}): void {
+  try {
+    const body = JSON.stringify({ action: "releaseEditLock", ...opts });
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon("/api/league", new Blob([body], { type: "application/json" }));
+      return;
+    }
+    void fetch("/api/league", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    });
+  } catch {
+    /* ignore */
+  }
+}

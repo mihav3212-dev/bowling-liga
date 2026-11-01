@@ -1,9 +1,16 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { canEnterPins, teamPerms } from "../lib/access";
+import { useAuth } from "../lib/auth";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
-import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
-import { canEnterPins, teamPerms } from "../lib/access";
+import {
+  claimMatchEditLock,
+  heartbeatMatchEditLock,
+  releaseMatchEditLock,
+  releaseMatchEditLockBeacon,
+} from "../lib/leagueApi";
 import { lineupsRevealed, teamMatchSide } from "../lib/lineup";
+import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchPlayerStats, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
@@ -11,6 +18,18 @@ import type { Player } from "../lib/types";
 
 /** Kot TV: hitro osveževanje, da vsi vidijo isto vpisano. */
 const MATCH_SYNC_MS = 800;
+const EDIT_LOCK_HEARTBEAT_MS = 20_000;
+
+function newEditLockToken(): string {
+  try {
+    if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID();
+    }
+  } catch {
+    /* ignore */
+  }
+  return `t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function playerName(roster: Player[], id: string): string {
   const player = roster.find((p) => p.id === id);
@@ -232,6 +251,7 @@ export function MatchEntry({
   const {
     state,
     remote,
+    seasonId,
     setLineup,
     setPins,
     setRoundPlayer,
@@ -241,14 +261,23 @@ export function MatchEntry({
     saveShownMatch,
     syncFromRemote,
   } = useStore();
+  const { admin, teamName } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saveNote, setSaveNote] = useState("");
+  const [lockGate, setLockGate] = useState<"idle" | "checking" | "conflict" | "ready">(
+    () => (remote && !readOnly ? "checking" : "ready"),
+  );
+  const [lockConflictLabel, setLockConflictLabel] = useState<string | null>(null);
+  const [forceClaim, setForceClaim] = useState(false);
   const editingPinsRef = useRef(false);
   const editingLineupRef = useRef(false);
   const pinGuardTimer = useRef<number | undefined>(undefined);
+  const lockTokenRef = useRef(newEditLockToken());
+  const lockActiveRef = useRef(false);
   const syncRef = useRef(syncFromRemote);
   syncRef.current = syncFromRemote;
   const match = state.matches.find((m) => m.id === matchId);
+  const lockLabel = admin ? "Admin" : teamName?.trim() || "Ekipa";
 
   const setPinsEditing = (editing: boolean) => {
     if (pinGuardTimer.current != null) {
@@ -282,7 +311,120 @@ export function MatchEntry({
     };
   }, [remote, matchId]);
 
+  useEffect(() => {
+    if (!remote || readOnly) {
+      setLockGate("ready");
+      return;
+    }
+    let cancelled = false;
+    let heartbeat: number | undefined;
+    const token = lockTokenRef.current;
+    const season = seasonId ?? undefined;
+
+    const release = () => {
+      if (!lockActiveRef.current) return;
+      lockActiveRef.current = false;
+      releaseMatchEditLockBeacon({ id: season, matchId, token });
+    };
+
+    const onPageHide = () => release();
+
+    const holdLock = () => {
+      lockActiveRef.current = true;
+      setLockGate("ready");
+      setLockConflictLabel(null);
+      heartbeat = window.setInterval(() => {
+        void heartbeatMatchEditLock({
+          id: season,
+          matchId,
+          token,
+          label: lockLabel,
+        }).then((res) => {
+          if (cancelled || res.held !== false) return;
+          // Nekdo drug je prevzel — samo opozori, ne zapri vnosa.
+          if (res.conflict?.label) setLockConflictLabel(res.conflict.label);
+        });
+      }, EDIT_LOCK_HEARTBEAT_MS);
+    };
+
+    const claim = async () => {
+      setLockGate("checking");
+      const res = await claimMatchEditLock({
+        id: season,
+        matchId,
+        token,
+        label: lockLabel,
+        force: forceClaim,
+      });
+      if (cancelled) return;
+      if (!res.ok) {
+        // Lokalno / napaka API — ne blokiraj vnosa.
+        setLockGate("ready");
+        return;
+      }
+      if (res.held) {
+        holdLock();
+        return;
+      }
+      setLockConflictLabel(res.conflict?.label ?? "nekdo drug");
+      setLockGate("conflict");
+    };
+
+    void claim();
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      cancelled = true;
+      if (heartbeat != null) window.clearInterval(heartbeat);
+      window.removeEventListener("pagehide", onPageHide);
+      if (lockActiveRef.current) {
+        lockActiveRef.current = false;
+        void releaseMatchEditLock({ id: season, matchId, token });
+      }
+    };
+  }, [remote, readOnly, matchId, seasonId, lockLabel, forceClaim]);
+
   if (!match) return <p>Tekma ne obstaja.</p>;
+
+  if (lockGate === "checking") {
+    return (
+      <section>
+        <button className="ghost" type="button" onClick={onBack}>
+          ← Nazaj
+        </button>
+        <p className="muted" style={{ marginTop: 16 }}>
+          Preverjam, ali kdo že vnaša to tekmo…
+        </p>
+      </section>
+    );
+  }
+
+  if (lockGate === "conflict") {
+    return (
+      <section>
+        <button className="ghost" type="button" onClick={onBack}>
+          ← Nazaj
+        </button>
+        <div className="dialog-panel" style={{ marginTop: 16, maxWidth: "28rem" }}>
+          <h2 style={{ marginTop: 0 }}>Tekmo že vnaša nekdo drug</h2>
+          <p>
+            Trenutno je odprt vnos pri: <strong>{lockConflictLabel ?? "neznano"}</strong>.
+          </p>
+          <p className="muted">
+            Če odpreš vseeno, lahko oba tipata hkrati in se rezultati prekrivajo. Priporočilo: počakaj
+            ali se dogovorita.
+          </p>
+          <div className="dialog-actions">
+            <button className="ghost" type="button" onClick={onBack}>
+              Nazaj
+            </button>
+            <button className="primary" type="button" onClick={() => setForceClaim(true)}>
+              Odpri vseeno
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
   const ownSide = teamMatchSide(match, lineupTeamId);
   const viewerTeam = lineupTeamId ? state.teams.find((t) => t.id === lineupTeamId) : undefined;
   const perms = teamPerms(viewerTeam);

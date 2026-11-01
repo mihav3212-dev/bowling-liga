@@ -23,6 +23,9 @@ import {
   createTeamInvite,
   previewTeamInvite,
   claimTeamInvite,
+  claimMatchEditLock,
+  heartbeatMatchEditLock,
+  releaseMatchEditLock,
 } from "./_lib/db.mjs";
 import { teamPerms } from "./_lib/access.mjs";
 
@@ -250,6 +253,40 @@ export async function handleLeague(req, res) {
           current: presentSeason(created.current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
+        return;
+      }
+      if (
+        body.action === "claimEditLock" ||
+        body.action === "heartbeatEditLock" ||
+        body.action === "releaseEditLock"
+      ) {
+        if (!viewer.admin && !viewer.teamId) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const seasonId = body.id || (await getCurrentSeason(sql))?.id;
+        if (!seasonId || !body.matchId || !body.token) {
+          json(res, 400, { ok: false });
+          return;
+        }
+        const label =
+          String(body.label || "").trim() ||
+          (viewer.admin ? "Admin" : "Ekipa");
+        if (body.action === "releaseEditLock") {
+          json(res, 200, await releaseMatchEditLock(sql, seasonId, body.matchId, body.token));
+          return;
+        }
+        if (body.action === "heartbeatEditLock") {
+          json(res, 200, await heartbeatMatchEditLock(sql, seasonId, body.matchId, body.token, label));
+          return;
+        }
+        json(
+          res,
+          200,
+          await claimMatchEditLock(sql, seasonId, body.matchId, body.token, label, {
+            force: Boolean(body.force),
+          }),
+        );
         return;
       }
       if (!viewer.admin) {

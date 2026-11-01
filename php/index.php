@@ -302,6 +302,37 @@ if ($route === 'league') {
                     'seasons' => list_seasons($pdo, true),
                 ]);
             }
+            if ($action === 'claimEditLock' || $action === 'heartbeatEditLock' || $action === 'releaseEditLock') {
+                if (empty($viewer['admin']) && empty($viewer['teamId'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $seasonId = $body['id'] ?? null;
+                if (!$seasonId) {
+                    $cur = get_current_season($pdo);
+                    $seasonId = $cur['id'] ?? null;
+                }
+                if (!$seasonId || empty($body['matchId']) || empty($body['token'])) {
+                    json_out(400, ['ok' => false]);
+                }
+                $label = trim((string) ($body['label'] ?? ''));
+                if ($label === '') {
+                    $label = !empty($viewer['admin']) ? 'Admin' : 'Ekipa';
+                }
+                if ($action === 'releaseEditLock') {
+                    json_out(200, release_match_edit_lock($pdo, $seasonId, $body['matchId'], $body['token']));
+                }
+                if ($action === 'heartbeatEditLock') {
+                    json_out(200, heartbeat_match_edit_lock($pdo, $seasonId, $body['matchId'], $body['token'], $label));
+                }
+                json_out(200, claim_match_edit_lock(
+                    $pdo,
+                    $seasonId,
+                    $body['matchId'],
+                    $body['token'],
+                    $label,
+                    !empty($body['force'])
+                ));
+            }
             if ($action === 'createInvite') {
                 if (empty($viewer['admin'])) {
                     json_out(401, ['ok' => false]);

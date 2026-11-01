@@ -116,7 +116,125 @@ function ensure_schema(PDO $pdo, $seed = '')
           PRIMARY KEY (name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS match_edit_locks (
+          season_id VARCHAR(64) NOT NULL,
+          match_id VARCHAR(64) NOT NULL,
+          token VARCHAR(64) NOT NULL,
+          label VARCHAR(128) NOT NULL,
+          updated_at DATETIME(3) NOT NULL,
+          PRIMARY KEY (season_id, match_id),
+          KEY idx_match_edit_locks_updated (updated_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
     sync_admin_password($pdo, $seed);
+}
+
+define('MATCH_EDIT_LOCK_TTL_MS', 60000);
+
+function match_edit_lock_fresh($row)
+{
+    if (empty($row['updated_at'])) {
+        return false;
+    }
+    $t = strtotime((string) $row['updated_at']);
+    if (!$t) {
+        return false;
+    }
+    return (microtime(true) * 1000) - ($t * 1000) < MATCH_EDIT_LOCK_TTL_MS;
+}
+
+function read_match_edit_lock(PDO $pdo, $seasonId, $matchId)
+{
+    $rows = q_all(
+        $pdo,
+        'SELECT season_id, match_id, token, label, updated_at FROM match_edit_locks WHERE season_id = ? AND match_id = ? LIMIT 1',
+        [$seasonId, $matchId]
+    );
+    return $rows[0] ?? null;
+}
+
+function write_match_edit_lock(PDO $pdo, $seasonId, $matchId, $token, $label)
+{
+    q_run(
+        $pdo,
+        'INSERT INTO match_edit_locks (season_id, match_id, token, label, updated_at)
+         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(3))
+         ON DUPLICATE KEY UPDATE token = VALUES(token), label = VALUES(label), updated_at = CURRENT_TIMESTAMP(3)',
+        [$seasonId, $matchId, $token, $label]
+    );
+}
+
+function claim_match_edit_lock(PDO $pdo, $seasonId, $matchId, $token, $label, $force = false)
+{
+    $sid = trim((string) $seasonId);
+    $mid = trim((string) $matchId);
+    $tok = trim((string) $token);
+    $lab = trim((string) $label);
+    if ($lab === '') {
+        $lab = 'Nekdo';
+    }
+    $lab = mb_substr($lab, 0, 128);
+    if ($sid === '' || $mid === '' || $tok === '') {
+        return ['ok' => false, 'error' => 'invalid'];
+    }
+    $existing = read_match_edit_lock($pdo, $sid, $mid);
+    if ($existing && match_edit_lock_fresh($existing) && ($existing['token'] ?? '') !== $tok && !$force) {
+        return [
+            'ok' => true,
+            'held' => false,
+            'conflict' => [
+                'label' => (string) ($existing['label'] ?? 'Nekdo'),
+                'updatedAt' => as_iso($existing['updated_at'] ?? null),
+            ],
+        ];
+    }
+    write_match_edit_lock($pdo, $sid, $mid, $tok, $lab);
+    return ['ok' => true, 'held' => true];
+}
+
+function heartbeat_match_edit_lock(PDO $pdo, $seasonId, $matchId, $token, $label)
+{
+    $sid = trim((string) $seasonId);
+    $mid = trim((string) $matchId);
+    $tok = trim((string) $token);
+    $lab = trim((string) $label);
+    if ($lab === '') {
+        $lab = 'Nekdo';
+    }
+    $lab = mb_substr($lab, 0, 128);
+    if ($sid === '' || $mid === '' || $tok === '') {
+        return ['ok' => false];
+    }
+    $existing = read_match_edit_lock($pdo, $sid, $mid);
+    if ($existing && match_edit_lock_fresh($existing) && ($existing['token'] ?? '') !== $tok) {
+        return [
+            'ok' => true,
+            'held' => false,
+            'conflict' => [
+                'label' => (string) ($existing['label'] ?? 'Nekdo'),
+                'updatedAt' => as_iso($existing['updated_at'] ?? null),
+            ],
+        ];
+    }
+    write_match_edit_lock($pdo, $sid, $mid, $tok, $lab);
+    return ['ok' => true, 'held' => true];
+}
+
+function release_match_edit_lock(PDO $pdo, $seasonId, $matchId, $token)
+{
+    $sid = trim((string) $seasonId);
+    $mid = trim((string) $matchId);
+    $tok = trim((string) $token);
+    if ($sid === '' || $mid === '' || $tok === '') {
+        return ['ok' => false];
+    }
+    q_run(
+        $pdo,
+        'DELETE FROM match_edit_locks WHERE season_id = ? AND match_id = ? AND token = ?',
+        [$sid, $mid, $tok]
+    );
+    return ['ok' => true];
 }
 
 function sync_admin_password(PDO $pdo, $seed = '')

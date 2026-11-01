@@ -133,7 +133,108 @@ export async function ensureSchema(pool, seed) {
       PRIMARY KEY (name)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   );
+  await exec(
+    pool,
+    `CREATE TABLE IF NOT EXISTS match_edit_locks (
+      season_id VARCHAR(64) NOT NULL,
+      match_id VARCHAR(64) NOT NULL,
+      token VARCHAR(64) NOT NULL,
+      label VARCHAR(128) NOT NULL,
+      updated_at DATETIME(3) NOT NULL,
+      PRIMARY KEY (season_id, match_id),
+      KEY idx_match_edit_locks_updated (updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  );
   await syncAdminPassword(pool, seed);
+}
+
+/** Mehki zaklep vnosa tekme — opozorilo, ne trdi blok. */
+export const MATCH_EDIT_LOCK_TTL_MS = 60_000;
+
+function lockRowFresh(row, now = Date.now()) {
+  if (!row?.updated_at) return false;
+  const t = new Date(row.updated_at).getTime();
+  if (Number.isNaN(t)) return false;
+  return now - t < MATCH_EDIT_LOCK_TTL_MS;
+}
+
+async function readMatchEditLock(pool, seasonId, matchId) {
+  const rows = await exec(
+    pool,
+    "SELECT season_id, match_id, token, label, updated_at FROM match_edit_locks WHERE season_id = ? AND match_id = ? LIMIT 1",
+    [seasonId, matchId],
+  );
+  return rows[0] ?? null;
+}
+
+async function writeMatchEditLock(pool, seasonId, matchId, token, label) {
+  await exec(
+    pool,
+    `INSERT INTO match_edit_locks (season_id, match_id, token, label, updated_at)
+     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP(3))
+     ON DUPLICATE KEY UPDATE token = VALUES(token), label = VALUES(label), updated_at = CURRENT_TIMESTAMP(3)`,
+    [seasonId, matchId, token, label],
+  );
+}
+
+/**
+ * @returns {{ ok: true, held: true } | { ok: true, held: false, conflict: { label: string, updatedAt?: string } }}
+ */
+export async function claimMatchEditLock(pool, seasonId, matchId, token, label, { force = false } = {}) {
+  const sid = String(seasonId || "").trim();
+  const mid = String(matchId || "").trim();
+  const tok = String(token || "").trim();
+  const lab = String(label || "Nekdo").trim().slice(0, 128) || "Nekdo";
+  if (!sid || !mid || !tok) return { ok: false, error: "invalid" };
+
+  const existing = await readMatchEditLock(pool, sid, mid);
+  if (existing && lockRowFresh(existing) && existing.token !== tok && !force) {
+    return {
+      ok: true,
+      held: false,
+      conflict: {
+        label: String(existing.label || "Nekdo"),
+        updatedAt: asIso(existing.updated_at),
+      },
+    };
+  }
+  await writeMatchEditLock(pool, sid, mid, tok, lab);
+  return { ok: true, held: true };
+}
+
+export async function heartbeatMatchEditLock(pool, seasonId, matchId, token, label) {
+  const sid = String(seasonId || "").trim();
+  const mid = String(matchId || "").trim();
+  const tok = String(token || "").trim();
+  const lab = String(label || "Nekdo").trim().slice(0, 128) || "Nekdo";
+  if (!sid || !mid || !tok) return { ok: false };
+
+  const existing = await readMatchEditLock(pool, sid, mid);
+  if (!existing || existing.token !== tok) {
+    // Prevzemi, če je star / prazen; sicer conflict
+    if (existing && lockRowFresh(existing) && existing.token !== tok) {
+      return {
+        ok: true,
+        held: false,
+        conflict: { label: String(existing.label || "Nekdo"), updatedAt: asIso(existing.updated_at) },
+      };
+    }
+  }
+  await writeMatchEditLock(pool, sid, mid, tok, lab);
+  return { ok: true, held: true };
+}
+
+export async function releaseMatchEditLock(pool, seasonId, matchId, token) {
+  const sid = String(seasonId || "").trim();
+  const mid = String(matchId || "").trim();
+  const tok = String(token || "").trim();
+  if (!sid || !mid || !tok) return { ok: false };
+  await exec(
+    pool,
+    "DELETE FROM match_edit_locks WHERE season_id = ? AND match_id = ? AND token = ?",
+    [sid, mid, tok],
+  );
+  return { ok: true };
 }
 
 export async function syncAdminPassword(pool, seed) {
