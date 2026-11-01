@@ -7,6 +7,7 @@ import { lastCompletedRound } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { findSeasonByName } from "../lib/storage";
 import type { LeagueState } from "../lib/types";
+import { AddMatchDialog } from "./AddMatchDialog";
 import { DeleteMatchDialog } from "./DeleteMatchDialog";
 import { RescheduleMatchDialog } from "./RescheduleMatchDialog";
 import { SwapMatchHomeAwayDialog } from "./SwapMatchHomeAwayDialog";
@@ -49,6 +50,7 @@ export function AdminMenu({
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
   const [deleteMatchOpen, setDeleteMatchOpen] = useState(false);
+  const [addMatchOpen, setAddMatchOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
   const closeMenu = () => {
@@ -60,14 +62,14 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (rescheduleOpen || swapOpen || swapHomeAwayOpen || deleteMatchOpen) return;
+      if (rescheduleOpen || swapOpen || swapHomeAwayOpen || deleteMatchOpen || addMatchOpen) return;
       if (panel === "edit") setPanel("seasons");
       else if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel, rescheduleOpen, swapOpen, swapHomeAwayOpen, deleteMatchOpen]);
+  }, [open, panel, rescheduleOpen, swapOpen, swapHomeAwayOpen, deleteMatchOpen, addMatchOpen]);
 
   const downloadSeasonJson = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -306,6 +308,24 @@ export function AdminMenu({
               <button
                 className="ghost"
                 type="button"
+                disabled={state.teams.length < 2}
+                title={
+                  state.teams.length < 2
+                    ? "Najprej dodaj vsaj dve ekipi."
+                    : "Vstavi eno tekmo v razpored (npr. nadomestna)."
+                }
+                onClick={() => {
+                  setAddMatchOpen(true);
+                  setOpen(false);
+                }}
+              >
+                Dodaj tekmo
+              </button>
+            )}
+            {canEdit && (
+              <button
+                className="ghost"
+                type="button"
                 disabled={state.matches.length < 1}
                 title={
                   state.matches.length < 1
@@ -467,6 +487,7 @@ export function AdminMenu({
     {rescheduleOpen && <RescheduleMatchDialog onClose={() => setRescheduleOpen(false)} />}
     {swapOpen && <SwapMatchTimesDialog onClose={() => setSwapOpen(false)} />}
     {swapHomeAwayOpen && <SwapMatchHomeAwayDialog onClose={() => setSwapHomeAwayOpen(false)} />}
+    {addMatchOpen && <AddMatchDialog onClose={() => setAddMatchOpen(false)} />}
     {deleteMatchOpen && <DeleteMatchDialog onClose={() => setDeleteMatchOpen(false)} />}
     </>
   );

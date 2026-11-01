@@ -16,6 +16,7 @@ import {
   buildDrawMatches,
   buildReturnDraw,
   buildSeasonMatches,
+  emptyMatch,
   flipMatchHomeAway,
   type FixtureRow,
 } from "./schedule";
@@ -116,6 +117,13 @@ type Store = {
   swapMatchHomeAway: (matchId: string) => void;
   /** Odstrani tekmo iz razporeda (npr. ekipa ni igrala). */
   deleteMatch: (matchId: string) => void;
+  /** Dodaj eno tekmo v razpored (admin). Vrne false, če par že obstaja v istem kolu. */
+  addMatch: (input: {
+    round: number;
+    homeTeamId: string;
+    awayTeamId: string;
+    startsAt?: string;
+  }) => boolean;
   /** Admin: prisili / ugasni TV prikaz te tekme. */
   setMatchLiveOnTv: (matchId: string, on: boolean) => void;
   setPins: (
@@ -631,6 +639,28 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...s,
           matches: s.matches.filter((m) => m.id !== matchId),
         }));
+      },
+      addMatch: ({ round, homeTeamId, awayTeamId, startsAt }) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer) {
+          if (!canTeam(stateRef.current.teams.find((t) => t.id === viewer), "season")) return false;
+        }
+        const roundNum = Math.floor(Number(round));
+        if (!Number.isFinite(roundNum) || roundNum < 1) return false;
+        if (!homeTeamId || !awayTeamId || homeTeamId === awayTeamId) return false;
+        const s = stateRef.current;
+        if (!s.teams.some((t) => t.id === homeTeamId) || !s.teams.some((t) => t.id === awayTeamId)) {
+          return false;
+        }
+        const key = `${roundNum}|${homeTeamId}|${awayTeamId}`;
+        if (s.matches.some((m) => `${m.round}|${m.homeTeamId}|${m.awayTeamId}` === key)) {
+          return false;
+        }
+        update((prev) => ({
+          ...prev,
+          matches: [...prev.matches, emptyMatch(roundNum, homeTeamId, awayTeamId, startsAt)],
+        }));
+        return true;
       },
       setMatchLiveOnTv: (matchId, on) => {
         const viewer = viewerTeamRef.current;

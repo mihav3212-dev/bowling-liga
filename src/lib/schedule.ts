@@ -53,7 +53,7 @@ export function flipMatchHomeAway(match: Match): Match {
   };
 }
 
-function emptyMatch(
+export function emptyMatch(
   round: number,
   homeTeamId: string,
   awayTeamId: string,

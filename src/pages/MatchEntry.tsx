@@ -3,6 +3,7 @@ import { canEnterPins, teamPerms } from "../lib/access";
 import { useAuth } from "../lib/auth";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { playerTag, parsePins, formatMatchWhen } from "../lib/labels";
+import { matchEditLockLabel } from "../lib/editLockLabel";
 import {
   claimMatchEditLock,
   heartbeatMatchEditLock,
@@ -278,7 +279,8 @@ export function MatchEntry({
   const syncRef = useRef(syncFromRemote);
   syncRef.current = syncFromRemote;
   const match = state.matches.find((m) => m.id === matchId);
-  const lockLabel = admin ? "Admin" : teamName?.trim() || "Ekipa";
+  // Isti admin račun na dveh napravah → različna oznaka (npr. Admin · A3F2).
+  const lockLabel = matchEditLockLabel(admin ? "Admin" : teamName?.trim() || "Ekipa");
 
   const setPinsEditing = (editing: boolean) => {
     if (pinGuardTimer.current != null) {
