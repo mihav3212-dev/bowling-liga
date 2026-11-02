@@ -11,6 +11,15 @@ export type LeaguePayload = {
     data: LeagueState;
   };
   seasons?: SeasonInfo[];
+  ok?: boolean;
+  conflict?: boolean;
+};
+
+/** Izid shranjevanja: ok / napaka / konflikt (v bazi je novejša različica). */
+export type SaveResult = {
+  ok: boolean;
+  conflict?: boolean;
+  payload?: LeaguePayload;
 };
 
 export async function fetchLeague(id?: string): Promise<LeaguePayload> {
@@ -20,14 +29,25 @@ export async function fetchLeague(id?: string): Promise<LeaguePayload> {
   return (await res.json()) as LeaguePayload;
 }
 
-export async function saveLeague(id: string, data: LeagueState): Promise<boolean> {
+export async function saveLeague(
+  id: string,
+  data: LeagueState,
+  opts?: { baseUpdatedAt?: string | null },
+): Promise<SaveResult> {
   const res = await fetch("/api/league", {
     method: "PUT",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id, data }),
+    body: JSON.stringify({ id, data, baseUpdatedAt: opts?.baseUpdatedAt ?? undefined }),
   });
-  return res.ok;
+  let payload: LeaguePayload | undefined;
+  try {
+    payload = (await res.json()) as LeaguePayload;
+  } catch {
+    payload = undefined;
+  }
+  if (res.ok) return { ok: true, payload };
+  return { ok: false, conflict: Boolean(payload?.conflict) || res.status === 409, payload };
 }
 
 export async function archiveLeague(id?: string): Promise<LeaguePayload> {
@@ -131,15 +151,37 @@ export async function saveMatchGame(
 export async function saveTeamRoster(
   id: string,
   teamId: string,
-  players: { id: string; teamId: string; name: string; gender: "M" | "F"; bzsMember: boolean }[],
-): Promise<boolean> {
+  players: {
+    id: string;
+    teamId: string;
+    name: string;
+    firstName?: string;
+    surname?: string;
+    gender: "M" | "F";
+    bzsMember: boolean;
+  }[],
+  opts?: { baseUpdatedAt?: string | null },
+): Promise<SaveResult> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "saveRoster", id, teamId, players }),
+    body: JSON.stringify({
+      action: "saveRoster",
+      id,
+      teamId,
+      players,
+      baseUpdatedAt: opts?.baseUpdatedAt ?? undefined,
+    }),
   });
-  return res.ok;
+  let payload: LeaguePayload | undefined;
+  try {
+    payload = (await res.json()) as LeaguePayload;
+  } catch {
+    payload = undefined;
+  }
+  if (res.ok) return { ok: true, payload };
+  return { ok: false, conflict: Boolean(payload?.conflict) || res.status === 409, payload };
 }
 
 export async function saveAdminMatch(
@@ -152,14 +194,27 @@ export async function saveAdminMatch(
     awayBench: string[];
     rounds: { games: { homePins: number | null; awayPins: number | null; homePlayerId: string; awayPlayerId: string; lane: number }[] }[];
   },
-): Promise<boolean> {
+  opts?: { baseUpdatedAt?: string | null },
+): Promise<SaveResult> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "saveMatch", id, match }),
+    body: JSON.stringify({
+      action: "saveMatch",
+      id,
+      match,
+      baseUpdatedAt: opts?.baseUpdatedAt ?? undefined,
+    }),
   });
-  return res.ok;
+  let payload: LeaguePayload | undefined;
+  try {
+    payload = (await res.json()) as LeaguePayload;
+  } catch {
+    payload = undefined;
+  }
+  if (res.ok) return { ok: true, payload };
+  return { ok: false, conflict: Boolean(payload?.conflict) || res.status === 409, payload };
 }
 
 export async function saveMatchLineup(
@@ -168,14 +223,31 @@ export async function saveMatchLineup(
   side: "home" | "away",
   starters: string[],
   bench: string[],
-): Promise<boolean> {
+  opts?: { baseStarters?: string[]; baseBench?: string[] },
+): Promise<SaveResult> {
   const res = await fetch("/api/league", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "saveLineup", id, matchId, side, starters, bench }),
+    body: JSON.stringify({
+      action: "saveLineup",
+      id,
+      matchId,
+      side,
+      starters,
+      bench,
+      baseStarters: opts?.baseStarters,
+      baseBench: opts?.baseBench,
+    }),
   });
-  return res.ok;
+  let payload: LeaguePayload | undefined;
+  try {
+    payload = (await res.json()) as LeaguePayload;
+  } catch {
+    payload = undefined;
+  }
+  if (res.ok) return { ok: true, payload };
+  return { ok: false, conflict: Boolean(payload?.conflict) || res.status === 409, payload };
 }
 
 export async function saveTeamTrainings(

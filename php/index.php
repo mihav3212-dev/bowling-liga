@@ -183,8 +183,25 @@ if ($route === 'league') {
                     json_out(401, ['ok' => false]);
                 }
             }
-            $ok = save_season($pdo, $id, $body['data'] ?? [], ['lockPerms' => empty($viewer['admin'])]);
-            json_out($ok ? 200 : 409, ['ok' => $ok]);
+            $result = save_season_if_fresh($pdo, $id, $body['data'] ?? [], [
+                'lockPerms' => empty($viewer['admin']),
+                'baseUpdatedAt' => $body['baseUpdatedAt'] ?? null,
+            ]);
+            if (empty($result['ok'])) {
+                json_out(409, [
+                    'ok' => false,
+                    'conflict' => !empty($result['conflict']),
+                    'storage' => 'db',
+                    'current' => !empty($result['season']) ? present_season($result['season'], $viewer) : null,
+                    'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                ]);
+            }
+            json_out(200, [
+                'ok' => true,
+                'storage' => 'db',
+                'current' => present_season($result['season'], $viewer),
+                'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+            ]);
         }
 
         if ($method === 'POST') {
@@ -216,11 +233,25 @@ if ($route === 'league') {
                 ]);
             }
             if ($action === 'saveRoster') {
-                $teamId = $viewer['teamId'] ?? null;
+                $teamId = !empty($viewer['admin'])
+                    ? ($body['teamId'] ?? $viewer['teamId'] ?? null)
+                    : ($viewer['teamId'] ?? null);
                 if (!$teamId) {
                     json_out(401, ['ok' => false]);
                 }
-                $current = save_team_roster($pdo, $teamId, $body['players'] ?? [], $body['id'] ?? null);
+                $current = save_team_roster($pdo, $teamId, $body['players'] ?? [], $body['id'] ?? null, [
+                    'admin' => !empty($viewer['admin']),
+                    'baseUpdatedAt' => $body['baseUpdatedAt'] ?? null,
+                ]);
+                if (is_array($current) && !empty($current['conflict'])) {
+                    json_out(409, [
+                        'ok' => false,
+                        'conflict' => true,
+                        'storage' => 'db',
+                        'current' => present_season($current['season'], $viewer),
+                        'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                    ]);
+                }
                 if (!$current) {
                     json_out(409, ['ok' => false]);
                 }
@@ -248,8 +279,21 @@ if ($route === 'league') {
                     $body['starters'] ?? [],
                     $body['bench'] ?? [],
                     $body['id'] ?? null,
-                    $asAdmin
+                    $asAdmin,
+                    [
+                        'baseStarters' => $body['baseStarters'] ?? null,
+                        'baseBench' => $body['baseBench'] ?? null,
+                    ]
                 );
+                if (is_array($current) && !empty($current['conflict'])) {
+                    json_out(409, [
+                        'ok' => false,
+                        'conflict' => true,
+                        'storage' => 'db',
+                        'current' => present_season($current['season'], $viewer),
+                        'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
+                    ]);
+                }
                 if (!$current) {
                     json_out(409, ['ok' => false]);
                 }
@@ -263,7 +307,18 @@ if ($route === 'league') {
                 if (empty($viewer['admin'])) {
                     json_out(401, ['ok' => false]);
                 }
-                $current = save_admin_match($pdo, $body['id'] ?? null, $body['match'] ?? []);
+                $current = save_admin_match($pdo, $body['id'] ?? null, $body['match'] ?? [], [
+                    'baseUpdatedAt' => $body['baseUpdatedAt'] ?? null,
+                ]);
+                if (is_array($current) && !empty($current['conflict'])) {
+                    json_out(409, [
+                        'ok' => false,
+                        'conflict' => true,
+                        'storage' => 'db',
+                        'current' => present_season($current['season'], $viewer),
+                        'seasons' => list_seasons($pdo, true),
+                    ]);
+                }
                 if (!$current) {
                     json_out(409, ['ok' => false]);
                 }

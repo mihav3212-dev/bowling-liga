@@ -610,7 +610,9 @@ export function TeamDetail({
                           ? remote
                             ? "Shranjeno v bazo."
                             : "Shranjeno v ta brskalnik."
-                          : "Shranjevanje ni uspelo. Poskusi znova.",
+                          : remote
+                            ? "Zavrnjeno — v bazi je novejša različica ali napaka. Preveri seznam in shrani znova."
+                            : "Shranjevanje ni uspelo. Poskusi znova.",
                       );
                     }}
                   >

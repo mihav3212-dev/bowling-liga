@@ -254,6 +254,7 @@ export function MatchEntry({
     remote,
     seasonId,
     syncStatus,
+    syncMessage,
     setLineup,
     setPins,
     setRoundPlayer,
@@ -513,7 +514,7 @@ export function MatchEntry({
                   ? "Shranjujem…"
                   : syncStatus === "saved"
                     ? "Shranjeno"
-                    : "Ni shranjeno — preveri povezavo"}
+                    : syncMessage || "Ni shranjeno — preveri povezavo"}
               </p>
             )}
           </div>
@@ -917,7 +918,8 @@ export function MatchEntry({
                   : remote && syncStatus === "saved"
                     ? "Shranjeno"
                     : remote && syncStatus === "error"
-                      ? "Ni shranjeno — preveri povezavo (poskusil bom znova ob naslednjem vnosu)."
+                      ? syncMessage ||
+                        "Ni shranjeno — preveri povezavo (poskusil bom znova ob naslednjem vnosu)."
                       : teamLineup
                         ? "Sestava se sproti zapiše; gumb te vrne na razpored."
                         : "Shrani zapiše sestavo in keglje. TV jih pokaže v paru sekundah.")}

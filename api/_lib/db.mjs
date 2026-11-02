@@ -108,6 +108,15 @@ function asSeason(row) {
   };
 }
 
+/** True, če je strežnikova sezona novejša od klientove baze (stari zavihek). */
+export function isSeasonBaseStale(serverUpdatedAt, baseUpdatedAt) {
+  if (!baseUpdatedAt) return false;
+  const serverMs = Date.parse(String(serverUpdatedAt || ""));
+  const baseMs = Date.parse(String(baseUpdatedAt || ""));
+  if (!Number.isFinite(serverMs) || !Number.isFinite(baseMs)) return false;
+  return serverMs > baseMs + 750;
+}
+
 function dump(data) {
   return JSON.stringify(data);
 }
@@ -308,6 +317,47 @@ export async function saveSeason(pool, id, data, opts = {}) {
   return result.affectedRows > 0;
 }
 
+/**
+ * Celoten zapis sezone — zavrne, če ima klient starejšo bazo (baseUpdatedAt).
+ * @returns {{ ok: true, season: object } | { ok: false, conflict?: boolean, season?: object }}
+ */
+export async function saveSeasonIfFresh(pool, id, data, opts = {}) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [rows] = await conn.execute(
+      `SELECT * FROM seasons WHERE id = ? AND archived_at IS NULL FOR UPDATE`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) {
+      await conn.rollback();
+      return { ok: false };
+    }
+    const current = asSeason(row);
+    if (isSeasonBaseStale(current.updatedAt, opts.baseUpdatedAt)) {
+      await conn.rollback();
+      return { ok: false, conflict: true, season: current };
+    }
+    const payload = preserveSecrets(asState(data), current.data, opts);
+    await conn.execute(
+      "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+      [dump(payload), id],
+    );
+    await conn.commit();
+    return { ok: true, season: await getSeason(pool, id) };
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 export async function archiveCurrent(pool, id) {
   let targetId = id;
   if (!targetId) {
@@ -381,6 +431,18 @@ export async function deleteSeason(pool, id) {
   return getSeason(pool, nextId);
 }
 
+function sameIdList(a, b) {
+  const left = Array.isArray(a) ? a.map((id) => String(id ?? "")) : [];
+  const right = Array.isArray(b) ? b.map((id) => String(id ?? "")) : [];
+  if (left.length !== right.length) return false;
+  return left.every((id, i) => id === right[i]);
+}
+
+/**
+ * Shrani sestavo ene strani. baseStarters/baseBench = kar klient še vidi v bazi;
+ * če je stran medtem spremenjena, conflict (brez da bi druga stran povoila to).
+ * @returns {object | null | { conflict: true, season: object }}
+ */
 export async function saveMatchLineup(pool, teamId, matchId, side, starters, bench, seasonId, opts = {}) {
   const admin = Boolean(opts.admin);
   const conn = await pool.getConnection();
@@ -433,6 +495,17 @@ export async function saveMatchLineup(pool, teamId, matchId, side, starters, ben
       await conn.rollback();
       return null;
     }
+    if (Array.isArray(opts.baseStarters)) {
+      const serverStarters = side === "home" ? match.homeStarters : match.awayStarters;
+      const serverBench = side === "home" ? match.homeBench : match.awayBench;
+      if (
+        !sameIdList(serverStarters, opts.baseStarters) ||
+        !sameIdList(serverBench ?? [], opts.baseBench ?? [])
+      ) {
+        await conn.rollback();
+        return { conflict: true, season: current };
+      }
+    }
     const allowed = new Set(
       (current.data.players ?? []).filter((player) => player.teamId === rosterTeamId).map((player) => player.id),
     );
@@ -457,8 +530,11 @@ export async function saveMatchLineup(pool, teamId, matchId, side, starters, ben
   }
 }
 
-/** Admin: ena tekma. Igralci gredo po oznakah A1–A4 / B1–B4, keglji ostanejo iz vnosa. */
-export async function saveAdminMatch(pool, seasonId, incoming) {
+/**
+ * Admin: ena tekma. Igralci gredo po oznakah A1–A4 / B1–B4, keglji iz vnosa.
+ * @returns {object | null | { conflict: true, season: object }}
+ */
+export async function saveAdminMatch(pool, seasonId, incoming, opts = {}) {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -483,6 +559,10 @@ export async function saveAdminMatch(pool, seasonId, incoming) {
       return null;
     }
     const current = asSeason(row);
+    if (isSeasonBaseStale(current.updatedAt, opts.baseUpdatedAt)) {
+      await conn.rollback();
+      return { conflict: true, season: current };
+    }
     const matches = [...(current.data.matches ?? [])];
     const index = matches.findIndex((match) => match.id === incoming.id);
     if (index < 0) {
@@ -503,11 +583,16 @@ export async function saveAdminMatch(pool, seasonId, incoming) {
       rounds: next.rounds.map((round, ri) => ({
         games: round.games.map((game, gi) => {
           const cell = inRounds[ri]?.games?.[gi];
-          if (!cell) return game;
+          if (!cell || typeof cell !== "object") return game;
           return {
             ...game,
-            homePins: cell.homePins ?? null,
-            awayPins: cell.awayPins ?? null,
+            // Ne zbriši kegljev z undefined — samo eksplicitno poslana polja.
+            homePins: Object.prototype.hasOwnProperty.call(cell, "homePins")
+              ? cell.homePins
+              : game.homePins,
+            awayPins: Object.prototype.hasOwnProperty.call(cell, "awayPins")
+              ? cell.awayPins
+              : game.awayPins,
           };
         }),
       })),
@@ -667,43 +752,99 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
   }
 }
 
-export async function saveTeamRoster(pool, teamId, roster, seasonId) {
-  const current = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
-  if (!current || current.archived) return null;
-  const team = (current.data.teams ?? []).find((item) => item.id === teamId);
-  if (!teamPerms(team).roster || !teamRosterWindowOpen(current.data.matches)) return null;
-  const incoming = Array.isArray(roster) ? roster : [];
-  const cleaned = incoming
-    .filter((player) => player && (player.name || player.firstName || player.surname))
-    .map((player) => {
-      const firstName = String(player.firstName ?? "").trim();
-      const surname = String(player.surname ?? "").trim();
-      const legacy = String(player.name ?? "").trim();
-      let f = firstName;
-      let s = surname;
-      if (!f && !s && legacy) {
-        const parts = legacy.split(/\s+/).filter(Boolean);
-        if (parts.length === 1) f = parts[0];
-        else if (parts.length > 1) {
-          f = parts.slice(0, -1).join(" ");
-          s = parts[parts.length - 1];
-        }
+/**
+ * Zamenjaj igralce ene ekipe. Zaklep + baseUpdatedAt preprečita, da star seznam povozi novejšega.
+ * @returns {object | null | { conflict: true, season: object }}
+ */
+export async function saveTeamRoster(pool, teamId, roster, seasonId, opts = {}) {
+  const admin = Boolean(opts.admin);
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    let id = seasonId;
+    if (!id) {
+      const [ids] = await conn.execute(
+        `SELECT id FROM seasons WHERE archived_at IS NULL ORDER BY updated_at DESC LIMIT 1 FOR UPDATE`,
+      );
+      id = ids[0]?.id;
+    }
+    if (!id) {
+      await conn.rollback();
+      return null;
+    }
+    const [rows] = await conn.execute(
+      `SELECT * FROM seasons WHERE id = ? AND archived_at IS NULL FOR UPDATE`,
+      [id],
+    );
+    const row = rows[0];
+    if (!row) {
+      await conn.rollback();
+      return null;
+    }
+    const current = asSeason(row);
+    if (isSeasonBaseStale(current.updatedAt, opts.baseUpdatedAt)) {
+      await conn.rollback();
+      return { conflict: true, season: current };
+    }
+    const team = (current.data.teams ?? []).find((item) => item.id === teamId);
+    if (!team) {
+      await conn.rollback();
+      return null;
+    }
+    if (!admin) {
+      if (!teamPerms(team).roster || !teamRosterWindowOpen(current.data.matches)) {
+        await conn.rollback();
+        return null;
       }
-      const name = [s, f].filter(Boolean).join(" ") || legacy;
-      return {
-        id: String(player.id || ""),
-        teamId,
-        firstName: f,
-        surname: s,
-        name,
-        gender: player.gender === "F" ? "F" : "M",
-        bzsMember: Boolean(player.bzsMember),
-      };
-    })
-    .filter((player) => player.id && player.name);
-  const others = (current.data.players ?? []).filter((player) => player.teamId !== teamId);
-  const ok = await saveSeason(pool, current.id, { ...current.data, players: [...others, ...cleaned] });
-  return ok ? getSeason(pool, current.id) : null;
+    }
+    const incoming = Array.isArray(roster) ? roster : [];
+    const cleaned = incoming
+      .filter((player) => player && (player.name || player.firstName || player.surname))
+      .map((player) => {
+        const firstName = String(player.firstName ?? "").trim();
+        const surname = String(player.surname ?? "").trim();
+        const legacy = String(player.name ?? "").trim();
+        let f = firstName;
+        let s = surname;
+        if (!f && !s && legacy) {
+          const parts = legacy.split(/\s+/).filter(Boolean);
+          if (parts.length === 1) f = parts[0];
+          else if (parts.length > 1) {
+            f = parts.slice(0, -1).join(" ");
+            s = parts[parts.length - 1];
+          }
+        }
+        const name = [s, f].filter(Boolean).join(" ") || legacy;
+        return {
+          id: String(player.id || ""),
+          teamId,
+          firstName: f,
+          surname: s,
+          name,
+          gender: player.gender === "F" ? "F" : "M",
+          bzsMember: Boolean(player.bzsMember),
+        };
+      })
+      .filter((player) => player.id && player.name);
+    const others = (current.data.players ?? []).filter((player) => player.teamId !== teamId);
+    const nextData = { ...current.data, players: [...others, ...cleaned] };
+    const payload = preserveSecrets(asState(nextData), current.data, { lockPerms: !admin });
+    await conn.execute(
+      "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+      [dump(payload), current.id],
+    );
+    await conn.commit();
+    return getSeason(pool, current.id);
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 export async function saveTeamTrainings(pool, teamId, sessions, seasonId) {

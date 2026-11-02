@@ -313,6 +313,59 @@ function save_season(PDO $pdo, $id, $data, $opts = [])
     return $stmt->rowCount() > 0;
 }
 
+/** True, če je strežnikova sezona novejša od klientove baze. */
+function is_season_base_stale($serverUpdatedAt, $baseUpdatedAt)
+{
+    if ($baseUpdatedAt === null || $baseUpdatedAt === '') {
+        return false;
+    }
+    $serverMs = strtotime((string) $serverUpdatedAt);
+    $baseMs = strtotime((string) $baseUpdatedAt);
+    if ($serverMs === false || $baseMs === false) {
+        return false;
+    }
+    return $serverMs > $baseMs + 0; // strtotime je v sekundah; +750ms ≈ ista sekunda OK
+}
+
+/**
+ * Celoten zapis sezone z zavrnitvijo starejše baze.
+ * @return array{ok:bool,conflict?:bool,season?:array|null}
+ */
+function save_season_if_fresh(PDO $pdo, $id, $data, $opts = [])
+{
+    $started = !$pdo->inTransaction();
+    try {
+        $current = begin_season_lock($pdo, $id);
+        if (!$current) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['ok' => false];
+        }
+        if (is_season_base_stale($current['updatedAt'] ?? null, $opts['baseUpdatedAt'] ?? null)) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['ok' => false, 'conflict' => true, 'season' => $current];
+        }
+        $payload = preserve_secrets(as_state($data), $current['data'] ?? null, $opts);
+        q_run(
+            $pdo,
+            'UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL',
+            [dump_state($payload), $current['id']]
+        );
+        if ($started && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+        return ['ok' => true, 'season' => get_season($pdo, $current['id'])];
+    } catch (Exception $e) {
+        if ($started && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
+}
+
 /** Zaklene vrstico sezone, da dva hkratna vpisa ne prepišeta drug drugega. */
 function begin_season_lock(PDO $pdo, $seasonId)
 {
@@ -430,7 +483,22 @@ function delete_season(PDO $pdo, $id)
     return $nextId ? get_season($pdo, $nextId) : null;
 }
 
-function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench, $seasonId, $asAdmin = false)
+function liga_same_id_list($a, $b)
+{
+    $left = is_array($a) ? array_map(static fn ($id) => (string) ($id ?? ''), $a) : [];
+    $right = is_array($b) ? array_map(static fn ($id) => (string) ($id ?? ''), $b) : [];
+    if (count($left) !== count($right)) {
+        return false;
+    }
+    foreach ($left as $i => $id) {
+        if ($id !== $right[$i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench, $seasonId, $asAdmin = false, $opts = [])
 {
     $started = !$pdo->inTransaction();
     try {
@@ -466,6 +534,17 @@ function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench
             }
             if (liga_lineup_locked($match['rounds'] ?? [])) {
                 return finish_season_write($pdo, $started, false, $current['id']);
+            }
+            if (array_key_exists('baseStarters', $opts) && is_array($opts['baseStarters'])) {
+                $serverStarters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
+                $serverBench = $side === 'home' ? ($match['homeBench'] ?? []) : ($match['awayBench'] ?? []);
+                $baseBench = $opts['baseBench'] ?? [];
+                if (!liga_same_id_list($serverStarters, $opts['baseStarters']) || !liga_same_id_list($serverBench, $baseBench)) {
+                    if ($started && $pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    return ['conflict' => true, 'season' => $current];
+                }
             }
             $allowed = [];
             foreach ($players as $player) {
@@ -600,13 +679,19 @@ function save_match_game_locked(PDO $pdo, $teamId, $patch, $seasonId, $asAdmin, 
 }
 
 /** Admin: ena tekma (sestava + keglji). Ostale tekme in ekipe ostanejo. */
-function save_admin_match(PDO $pdo, $seasonId, $incoming)
+function save_admin_match(PDO $pdo, $seasonId, $incoming, $opts = [])
 {
     $started = !$pdo->inTransaction();
     try {
         $current = begin_season_lock($pdo, $seasonId);
         if (!$current || !empty($current['archived']) || !is_array($incoming)) {
             return finish_season_write($pdo, $started, false, $seasonId);
+        }
+        if (is_season_base_stale($current['updatedAt'] ?? null, $opts['baseUpdatedAt'] ?? null)) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['conflict' => true, 'season' => $current];
         }
         $matchId = (string) ($incoming['id'] ?? '');
         $matches = $current['data']['matches'] ?? [];
@@ -646,8 +731,12 @@ function save_admin_match(PDO $pdo, $seasonId, $incoming)
                     if (!is_array($cell)) {
                         continue;
                     }
-                    $next['rounds'][$ri]['games'][$gi]['homePins'] = array_key_exists('homePins', $cell) ? $cell['homePins'] : null;
-                    $next['rounds'][$ri]['games'][$gi]['awayPins'] = array_key_exists('awayPins', $cell) ? $cell['awayPins'] : null;
+                    if (array_key_exists('homePins', $cell)) {
+                        $next['rounds'][$ri]['games'][$gi]['homePins'] = $cell['homePins'];
+                    }
+                    if (array_key_exists('awayPins', $cell)) {
+                        $next['rounds'][$ri]['games'][$gi]['awayPins'] = $cell['awayPins'];
+                    }
                 }
             }
             $filled = true;
@@ -679,64 +768,101 @@ function save_admin_match(PDO $pdo, $seasonId, $incoming)
     }
 }
 
-function save_team_roster(PDO $pdo, $teamId, $roster, $seasonId)
+function save_team_roster(PDO $pdo, $teamId, $roster, $seasonId, $opts = [])
 {
-    $current = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
-    if (!$current || !empty($current['archived'])) {
-        return null;
-    }
-    $teamRow = null;
-    foreach ($current['data']['teams'] ?? [] as $item) {
-        if (($item['id'] ?? '') === $teamId) {
-            $teamRow = $item;
-            break;
+    $admin = !empty($opts['admin']);
+    $started = !$pdo->inTransaction();
+    try {
+        $current = begin_season_lock($pdo, $seasonId);
+        if (!$current || !empty($current['archived'])) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return null;
         }
-    }
-    if (empty(liga_team_perms($teamRow)['roster']) || !liga_roster_window_open($current['data']['matches'] ?? [])) {
-        return null;
-    }
-    $cleaned = [];
-    foreach (is_array($roster) ? $roster : [] as $player) {
-        $id = (string) ($player['id'] ?? '');
-        $firstName = trim((string) ($player['firstName'] ?? ''));
-        $surname = trim((string) ($player['surname'] ?? ''));
-        $legacy = trim((string) ($player['name'] ?? ''));
-        if ($firstName === '' && $surname === '' && $legacy !== '') {
-            $parts = preg_split('/\s+/u', $legacy, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-            if (count($parts) === 1) {
-                $firstName = $parts[0];
-            } elseif (count($parts) > 1) {
-                $surname = array_pop($parts);
-                $firstName = implode(' ', $parts);
+        if (is_season_base_stale($current['updatedAt'] ?? null, $opts['baseUpdatedAt'] ?? null)) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return ['conflict' => true, 'season' => $current];
+        }
+        $teamRow = null;
+        foreach ($current['data']['teams'] ?? [] as $item) {
+            if (($item['id'] ?? '') === $teamId) {
+                $teamRow = $item;
+                break;
             }
         }
-        $name = trim(implode(' ', array_filter([$surname, $firstName], static fn ($p) => $p !== '')));
-        if ($name === '') {
-            $name = $legacy;
+        if (!$teamRow) {
+            if ($started && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            return null;
         }
-        if ($name === '' || $id === '') {
-            continue;
+        if (!$admin) {
+            if (empty(liga_team_perms($teamRow)['roster']) || !liga_roster_window_open($current['data']['matches'] ?? [])) {
+                if ($started && $pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                return null;
+            }
         }
-        $cleaned[] = [
-            'id' => $id,
-            'teamId' => $teamId,
-            'firstName' => $firstName,
-            'surname' => $surname,
-            'name' => $name,
-            'gender' => (($player['gender'] ?? '') === 'F') ? 'F' : 'M',
-            'bzsMember' => !empty($player['bzsMember']),
-        ];
+        $cleaned = [];
+        foreach (is_array($roster) ? $roster : [] as $player) {
+            $id = (string) ($player['id'] ?? '');
+            $firstName = trim((string) ($player['firstName'] ?? ''));
+            $surname = trim((string) ($player['surname'] ?? ''));
+            $legacy = trim((string) ($player['name'] ?? ''));
+            if ($firstName === '' && $surname === '' && $legacy !== '') {
+                $parts = preg_split('/\s+/u', $legacy, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                if (count($parts) === 1) {
+                    $firstName = $parts[0];
+                } elseif (count($parts) > 1) {
+                    $surname = array_pop($parts);
+                    $firstName = implode(' ', $parts);
+                }
+            }
+            $name = trim(implode(' ', array_filter([$surname, $firstName], static fn ($p) => $p !== '')));
+            if ($name === '') {
+                $name = $legacy;
+            }
+            if ($name === '' || $id === '') {
+                continue;
+            }
+            $cleaned[] = [
+                'id' => $id,
+                'teamId' => $teamId,
+                'firstName' => $firstName,
+                'surname' => $surname,
+                'name' => $name,
+                'gender' => (($player['gender'] ?? '') === 'F') ? 'F' : 'M',
+                'bzsMember' => !empty($player['bzsMember']),
+            ];
+        }
+        $others = [];
+        foreach ($current['data']['players'] ?? [] as $player) {
+            if (($player['teamId'] ?? '') !== $teamId) {
+                $others[] = $player;
+            }
+        }
+        $data = $current['data'];
+        $data['players'] = array_merge($others, $cleaned);
+        $payload = preserve_secrets(as_state($data), $current['data'], ['lockPerms' => !$admin]);
+        q_run(
+            $pdo,
+            'UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL',
+            [dump_state($payload), $current['id']]
+        );
+        if ($started && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+        return get_season($pdo, $current['id']);
+    } catch (Exception $e) {
+        if ($started && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
     }
-    $others = [];
-    foreach ($current['data']['players'] ?? [] as $player) {
-        if (($player['teamId'] ?? '') !== $teamId) {
-            $others[] = $player;
-        }
-    }
-    $data = $current['data'];
-    $data['players'] = array_merge($others, $cleaned);
-    $ok = save_season($pdo, $current['id'], $data);
-    return $ok ? get_season($pdo, $current['id']) : null;
 }
 
 function save_team_trainings(PDO $pdo, $teamId, $sessions, $seasonId)

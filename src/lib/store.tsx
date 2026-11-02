@@ -38,6 +38,7 @@ import {
   setTeamPassword,
   createTeamInvite as createTeamInviteRemote,
   type LeaguePayload,
+  type SaveResult,
 } from "./leagueApi";
 import { hashInviteToken, inviteExpiryIso, inviteLink, newInviteToken } from "./invite";
 import {
@@ -94,6 +95,8 @@ type Store = {
   seasons: SeasonInfo[];
   /** Sprotni zapis v bazo: Shranjujem / Shranjeno / napaka. */
   syncStatus: SyncStatus;
+  /** Dodatek ob napaki (npr. konflikt verzije). */
+  syncMessage: string | null;
   addTeam: (name: string, contact?: { captain?: string; phone?: string; email?: string }) => void;
   renameTeam: (id: string, name: string) => void;
   updateTeam: (id: string, patch: Partial<Omit<Team, "id">>) => void;
@@ -245,13 +248,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [label, setLabel] = useState(opening.label);
   const [seasons, setSeasons] = useState<SeasonInfo[]>(() => vaultInfos(vaultRef.current!));
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const stateRef = useRef(normalizeLeagueState(opening.data));
   const remoteRef = useRef(false);
   const archivedRef = useRef(opening.archived);
   const seasonIdRef = useRef<string | null>(opening.id);
+  /** Zadnji znani updatedAt sezone — za zavrnitev starejših zapisov. */
+  const seasonUpdatedAtRef = useRef<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   /** Debounce shranjevanja kegljev po celici — sicer vmesni »15« lahko na strežniku pre Maga »155«. */
   const pinSaveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const rosterFlushTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const editEpoch = useRef(0);
   const savesInFlight = useRef(0);
   const syncFailRef = useRef(false);
@@ -338,10 +345,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         void trackSave(async () => {
           if (team) {
             const perms = teamPerms(latest.teams.find((item) => item.id === team));
-            if (perms.season) await saveLeague(id, latest);
-            else await saveTeamTrainings(id, team, latest.teamTrainings?.[team] ?? []);
+            if (perms.season) {
+              await commitVersionedSave(
+                await saveLeague(id, latest, { baseUpdatedAt: seasonUpdatedAtRef.current }),
+              );
+            } else await saveTeamTrainings(id, team, latest.teamTrainings?.[team] ?? []);
           } else {
-            await saveLeague(id, latest);
+            await commitVersionedSave(
+              await saveLeague(id, latest, { baseUpdatedAt: seasonUpdatedAtRef.current }),
+            );
           }
         });
       }, 600);
@@ -387,15 +399,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  const flushRoster = (s: LeagueState) => {
-    const team = viewerTeamRef.current;
-    if (!remoteRef.current || !team || !seasonIdRef.current) return;
-    if (teamPerms(s.teams.find((item) => item.id === team)).season) return;
-    void saveTeamRoster(
-      seasonIdRef.current,
-      team,
-      s.players.filter((player) => player.teamId === team),
-    );
+  const noteSeasonStamp = (payload?: LeaguePayload | null) => {
+    if (payload?.current?.updatedAt) seasonUpdatedAtRef.current = payload.current.updatedAt;
   };
 
   const applyRemote = (payload: LeaguePayload) => {
@@ -407,6 +412,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     remoteRef.current = true;
     archivedRef.current = payload.current.archived;
     seasonIdRef.current = payload.current.id;
+    seasonUpdatedAtRef.current = payload.current.updatedAt ?? null;
     setRemote(true);
     setArchived(payload.current.archived);
     setSeasonId(payload.current.id);
@@ -416,6 +422,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setState(data);
     stateRef.current = data;
     saveState(data);
+  };
+
+  /** Ob uspehu posodobi žig; ob konfliktu naloži svežo bazo (stari zavihek ne sme povoziti). */
+  const commitVersionedSave = async (result: SaveResult): Promise<boolean> => {
+    if (result.ok) {
+      noteSeasonStamp(result.payload);
+      setSyncMessage(null);
+      return true;
+    }
+    if (result.conflict && result.payload?.current) {
+      applyRemote(result.payload);
+      setSyncStatus("error");
+      setSyncMessage("V bazi je novejša različica — seznam sem osvežil. Preveri in shrani znova.");
+      if (savedClearTimer.current) {
+        clearTimeout(savedClearTimer.current);
+        savedClearTimer.current = undefined;
+      }
+      return false;
+    }
+    return false;
+  };
+
+  const flushRoster = (s: LeagueState) => {
+    const team = viewerTeamRef.current;
+    if (!remoteRef.current || !team || !seasonIdRef.current) return;
+    if (teamPerms(s.teams.find((item) => item.id === team)).season) return;
+    const season = seasonIdRef.current;
+    const players = s.players.filter((player) => player.teamId === team);
+    if (rosterFlushTimer.current) clearTimeout(rosterFlushTimer.current);
+    rosterFlushTimer.current = setTimeout(() => {
+      rosterFlushTimer.current = undefined;
+      void runRemoteSave(async () =>
+        commitVersionedSave(
+          await saveTeamRoster(season, team, players, {
+            baseUpdatedAt: seasonUpdatedAtRef.current,
+          }),
+        ),
+      );
+    }, 500);
   };
 
   const openSeason = async (label: string, data: LeagueState) => {
@@ -454,6 +499,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       seasonLabel: label,
       seasons,
       syncStatus,
+      syncMessage,
       addTeam: (name, contact) => {
         if (viewerTeamRef.current && !canTeam(stateRef.current.teams.find((t) => t.id === viewerTeamRef.current), "season")) {
           return;
@@ -563,6 +609,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (team && !canTeam(stateRef.current.teams.find((t) => t.id === team), "lineup")) return;
         const match = stateRef.current.matches.find((item) => item.id === matchId);
         if (!match || lineupLocked(match.rounds)) return;
+        const baseStarters = [...(side === "home" ? match.homeStarters : match.awayStarters)];
+        const baseBench = [...(side === "home" ? match.homeBench : match.awayBench)];
         let nextStarters = starters;
         let nextBench = bench;
         if (team) {
@@ -583,8 +631,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
         if (remoteRef.current && seasonIdRef.current) {
           const season = seasonIdRef.current;
-          void runRemoteSave(() =>
-            saveMatchLineup(season, matchId, side, nextStarters, nextBench),
+          void runRemoteSave(async () =>
+            commitVersionedSave(
+              await saveMatchLineup(season, matchId, side, nextStarters, nextBench, {
+                baseStarters,
+                baseBench,
+              }),
+            ),
           );
         }
       },
@@ -723,17 +776,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             key,
             setTimeout(() => {
               pinSaveTimers.current.delete(key);
-              void runRemoteSave(async () =>
-                Boolean(
-                  await saveMatchGame(season, {
-                    matchId,
-                    roundIndex,
-                    gameIndex,
-                    side,
-                    pins,
-                  }),
-                ),
-              );
+              void runRemoteSave(async () => {
+                const payload = await saveMatchGame(season, {
+                  matchId,
+                  roundIndex,
+                  gameIndex,
+                  side,
+                  pins,
+                });
+                if (!payload) return false;
+                noteSeasonStamp(payload);
+                setSyncMessage(null);
+                return true;
+              });
             }, 120),
           );
         }
@@ -779,17 +834,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
         if (remoteRef.current && seasonIdRef.current) {
           const season = seasonIdRef.current;
-          void runRemoteSave(async () =>
-            Boolean(
-              await saveMatchGame(season, {
-                matchId,
-                roundIndex,
-                gameIndex,
-                side,
-                playerId,
-              }),
-            ),
-          );
+          void runRemoteSave(async () => {
+            const payload = await saveMatchGame(season, {
+              matchId,
+              roundIndex,
+              gameIndex,
+              side,
+              playerId,
+            });
+            if (!payload) return false;
+            noteSeasonStamp(payload);
+            setSyncMessage(null);
+            return true;
+          });
         }
       },
       syncFromRemote: async () => {
@@ -1149,8 +1206,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           for (const side of sides) {
             const starters = side === "home" ? match.homeStarters : match.awayStarters;
             const bench = side === "home" ? match.homeBench : match.awayBench;
-            const saved = await trackSave(() =>
-              saveMatchLineup(seasonIdRef.current as string, matchId, side, starters, bench),
+            // Explicit Shrani: zapiši lokalno (brez base) — konflikt velja pri sprotnih setLineup.
+            const saved = await trackSave(async () =>
+              commitVersionedSave(
+                await saveMatchLineup(seasonIdRef.current as string, matchId, side, starters, bench),
+              ),
             );
             ok = ok && Boolean(saved);
           }
@@ -1179,7 +1239,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           matches: s.matches.map((item) => (item.id === matchId ? fixed : item)),
         }));
         try {
-          return Boolean(await trackSave(() => saveAdminMatch(seasonIdRef.current as string, fixed)));
+          const ok = await trackSave(async () =>
+            commitVersionedSave(
+              await saveAdminMatch(seasonIdRef.current as string, fixed, {
+                baseUpdatedAt: seasonUpdatedAtRef.current,
+              }),
+            ),
+          );
+          return Boolean(ok);
         } catch {
           return false;
         }
@@ -1187,24 +1254,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveTeamRosterNow: async (teamId) => {
         const packed = compactTrainings(stateRef.current);
         clearTimeout(saveTimer.current);
+        if (rosterFlushTimer.current) {
+          clearTimeout(rosterFlushTimer.current);
+          rosterFlushTimer.current = undefined;
+        }
         update(() => packed);
         if (archivedRef.current) return false;
         if (!remoteRef.current || !seasonIdRef.current) return true;
         try {
-          const team = viewerTeamRef.current;
-          if (team) {
-            if (team !== teamId) return false;
-            const perms = teamPerms(packed.teams.find((item) => item.id === team));
-            if (perms.season) {
-              return await saveLeague(seasonIdRef.current, packed);
-            }
-            return await saveTeamRoster(
-              seasonIdRef.current,
-              team,
-              packed.players.filter((player) => player.teamId === team),
-            );
-          }
-          return await saveLeague(seasonIdRef.current, packed);
+          const players = packed.players.filter((player) => player.teamId === teamId);
+          const viewer = viewerTeamRef.current;
+          if (viewer && viewer !== teamId) return false;
+          return await commitVersionedSave(
+            await saveTeamRoster(seasonIdRef.current, teamId, players, {
+              baseUpdatedAt: seasonUpdatedAtRef.current,
+            }),
+          );
         } catch {
           return false;
         }
@@ -1218,7 +1283,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             if (team) {
               return await saveTeamTrainings(seasonIdRef.current, team, packed.teamTrainings?.[team] ?? []);
             }
-            return await saveLeague(seasonIdRef.current, packed);
+            return await commitVersionedSave(
+              await saveLeague(seasonIdRef.current, packed, {
+                baseUpdatedAt: seasonUpdatedAtRef.current,
+              }),
+            );
           } catch {
             return false;
           }
@@ -1375,7 +1444,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         applyVault(reopenVaultSeason(vaultRef.current, id), id);
       },
     }),
-    [state, remote, archived, seasonId, label, seasons, syncStatus],
+    [state, remote, archived, seasonId, label, seasons, syncStatus, syncMessage],
   );
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

@@ -13,7 +13,7 @@ import {
   getSeason,
   getSql,
   listSeasons,
-  saveSeason,
+  saveSeasonIfFresh,
   saveAdminMatch,
   saveMatchGame,
   saveMatchLineup,
@@ -98,8 +98,26 @@ export async function handleLeague(req, res) {
           return;
         }
       }
-      const ok = await saveSeason(sql, id, body.data, { lockPerms: !viewer.admin });
-      json(res, ok ? 200 : 409, { ok });
+      const result = await saveSeasonIfFresh(sql, id, body.data, {
+        lockPerms: !viewer.admin,
+        baseUpdatedAt: body.baseUpdatedAt,
+      });
+      if (!result.ok) {
+        json(res, 409, {
+          ok: false,
+          conflict: Boolean(result.conflict),
+          storage: "db",
+          current: result.season ? presentSeason(result.season, viewer) : undefined,
+          seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+        });
+        return;
+      }
+      json(res, 200, {
+        ok: true,
+        storage: "db",
+        current: presentSeason(result.season, viewer),
+        seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+      });
       return;
     }
 
@@ -133,12 +151,25 @@ export async function handleLeague(req, res) {
         return;
       }
       if (body.action === "saveRoster") {
-        const teamId = viewer.teamId;
+        const teamId = viewer.admin ? body.teamId || viewer.teamId : viewer.teamId;
         if (!teamId) {
           json(res, 401, { ok: false });
           return;
         }
-        const current = await saveTeamRoster(sql, teamId, body.players, body.id);
+        const current = await saveTeamRoster(sql, teamId, body.players, body.id, {
+          admin: Boolean(viewer.admin),
+          baseUpdatedAt: body.baseUpdatedAt,
+        });
+        if (current?.conflict) {
+          json(res, 409, {
+            ok: false,
+            conflict: true,
+            storage: "db",
+            current: presentSeason(current.season, viewer),
+            seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+          });
+          return;
+        }
         if (!current) {
           json(res, 409, { ok: false });
           return;
@@ -170,8 +201,22 @@ export async function handleLeague(req, res) {
           body.starters,
           body.bench,
           body.id,
-          { admin },
+          {
+            admin,
+            baseStarters: body.baseStarters,
+            baseBench: body.baseBench,
+          },
         );
+        if (current?.conflict) {
+          json(res, 409, {
+            ok: false,
+            conflict: true,
+            storage: "db",
+            current: presentSeason(current.season, viewer),
+            seasons: await listSeasons(sql, { includeTraining: viewer.admin }),
+          });
+          return;
+        }
         if (!current) {
           json(res, 409, { ok: false });
           return;
@@ -188,7 +233,19 @@ export async function handleLeague(req, res) {
           json(res, 401, { ok: false });
           return;
         }
-        const current = await saveAdminMatch(sql, body.id, body.match);
+        const current = await saveAdminMatch(sql, body.id, body.match, {
+          baseUpdatedAt: body.baseUpdatedAt,
+        });
+        if (current?.conflict) {
+          json(res, 409, {
+            ok: false,
+            conflict: true,
+            storage: "db",
+            current: presentSeason(current.season, viewer),
+            seasons: await listSeasons(sql, { includeTraining: true }),
+          });
+          return;
+        }
         if (!current) {
           json(res, 409, { ok: false });
           return;
