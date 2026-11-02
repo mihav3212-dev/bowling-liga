@@ -154,7 +154,127 @@ export async function ensureSchema(pool, seed) {
       KEY idx_match_edit_locks_updated (updated_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   );
+  await exec(
+    pool,
+    `CREATE TABLE IF NOT EXISTS season_snapshots (
+      id VARCHAR(64) NOT NULL,
+      season_id VARCHAR(64) NOT NULL,
+      kind VARCHAR(32) NOT NULL,
+      round_num INT NULL,
+      label VARCHAR(255) NOT NULL,
+      data MEDIUMTEXT NOT NULL,
+      created_at DATETIME(3) NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uq_season_snapshots_round (season_id, kind, round_num),
+      KEY idx_season_snapshots_created (season_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  );
   await syncAdminPassword(pool, seed);
+}
+
+/** Koliko obnovitvenih točk hranimo na sezono. */
+export const SNAPSHOT_KEEP = 10;
+
+function matchFullyFilled(match) {
+  const rounds = match?.rounds;
+  if (!Array.isArray(rounds) || rounds.length === 0) return false;
+  return rounds.every((round) =>
+    (round.games ?? []).every((game) => game.homePins != null && game.awayPins != null),
+  );
+}
+
+function isRoundComplete(data, roundNum) {
+  const list = (data?.matches ?? []).filter((m) => Number(m.round) === Number(roundNum));
+  return list.length > 0 && list.every(matchFullyFilled);
+}
+
+async function pruneSeasonSnapshots(pool, seasonId) {
+  const rows = await exec(
+    pool,
+    `SELECT id FROM season_snapshots WHERE season_id = ? ORDER BY created_at DESC`,
+    [seasonId],
+  );
+  if (rows.length <= SNAPSHOT_KEEP) return;
+  const drop = rows.slice(SNAPSHOT_KEEP).map((row) => row.id);
+  if (!drop.length) return;
+  await exec(
+    pool,
+    `DELETE FROM season_snapshots WHERE id IN (${drop.map(() => "?").join(",")})`,
+    drop,
+  );
+}
+
+/**
+ * Ko je celotno kolo odigrano — shrani / osveži obnovitveno točko, starih največ SNAPSHOT_KEEP.
+ */
+export async function ensureRoundSnapshot(pool, seasonId, roundNum) {
+  const season = await getSeason(pool, seasonId);
+  if (!season || season.archived || season.training) return null;
+  const round = Math.floor(Number(roundNum));
+  if (!Number.isFinite(round) || round < 1) return null;
+  if (!isRoundComplete(season.data, round)) return null;
+
+  const label = `Po ${round}. kolu`;
+  const dataJson = dump(season.data);
+  const existing = await exec(
+    pool,
+    `SELECT id FROM season_snapshots WHERE season_id = ? AND kind = 'round' AND round_num = ? LIMIT 1`,
+    [season.id, round],
+  );
+  if (existing[0]?.id) {
+    await exec(
+      pool,
+      `UPDATE season_snapshots SET label = ?, data = ?, created_at = CURRENT_TIMESTAMP(3) WHERE id = ?`,
+      [label, dataJson, existing[0].id],
+    );
+  } else {
+    const id = `snap_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await exec(
+      pool,
+      `INSERT INTO season_snapshots (id, season_id, kind, round_num, label, data, created_at)
+       VALUES (?, ?, 'round', ?, ?, ?, CURRENT_TIMESTAMP(3))`,
+      [id, season.id, round, label, dataJson],
+    );
+  }
+  await pruneSeasonSnapshots(pool, season.id);
+  return true;
+}
+
+export async function listSeasonSnapshots(pool, seasonId) {
+  if (!seasonId) return [];
+  const rows = await exec(
+    pool,
+    `SELECT id, season_id, kind, round_num, label, created_at
+     FROM season_snapshots
+     WHERE season_id = ?
+     ORDER BY created_at DESC
+     LIMIT ?`,
+    [seasonId, SNAPSHOT_KEEP],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    seasonId: row.season_id,
+    kind: row.kind,
+    round: row.round_num == null ? null : Number(row.round_num),
+    label: row.label,
+    createdAt: asIso(row.created_at),
+  }));
+}
+
+export async function restoreSeasonSnapshot(pool, snapshotId) {
+  const rows = await exec(pool, "SELECT * FROM season_snapshots WHERE id = ? LIMIT 1", [snapshotId]);
+  const snap = rows[0];
+  if (!snap) return null;
+  const current = await getSeason(pool, snap.season_id);
+  if (!current || current.archived) return null;
+  const payload = preserveSecrets(asState(snap.data), current.data);
+  const result = await exec(
+    pool,
+    "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+    [dump(payload), current.id],
+  );
+  if (!result.affectedRows) return null;
+  return getSeason(pool, current.id);
 }
 
 /** Mehki zaklep vnosa tekme — opozorilo, ne trdi blok. */
@@ -607,7 +727,15 @@ export async function saveAdminMatch(pool, seasonId, incoming, opts = {}) {
       [dump(payload), current.id],
     );
     await conn.commit();
-    return getSeason(pool, current.id);
+    const season = await getSeason(pool, current.id);
+    if (filled) {
+      try {
+        await ensureRoundSnapshot(pool, current.id, match.round);
+      } catch {
+        /* ignore */
+      }
+    }
+    return season;
   } catch (err) {
     try {
       await conn.rollback();
@@ -739,7 +867,15 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
       [dump(payload), id],
     );
     await conn.commit();
-    return getSeason(pool, id);
+    const season = await getSeason(pool, id);
+    if (filled) {
+      try {
+        await ensureRoundSnapshot(pool, id, match.round);
+      } catch {
+        /* obnovitvena točka ne sme podreti shranjevanja */
+      }
+    }
+    return season;
   } catch (err) {
     try {
       await conn.rollback();

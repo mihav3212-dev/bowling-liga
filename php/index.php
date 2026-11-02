@@ -303,6 +303,35 @@ if ($route === 'league') {
                     'seasons' => list_seasons($pdo, !empty($viewer['admin'])),
                 ]);
             }
+            if ($action === 'listSnapshots') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $id = $body['id'] ?? get_current_season($pdo)['id'] ?? null;
+                if (!$id) {
+                    json_out(404, ['ok' => false]);
+                }
+                json_out(200, ['ok' => true, 'snapshots' => list_season_snapshots($pdo, $id)]);
+            }
+            if ($action === 'restoreSnapshot') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $snapshotId = $body['snapshotId'] ?? '';
+                if ($snapshotId === '') {
+                    json_out(400, ['ok' => false]);
+                }
+                $current = restore_season_snapshot($pdo, $snapshotId);
+                if (!$current) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, [
+                    'ok' => true,
+                    'storage' => 'db',
+                    'current' => present_season($current, $viewer),
+                    'seasons' => list_seasons($pdo, true),
+                ]);
+            }
             if ($action === 'saveMatch') {
                 if (empty($viewer['admin'])) {
                     json_out(401, ['ok' => false]);

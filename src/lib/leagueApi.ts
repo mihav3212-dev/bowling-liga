@@ -264,6 +264,38 @@ export async function saveTeamTrainings(
   return res.ok;
 }
 
+export type SeasonSnapshotInfo = {
+  id: string;
+  seasonId: string;
+  kind: string;
+  round: number | null;
+  label: string;
+  createdAt?: string;
+};
+
+export async function listSeasonSnapshots(id?: string): Promise<SeasonSnapshotInfo[]> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "listSnapshots", id }),
+  });
+  if (!res.ok) return [];
+  const body = (await res.json()) as { snapshots?: SeasonSnapshotInfo[] };
+  return Array.isArray(body.snapshots) ? body.snapshots : [];
+}
+
+export async function restoreSeasonSnapshot(snapshotId: string): Promise<LeaguePayload> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "restoreSnapshot", snapshotId }),
+  });
+  if (!res.ok) throw new Error("restore");
+  return (await res.json()) as LeaguePayload;
+}
+
 export async function setTeamPassword(
   id: string,
   teamId: string,

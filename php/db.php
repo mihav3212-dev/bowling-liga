@@ -127,7 +127,162 @@ function ensure_schema(PDO $pdo, $seed = '')
           KEY idx_match_edit_locks_updated (updated_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS season_snapshots (
+          id VARCHAR(64) NOT NULL,
+          season_id VARCHAR(64) NOT NULL,
+          kind VARCHAR(32) NOT NULL,
+          round_num INT NULL,
+          label VARCHAR(255) NOT NULL,
+          data MEDIUMTEXT NOT NULL,
+          created_at DATETIME(3) NOT NULL,
+          PRIMARY KEY (id),
+          UNIQUE KEY uq_season_snapshots_round (season_id, kind, round_num),
+          KEY idx_season_snapshots_created (season_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
     sync_admin_password($pdo, $seed);
+}
+
+define('SNAPSHOT_KEEP', 10);
+
+function match_fully_filled($match)
+{
+    $rounds = $match['rounds'] ?? null;
+    if (!is_array($rounds) || count($rounds) === 0) {
+        return false;
+    }
+    foreach ($rounds as $round) {
+        foreach ($round['games'] ?? [] as $game) {
+            if (!array_key_exists('homePins', $game) || $game['homePins'] === null
+                || !array_key_exists('awayPins', $game) || $game['awayPins'] === null) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function is_round_complete($data, $roundNum)
+{
+    $list = [];
+    foreach ($data['matches'] ?? [] as $match) {
+        if ((int) ($match['round'] ?? 0) === (int) $roundNum) {
+            $list[] = $match;
+        }
+    }
+    if (count($list) === 0) {
+        return false;
+    }
+    foreach ($list as $match) {
+        if (!match_fully_filled($match)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function prune_season_snapshots(PDO $pdo, $seasonId)
+{
+    $rows = q_all(
+        $pdo,
+        'SELECT id FROM season_snapshots WHERE season_id = ? ORDER BY created_at DESC',
+        [$seasonId]
+    );
+    if (count($rows) <= SNAPSHOT_KEEP) {
+        return;
+    }
+    $drop = array_slice(array_map(static fn ($r) => $r['id'], $rows), SNAPSHOT_KEEP);
+    if (!$drop) {
+        return;
+    }
+    $ph = implode(',', array_fill(0, count($drop), '?'));
+    q_run($pdo, "DELETE FROM season_snapshots WHERE id IN ($ph)", $drop);
+}
+
+function ensure_round_snapshot(PDO $pdo, $seasonId, $roundNum)
+{
+    $season = get_season($pdo, $seasonId);
+    if (!$season || !empty($season['archived']) || !empty($season['training'])) {
+        return null;
+    }
+    $round = (int) $roundNum;
+    if ($round < 1 || !is_round_complete($season['data'], $round)) {
+        return null;
+    }
+    $label = "Po {$round}. kolu";
+    $dataJson = dump_state($season['data']);
+    $existing = q_all(
+        $pdo,
+        "SELECT id FROM season_snapshots WHERE season_id = ? AND kind = 'round' AND round_num = ? LIMIT 1",
+        [$season['id'], $round]
+    );
+    if ($existing) {
+        q_run(
+            $pdo,
+            'UPDATE season_snapshots SET label = ?, data = ?, created_at = CURRENT_TIMESTAMP(3) WHERE id = ?',
+            [$label, $dataJson, $existing[0]['id']]
+        );
+    } else {
+        $id = 'snap_' . base_convert((string) time(), 10, 36) . '_' . bin2hex(random_bytes(3));
+        q_run(
+            $pdo,
+            'INSERT INTO season_snapshots (id, season_id, kind, round_num, label, data, created_at)
+             VALUES (?, ?, \'round\', ?, ?, ?, CURRENT_TIMESTAMP(3))',
+            [$id, $season['id'], $round, $label, $dataJson]
+        );
+    }
+    prune_season_snapshots($pdo, $season['id']);
+    return true;
+}
+
+function list_season_snapshots(PDO $pdo, $seasonId)
+{
+    if (!$seasonId) {
+        return [];
+    }
+    $rows = q_all(
+        $pdo,
+        'SELECT id, season_id, kind, round_num, label, created_at
+         FROM season_snapshots WHERE season_id = ?
+         ORDER BY created_at DESC LIMIT ' . (int) SNAPSHOT_KEEP,
+        [$seasonId]
+    );
+    $out = [];
+    foreach ($rows as $row) {
+        $out[] = [
+            'id' => $row['id'],
+            'seasonId' => $row['season_id'],
+            'kind' => $row['kind'],
+            'round' => $row['round_num'] === null ? null : (int) $row['round_num'],
+            'label' => $row['label'],
+            'createdAt' => as_iso($row['created_at'] ?? null),
+        ];
+    }
+    return $out;
+}
+
+function restore_season_snapshot(PDO $pdo, $snapshotId)
+{
+    $rows = q_all($pdo, 'SELECT * FROM season_snapshots WHERE id = ? LIMIT 1', [$snapshotId]);
+    if (!$rows) {
+        return null;
+    }
+    $snap = $rows[0];
+    $current = get_season($pdo, $snap['season_id']);
+    if (!$current || !empty($current['archived'])) {
+        return null;
+    }
+    $payload = preserve_secrets(as_state($snap['data']), $current['data']);
+    $stmt = q_run(
+        $pdo,
+        'UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL',
+        [dump_state($payload), $current['id']]
+    );
+    if ($stmt->rowCount() < 1) {
+        return null;
+    }
+    return get_season($pdo, $current['id']);
 }
 
 define('MATCH_EDIT_LOCK_TTL_MS', 60000);
@@ -572,11 +727,33 @@ function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench
     }
 }
 
+function maybe_snapshot_after_match_save(PDO $pdo, $season, $matchId)
+{
+    if (!$season || empty($season['id']) || !empty($season['conflict'])) {
+        return;
+    }
+    foreach ($season['data']['matches'] ?? [] as $match) {
+        if (($match['id'] ?? '') !== $matchId) {
+            continue;
+        }
+        if (($match['status'] ?? '') === 'done' || match_fully_filled($match)) {
+            try {
+                ensure_round_snapshot($pdo, $season['id'], $match['round'] ?? 0);
+            } catch (Exception $e) {
+                /* ignore */
+            }
+        }
+        break;
+    }
+}
+
 function save_match_game(PDO $pdo, $teamId, $patch, $seasonId, $asAdmin = false)
 {
     $started = !$pdo->inTransaction();
     try {
-        return save_match_game_locked($pdo, $teamId, $patch, $seasonId, $asAdmin, $started);
+        $result = save_match_game_locked($pdo, $teamId, $patch, $seasonId, $asAdmin, $started);
+        maybe_snapshot_after_match_save($pdo, $result, $patch['matchId'] ?? '');
+        return $result;
     } catch (Exception $e) {
         if ($started && $pdo->inTransaction()) {
             $pdo->rollBack();
@@ -759,7 +936,9 @@ function save_admin_match(PDO $pdo, $seasonId, $incoming, $opts = [])
         $data = $current['data'];
         $data['matches'] = $matches;
         $ok = save_season($pdo, $current['id'], $data, ['lockPerms' => true]);
-        return finish_season_write($pdo, $started, $ok, $current['id']);
+        $result = finish_season_write($pdo, $started, $ok, $current['id']);
+        maybe_snapshot_after_match_save($pdo, $result, $matchId);
+        return $result;
     } catch (Exception $e) {
         if ($started && $pdo->inTransaction()) {
             $pdo->rollBack();

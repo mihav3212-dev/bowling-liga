@@ -10,6 +10,7 @@ import type { LeagueState } from "../lib/types";
 import { AddMatchDialog } from "./AddMatchDialog";
 import { DeleteMatchDialog } from "./DeleteMatchDialog";
 import { RescheduleMatchDialog } from "./RescheduleMatchDialog";
+import { SeasonSnapshotsDialog } from "./SeasonSnapshotsDialog";
 import { SwapMatchHomeAwayDialog } from "./SwapMatchHomeAwayDialog";
 import { SwapMatchTimesDialog } from "./SwapMatchTimesDialog";
 
@@ -51,6 +52,7 @@ export function AdminMenu({
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
   const [deleteMatchOpen, setDeleteMatchOpen] = useState(false);
   const [addMatchOpen, setAddMatchOpen] = useState(false);
+  const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
 
   const closeMenu = () => {
@@ -62,14 +64,32 @@ export function AdminMenu({
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (rescheduleOpen || swapOpen || swapHomeAwayOpen || deleteMatchOpen || addMatchOpen) return;
+      if (
+        rescheduleOpen ||
+        swapOpen ||
+        swapHomeAwayOpen ||
+        deleteMatchOpen ||
+        addMatchOpen ||
+        snapshotsOpen
+      ) {
+        return;
+      }
       if (panel === "edit") setPanel("seasons");
       else if (panel === "seasons") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, panel, rescheduleOpen, swapOpen, swapHomeAwayOpen, deleteMatchOpen, addMatchOpen]);
+  }, [
+    open,
+    panel,
+    rescheduleOpen,
+    swapOpen,
+    swapHomeAwayOpen,
+    deleteMatchOpen,
+    addMatchOpen,
+    snapshotsOpen,
+  ]);
 
   const downloadSeasonJson = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
@@ -249,6 +269,22 @@ export function AdminMenu({
             </p>
             <button className="ghost" type="button" onClick={() => void renameCurrentSeason()}>
               Preimenuj
+            </button>
+            <button
+              className="ghost"
+              type="button"
+              disabled={!remote}
+              title={
+                remote
+                  ? "Avtomatske kopije po koncu kola (zadnjih 10)."
+                  : "Obnovitvene točke zahtevajo bazo."
+              }
+              onClick={() => {
+                setSnapshotsOpen(true);
+                setOpen(false);
+              }}
+            >
+              Obnovitvene točke
             </button>
             {canEdit && (
               <button
@@ -489,6 +525,7 @@ export function AdminMenu({
     {swapHomeAwayOpen && <SwapMatchHomeAwayDialog onClose={() => setSwapHomeAwayOpen(false)} />}
     {addMatchOpen && <AddMatchDialog onClose={() => setAddMatchOpen(false)} />}
     {deleteMatchOpen && <DeleteMatchDialog onClose={() => setDeleteMatchOpen(false)} />}
+    {snapshotsOpen && <SeasonSnapshotsDialog onClose={() => setSnapshotsOpen(false)} />}
     </>
   );
 }

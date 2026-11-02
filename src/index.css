@@ -364,6 +364,26 @@ button.danger {
   font-weight: 600;
 }
 
+.snapshot-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(50vh, 22rem);
+  overflow: auto;
+}
+
+.snapshot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
 input,
 select {
   background: var(--input-bg);

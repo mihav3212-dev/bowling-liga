@@ -26,9 +26,11 @@ import {
   createLeagueFromSource,
   deleteLeague,
   fetchLeague,
+  listSeasonSnapshots,
   renameLeague,
   replaceLeague,
   reopenLeague,
+  restoreSeasonSnapshot,
   saveAdminMatch,
   saveLeague,
   saveMatchGame,
@@ -39,6 +41,7 @@ import {
   createTeamInvite as createTeamInviteRemote,
   type LeaguePayload,
   type SaveResult,
+  type SeasonSnapshotInfo,
 } from "./leagueApi";
 import { hashInviteToken, inviteExpiryIso, inviteLink, newInviteToken } from "./invite";
 import {
@@ -228,6 +231,9 @@ type Store = {
   loadSeason: (id: string) => Promise<void>;
   closeSeason: () => Promise<void>;
   reopenSeason: () => Promise<void>;
+  /** Obnovitvene točke po končanih kolih (max 10). */
+  listSnapshots: () => Promise<SeasonSnapshotInfo[]>;
+  restoreSnapshot: (snapshotId: string) => Promise<boolean>;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -1442,6 +1448,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }
         if (!vaultRef.current || !id) return;
         applyVault(reopenVaultSeason(vaultRef.current, id), id);
+      },
+      listSnapshots: async () => {
+        if (!remoteRef.current || !seasonIdRef.current) return [];
+        try {
+          return await listSeasonSnapshots(seasonIdRef.current);
+        } catch {
+          return [];
+        }
+      },
+      restoreSnapshot: async (snapshotId) => {
+        if (!remoteRef.current || !snapshotId) return false;
+        try {
+          applyRemote(await restoreSeasonSnapshot(snapshotId));
+          setSyncMessage(null);
+          setSyncStatus("saved");
+          return true;
+        } catch {
+          return false;
+        }
       },
     }),
     [state, remote, archived, seasonId, label, seasons, syncStatus, syncMessage],
