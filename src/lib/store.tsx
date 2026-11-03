@@ -26,6 +26,7 @@ import {
   createLeagueFromSource,
   deleteLeague,
   fetchLeague,
+  createSeasonSnapshot,
   listSeasonSnapshots,
   renameLeague,
   replaceLeague,
@@ -233,6 +234,7 @@ type Store = {
   reopenSeason: () => Promise<void>;
   /** Obnovitvene točke po končanih kolih (max 10). */
   listSnapshots: () => Promise<SeasonSnapshotInfo[]>;
+  createSnapshot: (label?: string) => Promise<SeasonSnapshotInfo[]>;
   restoreSnapshot: (snapshotId: string) => Promise<boolean>;
 };
 
@@ -1453,6 +1455,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (!remoteRef.current || !seasonIdRef.current) return [];
         try {
           return await listSeasonSnapshots(seasonIdRef.current);
+        } catch {
+          return [];
+        }
+      },
+      createSnapshot: async (label) => {
+        if (!remoteRef.current || !seasonIdRef.current) return [];
+        try {
+          return await createSeasonSnapshot(seasonIdRef.current, label);
         } catch {
           return [];
         }

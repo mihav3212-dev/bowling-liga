@@ -313,6 +313,20 @@ if ($route === 'league') {
                 }
                 json_out(200, ['ok' => true, 'snapshots' => list_season_snapshots($pdo, $id)]);
             }
+            if ($action === 'createSnapshot') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                $id = $body['id'] ?? get_current_season($pdo)['id'] ?? null;
+                if (!$id) {
+                    json_out(404, ['ok' => false]);
+                }
+                $snapshots = create_manual_snapshot($pdo, $id, $body['label'] ?? '');
+                if ($snapshots === null) {
+                    json_out(409, ['ok' => false]);
+                }
+                json_out(200, ['ok' => true, 'snapshots' => $snapshots]);
+            }
             if ($action === 'restoreSnapshot') {
                 if (empty($viewer['admin'])) {
                     json_out(401, ['ok' => false]);

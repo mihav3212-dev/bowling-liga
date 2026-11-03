@@ -285,6 +285,21 @@ export async function listSeasonSnapshots(id?: string): Promise<SeasonSnapshotIn
   return Array.isArray(body.snapshots) ? body.snapshots : [];
 }
 
+export async function createSeasonSnapshot(
+  id?: string,
+  label?: string,
+): Promise<SeasonSnapshotInfo[]> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "createSnapshot", id, label }),
+  });
+  if (!res.ok) throw new Error("snapshot");
+  const body = (await res.json()) as { snapshots?: SeasonSnapshotInfo[] };
+  return Array.isArray(body.snapshots) ? body.snapshots : [];
+}
+
 export async function restoreSeasonSnapshot(snapshotId: string): Promise<LeaguePayload> {
   const res = await fetch("/api/league", {
     method: "POST",

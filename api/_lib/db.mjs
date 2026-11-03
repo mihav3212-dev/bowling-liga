@@ -261,6 +261,22 @@ export async function listSeasonSnapshots(pool, seasonId) {
   }));
 }
 
+/** Ročna obnovitvena točka (admin). */
+export async function createManualSnapshot(pool, seasonId, label) {
+  const season = seasonId ? await getSeason(pool, seasonId) : await getCurrentSeason(pool);
+  if (!season || season.archived) return null;
+  const name = String(label || "").trim() || "Ročna točka";
+  const id = `snap_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  await exec(
+    pool,
+    `INSERT INTO season_snapshots (id, season_id, kind, round_num, label, data, created_at)
+     VALUES (?, ?, 'manual', NULL, ?, ?, CURRENT_TIMESTAMP(3))`,
+    [id, season.id, name.slice(0, 255), dump(season.data)],
+  );
+  await pruneSeasonSnapshots(pool, season.id);
+  return listSeasonSnapshots(pool, season.id);
+}
+
 export async function restoreSeasonSnapshot(pool, snapshotId) {
   const rows = await exec(pool, "SELECT * FROM season_snapshots WHERE id = ? LIMIT 1", [snapshotId]);
   const snap = rows[0];

@@ -273,12 +273,7 @@ export function AdminMenu({
             <button
               className="ghost"
               type="button"
-              disabled={!remote}
-              title={
-                remote
-                  ? "Avtomatske kopije po koncu kola (zadnjih 10)."
-                  : "Obnovitvene točke zahtevajo bazo."
-              }
+              title="Avtomatske kopije po koncu kola (zadnjih 10) in ročna točka."
               onClick={() => {
                 setSnapshotsOpen(true);
                 setOpen(false);

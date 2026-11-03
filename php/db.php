@@ -236,6 +236,27 @@ function ensure_round_snapshot(PDO $pdo, $seasonId, $roundNum)
     return true;
 }
 
+function create_manual_snapshot(PDO $pdo, $seasonId, $label = '')
+{
+    $season = $seasonId ? get_season($pdo, $seasonId) : get_current_season($pdo);
+    if (!$season || !empty($season['archived'])) {
+        return null;
+    }
+    $name = trim((string) $label);
+    if ($name === '') {
+        $name = 'Ročna točka';
+    }
+    $id = 'snap_' . base_convert((string) time(), 10, 36) . '_' . bin2hex(random_bytes(3));
+    q_run(
+        $pdo,
+        'INSERT INTO season_snapshots (id, season_id, kind, round_num, label, data, created_at)
+         VALUES (?, ?, \'manual\', NULL, ?, ?, CURRENT_TIMESTAMP(3))',
+        [$id, $season['id'], mb_substr($name, 0, 255), dump_state($season['data'])]
+    );
+    prune_season_snapshots($pdo, $season['id']);
+    return list_season_snapshots($pdo, $season['id']);
+}
+
 function list_season_snapshots(PDO $pdo, $seasonId)
 {
     if (!$seasonId) {

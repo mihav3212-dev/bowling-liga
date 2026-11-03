@@ -27,6 +27,7 @@ import {
   heartbeatMatchEditLock,
   releaseMatchEditLock,
   listSeasonSnapshots,
+  createManualSnapshot,
   restoreSeasonSnapshot,
 } from "./_lib/db.mjs";
 import { teamPerms } from "./_lib/access.mjs";
@@ -325,6 +326,24 @@ export async function handleLeague(req, res) {
           return;
         }
         json(res, 200, { ok: true, snapshots: await listSeasonSnapshots(sql, id) });
+        return;
+      }
+      if (body.action === "createSnapshot") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const id = body.id || (await getCurrentSeason(sql))?.id;
+        if (!id) {
+          json(res, 404, { ok: false });
+          return;
+        }
+        const snapshots = await createManualSnapshot(sql, id, body.label);
+        if (!snapshots) {
+          json(res, 409, { ok: false });
+          return;
+        }
+        json(res, 200, { ok: true, snapshots });
         return;
       }
       if (body.action === "restoreSnapshot") {
