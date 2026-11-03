@@ -75,28 +75,31 @@ function composePlayerName(firstName, surname) {
   return [String(surname || "").trim(), String(firstName || "").trim()].filter(Boolean).join(" ");
 }
 
-/** Enkratna zamenjava firstName↔surname (vnos priimek|ime je bil shranjen obratno). */
+/** Shema 3 = Ime|Priimek vnos, pravilna shramba. Iz 1 enkrat zamenjaj; iz 2 samo dvigni oznako. */
 function migratePlayerNames(value) {
   const prevSchema = Number(value?.playerNameSchema) || 1;
   const rawPlayers = Array.isArray(value?.players) ? value.players : [];
-  if (prevSchema >= 2) {
+  if (prevSchema >= 3) {
     return { players: rawPlayers, playerNameSchema: prevSchema };
   }
-  const players = rawPlayers.map((player) => {
-    if (!player || typeof player !== "object") return player;
-    const firstName = String(player.firstName ?? "").trim();
-    const surname = String(player.surname ?? "").trim();
-    if (!firstName && !surname) return player;
-    const nextFirst = surname;
-    const nextSurname = firstName;
-    return {
-      ...player,
-      firstName: nextFirst,
-      surname: nextSurname,
-      name: composePlayerName(nextFirst, nextSurname) || String(player.name ?? "").trim(),
-    };
-  });
-  return { players, playerNameSchema: 2 };
+  const players =
+    prevSchema >= 2
+      ? rawPlayers
+      : rawPlayers.map((player) => {
+          if (!player || typeof player !== "object") return player;
+          const firstName = String(player.firstName ?? "").trim();
+          const surname = String(player.surname ?? "").trim();
+          if (!firstName && !surname) return player;
+          const nextFirst = surname;
+          const nextSurname = firstName;
+          return {
+            ...player,
+            firstName: nextFirst,
+            surname: nextSurname,
+            name: composePlayerName(nextFirst, nextSurname) || String(player.name ?? "").trim(),
+          };
+        });
+  return { players, playerNameSchema: 3 };
 }
 
 function asState(data, opts = {}) {
@@ -146,14 +149,13 @@ function asSeason(row) {
 /** Če je bila ob branju narejena migracija imen, jo takoj zapiši (enkrat). */
 async function persistNameMigration(pool, season) {
   if (!season?.id || !season.data) return season;
-  if ((Number(season.data.playerNameSchema) || 1) < 2) return season;
-  // Preveri surove podatke — če schema še ni 2, shrani migrirano stanje.
+  if ((Number(season.data.playerNameSchema) || 1) < 3) return season;
   const rows = await exec(pool, "SELECT data FROM seasons WHERE id = ? LIMIT 1", [season.id]);
   const raw = rows[0]?.data;
   let parsed = raw;
   if (Buffer.isBuffer(parsed)) parsed = parsed.toString("utf8");
   if (typeof parsed === "string") parsed = parsed ? JSON.parse(parsed) : {};
-  if ((Number(parsed?.playerNameSchema) || 1) >= 2) return season;
+  if ((Number(parsed?.playerNameSchema) || 1) >= 3) return season;
   await exec(pool, "UPDATE seasons SET data = ?, updated_at = updated_at WHERE id = ?", [
     dump(season.data),
     season.id,
@@ -491,7 +493,7 @@ export async function getCurrentSeason(pool) {
   if (current) return persistNameMigration(pool, current);
   const id = `s_${Date.now().toString(36)}`;
   const label = "2026/27";
-  const empty = { seasonTitle: label, teams: [], players: [], matches: [], playerNameSchema: 2 };
+  const empty = { seasonTitle: label, teams: [], players: [], matches: [], playerNameSchema: 3 };
   await exec(pool, "INSERT INTO seasons (id, label, data) VALUES (?, ?, ?)", [id, label, dump(empty)]);
   return { id, label, archived: false, updatedAt: new Date().toISOString(), data: empty };
 }
@@ -1037,8 +1039,7 @@ export async function saveTeamRoster(pool, teamId, roster, seasonId, opts = {}) 
     const nextData = {
       ...current.data,
       players: [...others, ...cleaned],
-      // Po migraciji priimek/ime ostane oznaka, da se polja ne zamenjajo dvakrat.
-      playerNameSchema: Math.max(Number(current.data.playerNameSchema) || 1, 2),
+      playerNameSchema: Math.max(Number(current.data.playerNameSchema) || 1, 3),
     };
     const payload = preserveSecrets(asState(nextData), current.data, { lockPerms: !admin });
     await conn.execute(

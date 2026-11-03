@@ -121,8 +121,8 @@ export type LeagueState = {
   /** Oznaka kola (datumi), npr. iz žreba s koledarjem. */
   roundLabels?: Record<string, string>;
   /**
-   * 2 = firstName/surname sta v pravem pomenu (priimek v surname).
-   * Manjkajoča/1: po razcepu »IME PRIIMEK« so bila polja obrnjena glede na vnos »PRIIMEK IME«.
+   * 3 = vnos Ime|Priimek, shramba firstName/surname pravilna (lestvica: Priimek Ime).
+   * 2 = vmesno; 1/manjka = treba enkrat zamenjati obrnjene dele.
    */
   playerNameSchema?: number;
 };

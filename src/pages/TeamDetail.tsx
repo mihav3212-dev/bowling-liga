@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
+import { swapPlayerNameParts } from "../lib/playerName";
 import { computePlayerDetailStats } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { formatInviteCode, formatInviteUntil, inviteStillOpen } from "../lib/invite";
@@ -482,18 +483,18 @@ export function TeamDetail({
                     }}
                   >
                     <input
-                      value={surname}
-                      onChange={(e) => setSurname(e.target.value.toLocaleUpperCase("sl"))}
-                      placeholder="Priimek"
-                      aria-label="Priimek"
-                      autoComplete="family-name"
-                    />
-                    <input
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value.toLocaleUpperCase("sl"))}
                       placeholder="Ime"
                       aria-label="Ime"
                       autoComplete="given-name"
+                    />
+                    <input
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value.toLocaleUpperCase("sl"))}
+                      placeholder="Priimek"
+                      aria-label="Priimek"
+                      autoComplete="family-name"
                     />
                     <select
                       value={gender}
@@ -515,29 +516,25 @@ export function TeamDetail({
                     </button>
                   </form>
                 )}
+                {editRoster && players.length > 0 && (
+                  <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+                    Vnos: Ime | Priimek. Na lestvici je obratno (Priimek Ime).{" "}
+                    <button
+                      type="button"
+                      className="linkish"
+                      onClick={() => {
+                        for (const p of players) updatePlayer(swapPlayerNameParts(p));
+                      }}
+                    >
+                      Zamenjaj ime ↔ priimek pri vseh
+                    </button>
+                  </p>
+                )}
                 <div className="list roster-list" style={{ marginTop: 16 }}>
                   {players.map((p) => (
                     <div key={p.id} className="form-row roster-player-row">
                       {editRoster ? (
                         <>
-                          <input
-                            className="roster-player-name-input"
-                            value={p.surname}
-                            aria-label="Priimek"
-                            placeholder="Priimek"
-                            onChange={(e) =>
-                              updatePlayer({
-                                ...p,
-                                surname: e.target.value.toLocaleUpperCase("sl"),
-                              })
-                            }
-                            onBlur={(e) => {
-                              const trimmed = e.target.value.trim().toLocaleUpperCase("sl");
-                              if (trimmed !== p.surname) {
-                                updatePlayer({ ...p, surname: trimmed });
-                              }
-                            }}
-                          />
                           <input
                             className="roster-player-name-input"
                             value={p.firstName}
@@ -556,6 +553,33 @@ export function TeamDetail({
                               }
                             }}
                           />
+                          <input
+                            className="roster-player-name-input"
+                            value={p.surname}
+                            aria-label="Priimek"
+                            placeholder="Priimek"
+                            onChange={(e) =>
+                              updatePlayer({
+                                ...p,
+                                surname: e.target.value.toLocaleUpperCase("sl"),
+                              })
+                            }
+                            onBlur={(e) => {
+                              const trimmed = e.target.value.trim().toLocaleUpperCase("sl");
+                              if (trimmed !== p.surname) {
+                                updatePlayer({ ...p, surname: trimmed });
+                              }
+                            }}
+                          />
+                          <button
+                            className="ghost"
+                            type="button"
+                            title="Zamenjaj ime ↔ priimek"
+                            aria-label="Zamenjaj ime in priimek"
+                            onClick={() => updatePlayer(swapPlayerNameParts(p))}
+                          >
+                            ↔
+                          </button>
                           <label className="muted">
                             <input
                               type="checkbox"
