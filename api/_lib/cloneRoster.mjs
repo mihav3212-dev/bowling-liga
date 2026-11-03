@@ -39,8 +39,9 @@ export function cloneTeamsAndPlayers(teams, players, selectedTeamIds, includePla
       if (parts.length === 1) {
         f = parts[0];
       } else {
-        f = parts.slice(0, -1).join(" ");
-        s = parts[parts.length - 1];
+        // PRIIMEK IME
+        s = parts[0];
+        f = parts.slice(1).join(" ");
       }
     }
     const composed = [s, f].filter(Boolean).join(" ") || name;

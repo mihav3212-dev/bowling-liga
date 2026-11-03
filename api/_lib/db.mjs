@@ -71,16 +71,51 @@ async function exec(pool, sql, params = []) {
   return result;
 }
 
-function asState(data) {
+function composePlayerName(firstName, surname) {
+  return [String(surname || "").trim(), String(firstName || "").trim()].filter(Boolean).join(" ");
+}
+
+/** Enkratna zamenjava firstName↔surname (vnos priimek|ime je bil shranjen obratno). */
+function migratePlayerNames(value) {
+  const prevSchema = Number(value?.playerNameSchema) || 1;
+  const rawPlayers = Array.isArray(value?.players) ? value.players : [];
+  if (prevSchema >= 2) {
+    return { players: rawPlayers, playerNameSchema: prevSchema };
+  }
+  const players = rawPlayers.map((player) => {
+    if (!player || typeof player !== "object") return player;
+    const firstName = String(player.firstName ?? "").trim();
+    const surname = String(player.surname ?? "").trim();
+    if (!firstName && !surname) return player;
+    const nextFirst = surname;
+    const nextSurname = firstName;
+    return {
+      ...player,
+      firstName: nextFirst,
+      surname: nextSurname,
+      name: composePlayerName(nextFirst, nextSurname) || String(player.name ?? "").trim(),
+    };
+  });
+  return { players, playerNameSchema: 2 };
+}
+
+function asState(data, opts = {}) {
   let value = data;
   if (Buffer.isBuffer(value)) value = value.toString("utf8");
   if (typeof value === "string") value = value ? JSON.parse(value) : {};
+  const migrated = opts.migrateNames
+    ? migratePlayerNames(value)
+    : {
+        players: Array.isArray(value?.players) ? value.players : [],
+        playerNameSchema: Number(value?.playerNameSchema) || 1,
+      };
   return {
     seasonKey: value?.seasonKey,
     seasonTitle: value?.seasonTitle,
     training: Boolean(value?.training),
     teams: Array.isArray(value?.teams) ? value.teams : [],
-    players: Array.isArray(value?.players) ? value.players : [],
+    players: migrated.players,
+    playerNameSchema: migrated.playerNameSchema,
     matches: Array.isArray(value?.matches) ? value.matches : [],
     roundNotes: value?.roundNotes && typeof value.roundNotes === "object" ? value.roundNotes : undefined,
     roundLabels: value?.roundLabels && typeof value.roundLabels === "object" ? value.roundLabels : undefined,
@@ -97,7 +132,7 @@ function asIso(value) {
 }
 
 function asSeason(row) {
-  const data = asState(row.data);
+  const data = asState(row.data, { migrateNames: true });
   return {
     id: row.id,
     label: row.label,
@@ -106,6 +141,24 @@ function asSeason(row) {
     updatedAt: asIso(row.updated_at),
     data,
   };
+}
+
+/** Če je bila ob branju narejena migracija imen, jo takoj zapiši (enkrat). */
+async function persistNameMigration(pool, season) {
+  if (!season?.id || !season.data) return season;
+  if ((Number(season.data.playerNameSchema) || 1) < 2) return season;
+  // Preveri surove podatke — če schema še ni 2, shrani migrirano stanje.
+  const rows = await exec(pool, "SELECT data FROM seasons WHERE id = ? LIMIT 1", [season.id]);
+  const raw = rows[0]?.data;
+  let parsed = raw;
+  if (Buffer.isBuffer(parsed)) parsed = parsed.toString("utf8");
+  if (typeof parsed === "string") parsed = parsed ? JSON.parse(parsed) : {};
+  if ((Number(parsed?.playerNameSchema) || 1) >= 2) return season;
+  await exec(pool, "UPDATE seasons SET data = ?, updated_at = updated_at WHERE id = ?", [
+    dump(season.data),
+    season.id,
+  ]);
+  return season;
 }
 
 /** True, če je strežnikova sezona novejša od klientove baze (stari zavihek). */
@@ -423,7 +476,8 @@ export async function listSeasons(pool, { includeTraining = false } = {}) {
 
 export async function getSeason(pool, id) {
   const rows = await exec(pool, "SELECT * FROM seasons WHERE id = ? LIMIT 1", [id]);
-  return rows[0] ? asSeason(rows[0]) : null;
+  if (!rows[0]) return null;
+  return persistNameMigration(pool, asSeason(rows[0]));
 }
 
 export async function getCurrentSeason(pool) {
@@ -434,10 +488,10 @@ export async function getCurrentSeason(pool) {
      ORDER BY updated_at DESC`,
   );
   const current = rows.map(asSeason).find((season) => !season.training);
-  if (current) return current;
+  if (current) return persistNameMigration(pool, current);
   const id = `s_${Date.now().toString(36)}`;
   const label = "2026/27";
-  const empty = { seasonTitle: label, teams: [], players: [], matches: [] };
+  const empty = { seasonTitle: label, teams: [], players: [], matches: [], playerNameSchema: 2 };
   await exec(pool, "INSERT INTO seasons (id, label, data) VALUES (?, ?, ?)", [id, label, dump(empty)]);
   return { id, label, archived: false, updatedAt: new Date().toISOString(), data: empty };
 }
@@ -962,8 +1016,9 @@ export async function saveTeamRoster(pool, teamId, roster, seasonId, opts = {}) 
           const parts = legacy.split(/\s+/).filter(Boolean);
           if (parts.length === 1) f = parts[0];
           else if (parts.length > 1) {
-            f = parts.slice(0, -1).join(" ");
-            s = parts[parts.length - 1];
+            // PRIIMEK IME (kot na lestvici)
+            s = parts[0];
+            f = parts.slice(1).join(" ");
           }
         }
         const name = [s, f].filter(Boolean).join(" ") || legacy;
@@ -979,7 +1034,12 @@ export async function saveTeamRoster(pool, teamId, roster, seasonId, opts = {}) 
       })
       .filter((player) => player.id && player.name);
     const others = (current.data.players ?? []).filter((player) => player.teamId !== teamId);
-    const nextData = { ...current.data, players: [...others, ...cleaned] };
+    const nextData = {
+      ...current.data,
+      players: [...others, ...cleaned],
+      // Po migraciji priimek/ime ostane oznaka, da se polja ne zamenjajo dvakrat.
+      playerNameSchema: Math.max(Number(current.data.playerNameSchema) || 1, 2),
+    };
     const payload = preserveSecrets(asState(nextData), current.data, { lockPerms: !admin });
     await conn.execute(
       "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",

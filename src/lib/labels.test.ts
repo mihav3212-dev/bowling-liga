@@ -2,15 +2,16 @@ import { describe, expect, it } from "vitest";
 import { shortTvPersonName } from "./labels";
 import {
   composePlayerName,
+  normalizeLeagueState,
   normalizePlayer,
   shortTvPersonNameFromParts,
   splitPlayerName,
 } from "./playerName";
 
 describe("splitPlayerName", () => {
-  it("razcepi ime + priimek", () => {
-    expect(splitPlayerName("Miha Novak")).toEqual({ firstName: "Miha", surname: "Novak" });
-    expect(splitPlayerName("Ana Maria Horvat")).toEqual({
+  it("razcepi priimek + ime", () => {
+    expect(splitPlayerName("Novak Miha")).toEqual({ firstName: "Miha", surname: "Novak" });
+    expect(splitPlayerName("Horvat Ana Maria")).toEqual({
       firstName: "Ana Maria",
       surname: "Horvat",
     });
@@ -29,7 +30,7 @@ describe("composePlayerName", () => {
 
 describe("shortTvPersonName", () => {
   it("ime polno, priimek začetnica", () => {
-    expect(shortTvPersonName("Miha Novak")).toBe("Miha N.");
+    expect(shortTvPersonName("Novak Miha")).toBe("Miha N.");
     expect(shortTvPersonNameFromParts("Miha", "Novak")).toBe("Miha N.");
   });
 
@@ -40,11 +41,11 @@ describe("shortTvPersonName", () => {
 });
 
 describe("normalizePlayer", () => {
-  it("dopolni firstName/surname iz name", () => {
+  it("dopolni firstName/surname iz name (priimek ime)", () => {
     const p = normalizePlayer({
       id: "p1",
       teamId: "t1",
-      name: "Miha Novak",
+      name: "Novak Miha",
       gender: "M",
       bzsMember: false,
       firstName: "",
@@ -53,5 +54,32 @@ describe("normalizePlayer", () => {
     expect(p.firstName).toBe("MIHA");
     expect(p.surname).toBe("NOVAK");
     expect(p.name).toBe("NOVAK MIHA");
+  });
+});
+
+describe("normalizeLeagueState name schema", () => {
+  it("enkrat zamenja obrnjena firstName/surname polja", () => {
+    const once = normalizeLeagueState({
+      playerNameSchema: 1,
+      players: [
+        {
+          id: "p1",
+          teamId: "t1",
+          firstName: "HOJS",
+          surname: "SVEN",
+          name: "SVEN HOJS",
+          gender: "M" as const,
+          bzsMember: false,
+        },
+      ],
+    });
+    expect(once.players[0]?.firstName).toBe("SVEN");
+    expect(once.players[0]?.surname).toBe("HOJS");
+    expect(once.players[0]?.name).toBe("HOJS SVEN");
+    expect(once.playerNameSchema).toBe(2);
+
+    const twice = normalizeLeagueState(once);
+    expect(twice.players[0]?.firstName).toBe("SVEN");
+    expect(twice.players[0]?.surname).toBe("HOJS");
   });
 });

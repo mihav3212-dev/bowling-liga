@@ -6,9 +6,8 @@ export function composePlayerName(firstName: string, surname: string): string {
 }
 
 /**
- * Razcepi staro eno polje. Privzeto: zadnja beseda = priimek, preostalo = ime
- * (večina obstoječih vnosov je »IME PRIIMEK«). »M. NOVAK« → ime začetnica, priimek poln.
- * Če je bilo vneseno »PRIIMEK IME«, se da v urejanju zamenjati.
+ * Razcepi staro eno polje v »PRIIMEK IME« (kot na lestvici in vnosu ekipe).
+ * »M. NOVAK« → ime začetnica, priimek poln.
  */
 export function splitPlayerName(raw: string): { firstName: string; surname: string } {
   const parts = raw.trim().split(/\s+/).filter(Boolean);
@@ -18,8 +17,8 @@ export function splitPlayerName(raw: string): { firstName: string; surname: stri
     return { firstName: parts[0]!, surname: parts.slice(1).join(" ") };
   }
   return {
-    firstName: parts.slice(0, -1).join(" "),
-    surname: parts[parts.length - 1]!,
+    surname: parts[0]!,
+    firstName: parts.slice(1).join(" "),
   };
 }
 
@@ -73,6 +72,33 @@ export function normalizePlayers(players: Player[] | undefined | null): Player[]
     .map((p) => normalizePlayer(p));
 }
 
-export function normalizeLeagueState<T extends { players?: Player[] | null }>(state: T): T {
-  return { ...state, players: normalizePlayers(state.players) };
+const PLAYER_NAME_SCHEMA = 2;
+
+/** Zamenjaj firstName↔surname (enkrat), ker so bili vnosi »priimek|ime« shranjeni obratno. */
+export function normalizeLeagueState<
+  T extends { players?: Player[] | null; playerNameSchema?: number },
+>(state: T): T {
+  const prevSchema = state.playerNameSchema ?? 1;
+  const rawPlayers = Array.isArray(state.players) ? state.players : [];
+  const players = rawPlayers
+    .filter((p) => p && p.id && p.teamId)
+    .map((raw) => {
+      const hadParts =
+        Boolean(String(raw.firstName ?? "").trim()) || Boolean(String(raw.surname ?? "").trim());
+      let player = normalizePlayer(raw);
+      if (prevSchema < PLAYER_NAME_SCHEMA && hadParts) {
+        player = normalizePlayer({
+          ...player,
+          firstName: player.surname,
+          surname: player.firstName,
+          name: "",
+        });
+      }
+      return player;
+    });
+  return {
+    ...state,
+    players,
+    playerNameSchema: Math.max(prevSchema, PLAYER_NAME_SCHEMA),
+  };
 }

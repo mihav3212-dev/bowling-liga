@@ -120,6 +120,11 @@ export type LeagueState = {
   roundNotes?: Record<string, string>;
   /** Oznaka kola (datumi), npr. iz žreba s koledarjem. */
   roundLabels?: Record<string, string>;
+  /**
+   * 2 = firstName/surname sta v pravem pomenu (priimek v surname).
+   * Manjkajoča/1: po razcepu »IME PRIIMEK« so bila polja obrnjena glede na vnos »PRIIMEK IME«.
+   */
+  playerNameSchema?: number;
 };
 
 export type SeasonInfo = {
