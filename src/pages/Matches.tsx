@@ -151,7 +151,7 @@ export function Matches({
                   key={match.id}
                   type="button"
                   onClick={() => {
-                    window.open("/?display=live", "_blank", "noopener,noreferrer");
+                    window.open("/?display=live&device=tv", "_blank", "noopener,noreferrer");
                   }}
                 >
                   <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>

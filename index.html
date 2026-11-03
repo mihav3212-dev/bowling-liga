@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <script>
+      /* Classic script (ne module): teče pred Vite modern-detect.
+         LG webOS ~Chrome 79 sicer gre v “modern” bundle, kjer manjkajo polyfilli
+         (npr. .at / randomUUID) → bela stran. Prisili legacy SystemJS paket. */
+      (function () {
+        try {
+          var ua = navigator.userAgent || "";
+          var q = String(location.search || "");
+          var forceLegacy =
+            /(?:\?|&)legacy=1(?:&|$)/.test(q) ||
+            /Web0S|WebOS|NetCast|LG Browser|Tizen|SmartTV|SMART-TV|SamsungBrowser|Viera|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari/i.test(
+              ua,
+            );
+          if (!forceLegacy) return;
+          window.__BOLING_FORCE_LEGACY__ = true;
+          Object.defineProperty(window, "__vite_is_modern_browser", {
+            configurable: true,
+            get: function () {
+              return false;
+            },
+            set: function () {
+              /* Vite hoče nastaviti true — ignoriraj. */
+            },
+          });
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
+    <script>
       document.documentElement.dataset.theme = "dark";
       (function () {
         try {
@@ -63,7 +92,7 @@
           var el = document.getElementById("boot-msg");
           if (!el || !document.body || document.body.dataset.appReady === "1") return;
           el.innerHTML =
-            "Prikaz se ni naložil.<br/><small>Poskusi drug brskalnik na TV ali odpri na telefonu.</small>" +
+            "Prikaz se ni naložil.<br/><small>Na starem TV odpri:<br/>/?display=live&amp;device=tv&amp;legacy=1</small>" +
             (extra
               ? "<br/><small style='opacity:.7;word-break:break-word'>" + extra + "</small>"
               : "");

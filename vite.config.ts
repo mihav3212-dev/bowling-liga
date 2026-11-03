@@ -69,6 +69,26 @@ function copyPhpApi(): Plugin {
   };
 }
 
+/** Poskrbi, da je force-legacy skripta na začetku <head> (po Vite injectu modulov). */
+function forceLegacyTvHtml(): Plugin {
+  return {
+    name: "force-legacy-tv-html",
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        if (!html.includes("__BOLING_FORCE_LEGACY__")) return html;
+        const match = html.match(
+          /<script>\s*\/\* Classic script[\s\S]*?__BOLING_FORCE_LEGACY__[\s\S]*?<\/script>/,
+        );
+        if (!match) return html;
+        const snip = match[0];
+        const without = html.replace(snip, "");
+        return without.replace(/<head[^>]*>/i, (open) => `${open}\n    ${snip}`);
+      },
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   if (env.ADMIN_PASSWORD) process.env.ADMIN_PASSWORD = env.ADMIN_PASSWORD;
@@ -86,14 +106,19 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [
       react(),
-      // LG webOS ~Chrome 79 vzame “modern” bundle — modernTargets mora biti
-      // dovolj nizek, da se ?. / ?? prepišeta (sicer bela stran).
+      // LG webOS ~Chrome 79: index.html prisili legacy; modernTargets naj bo
+      // še vedno dovolj nizek (brez ?. / ??), če bi modern lezel skozi.
       legacy({
         targets: ["chrome >= 63", "safari >= 11", "ios >= 11"],
         modernTargets: ["chrome >= 75", "safari >= 13", "firefox >= 70"],
         modernPolyfills: true,
-        additionalLegacyPolyfills: ["regenerator-runtime/runtime"],
+        additionalLegacyPolyfills: [
+          "regenerator-runtime/runtime",
+          "core-js/modules/es.array.at.js",
+          "core-js/modules/es.string.at-alternative.js",
+        ],
       }),
+      forceLegacyTvHtml(),
       adminApi(),
       copyPhpApi(),
     ],

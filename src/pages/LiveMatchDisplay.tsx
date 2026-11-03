@@ -1228,7 +1228,11 @@ export function LiveMatchDisplay({ preview = true, previewPhase = "live" }: Prev
             </button>
           </div>
           <p className="live-tv-preview-note">
-            Živo: <code>?display=live</code> · layout zgoraj desno (Klasično / Kvadrati)
+            Živo: <code>?display=live&amp;device=tv</code>
+            {" · "}
+            stari LG: <code>?display=live&amp;legacy=1</code>
+            {" · "}
+            layout zgoraj desno (Klasično / Kvadrati)
           </p>
         </div>
       )}
