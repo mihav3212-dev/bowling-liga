@@ -9,6 +9,9 @@ const TV_UA =
 
 const STORAGE_KEY = "liga-display-device";
 
+/** Kratka stranica ≤ tega = telefon (portrait in landscape). */
+const PHONE_SHORT_MAX = 600;
+
 function isDisplayDevice(v: string | null | undefined): v is DisplayDevice {
   return v === "phone" || v === "tablet" || v === "desktop" || v === "tv";
 }
@@ -31,7 +34,11 @@ function readStoredOverride(): DisplayDevice | null {
   }
 }
 
-/** Ročna izbira (URL `?device=` ali gumb) — ostane v localStorage. */
+function shortSide(): number {
+  return Math.min(window.innerWidth || 0, window.innerHeight || 0);
+}
+
+/** Ročna izbira (gumb Telefon/TV) — ostane v localStorage. */
 export function setDisplayDeviceOverride(device: DisplayDevice | null): void {
   try {
     if (device) localStorage.setItem(STORAGE_KEY, device);
@@ -44,11 +51,7 @@ export function setDisplayDeviceOverride(device: DisplayDevice | null): void {
 }
 
 function looksLikeTvUa(): boolean {
-  if (typeof window === "undefined") return false;
-  if (!TV_UA.test(navigator.userAgent || "")) return false;
-  // Varovalo: tudi ob TV-podobnem UA ne vsili TV layouta na telefonu (portrait/landscape).
-  const short = Math.min(window.innerWidth, window.innerHeight);
-  return short > 600;
+  return TV_UA.test(navigator.userAgent || "");
 }
 
 /**
@@ -70,28 +73,34 @@ function looksLikeTvEnvironment(): boolean {
 }
 
 /**
- * Avtomatska izbira: URL → shranjena izbira → TV UA/okolje → kratka stranica / širina.
- * Telefon v landscape ne sme postati »tablet/TV« samo zaradi širine.
+ * Avtomatska izbira.
+ * Na telefonu (kratka stranica) vedno phone — tudi če je v URL `device=tv`
+ * (pogost bookmark za dvorano). Ročni gumb TV še vedno deluje prek localStorage.
  */
 export function detectDisplayDevice(): DisplayDevice {
   if (typeof window === "undefined") return "desktop";
+
+  const short = shortSide();
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const long = Math.max(w, h);
   const url = readUrlOverride();
-  if (url) return url;
   const stored = readStoredOverride();
+
+  if (short > 0 && short <= PHONE_SHORT_MAX) {
+    // Samo eksplicitna ročna izbira na telefonu lahko vklopi TV scale.
+    if (stored === "tv" || stored === "desktop") return stored;
+    if (url === "phone" || url === "tablet") return url;
+    return "phone";
+  }
+
+  if (url) return url;
   if (stored) return stored;
   if (looksLikeTvUa() || looksLikeTvEnvironment()) return "tv";
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  const short = Math.min(w, h);
-  const long = Math.max(w, h);
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-
-  // Telefon: kratka stranica tipično ≤ ~500 (tudi v landscape).
   if (short <= 520) return "phone";
-  // Večji telefoni / majhne tablice v portrait.
   if (short <= 600 && long <= 950) return "phone";
-  // Tablica (iPad ipd.).
   if (coarse && short <= 900) return "tablet";
   if (w <= 820) return "phone";
   if (w <= 1200) return "tablet";
@@ -127,9 +136,11 @@ export function useDisplayDevice(): DisplayDevice {
     const sync = () => setDevice(applyDisplayDevice());
     sync();
     window.addEventListener("resize", sync);
+    window.addEventListener("orientationchange", sync);
     window.addEventListener("liga-display-device", sync);
     return () => {
       window.removeEventListener("resize", sync);
+      window.removeEventListener("orientationchange", sync);
       window.removeEventListener("liga-display-device", sync);
     };
   }, []);

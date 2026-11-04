@@ -37,17 +37,43 @@
       document.documentElement.dataset.theme = "dark";
       (function () {
         try {
+          var w = window.innerWidth || 0;
+          var h = window.innerHeight || 0;
+          var short = Math.min(w, h);
           var q = new URLSearchParams(location.search).get("device");
+          var stored = null;
+          try {
+            stored = localStorage.getItem("liga-display-device");
+          } catch (e2) {
+            /* ignore */
+          }
+          // Telefon: vedno phone (tudi ob ?device=tv iz dvoranskega bookmarka),
+          // razen ročne izbire TV v localStorage.
+          if (short > 0 && short <= 600) {
+            if (stored === "tv" || stored === "desktop") {
+              document.documentElement.dataset.device = stored;
+              return;
+            }
+            document.documentElement.dataset.device = "phone";
+            return;
+          }
           if (q === "phone" || q === "tablet" || q === "desktop" || q === "tv") {
             document.documentElement.dataset.device = q;
             return;
           }
+          if (stored === "phone" || stored === "tablet" || stored === "desktop" || stored === "tv") {
+            document.documentElement.dataset.device = stored;
+            return;
+          }
           var ua = navigator.userAgent || "";
-          if (/Tizen|SmartTV|SMART-TV|SamsungBrowser|Web0S|WebOS|Viera|NetCast|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari/i.test(ua)) {
+          if (
+            /SmartTV|SMART-TV|Web0S|WebOS|Viera|NetCast|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari|(?:Tizen.*TV|TV.*Tizen)/i.test(
+              ua,
+            )
+          ) {
             document.documentElement.dataset.device = "tv";
             return;
           }
-          var w = window.innerWidth || 0;
           document.documentElement.dataset.device =
             w <= 820 ? "phone" : w <= 1200 ? "tablet" : "desktop";
         } catch (e) {
