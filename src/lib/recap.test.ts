@@ -44,6 +44,43 @@ function filledMatch(
   };
 }
 
+describe("topSingles / topSeries", () => {
+  it("vsak igralec največ enkrat — najboljši rezultat", () => {
+    const teams: Team[] = [
+      { id: "t1", name: "Alpha" },
+      { id: "t2", name: "Beta" },
+    ];
+    const players: Player[] = ["h1", "h2", "h3", "h4", "a1", "a2", "a3", "a4"].map((id) => ({
+      id,
+      teamId: id.startsWith("h") ? "t1" : "t2",
+      firstName: "",
+      surname: "",
+      name: id,
+      gender: "M",
+      bzsMember: false,
+    }));
+    const m1 = filledMatch("m1", "t1", "t2", 100, 90);
+    // h1: ena igra 250, ostale 100 — najboljša posamezna 250; serija 550
+    m1.rounds[0]!.games[0]!.homePins = 250;
+    const m2 = filledMatch("m2", "t1", "t2", 180, 80);
+    // h1 v 2. tekmi: vse 180 → serija 720 (boljša od 550)
+    const state: LeagueState = { teams, players, matches: [m1, m2] };
+
+    const { topSingles, topSeries, bestSingle, bestSeries } = computeWeekRecap(state);
+
+    expect(topSingles.filter((r) => r.name === "h1")).toHaveLength(1);
+    expect(topSingles.find((r) => r.name === "h1")?.value).toBe(250);
+    expect(bestSingle.map((r) => r.name)).toEqual(["h1"]);
+    expect(bestSingle[0]?.value).toBe(250);
+
+    expect(topSeries.filter((r) => r.name === "h1")).toHaveLength(1);
+    expect(topSeries.find((r) => r.name === "h1")?.value).toBe(720);
+    // m2: vsi domači 4×180 = 720
+    expect(bestSeries.every((r) => r.value === 720)).toBe(true);
+    expect(bestSeries.map((r) => r.name).sort()).toEqual(["h1", "h2", "h3", "h4"]);
+  });
+});
+
 describe("topTeams", () => {
   it("vsaka ekipa največ enkrat (najboljši izid)", () => {
     const teams: Team[] = [

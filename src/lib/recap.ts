@@ -50,10 +50,27 @@ export function topPlaces(items: RecapLine[], places = 5): RecapLine[] {
   return out;
 }
 
+/** Vsak igralec največ enkrat — najboljši izid. */
+function bestPerPlayer(rows: (RecapLine & { playerId: string })[]): RecapLine[] {
+  const best = new Map<string, RecapLine>();
+  for (const row of rows) {
+    const prev = best.get(row.playerId);
+    if (!prev || row.value > prev.value) {
+      best.set(row.playerId, {
+        showRank: false,
+        value: row.value,
+        name: row.name,
+        team: row.team,
+      });
+    }
+  }
+  return [...best.values()];
+}
+
 function playerSeries(state: LeagueState): RecapLine[] {
   const teams = new Map(state.teams.map((t) => [t.id, t.name]));
   const players = new Map(state.players.map((p) => [p.id, p]));
-  const series = new Map<string, RecapLine & { games: number }>();
+  const series = new Map<string, RecapLine & { playerId: string; games: number }>();
 
   const add = (playerId: string, matchId: string, pins: number) => {
     const player = players.get(playerId);
@@ -66,6 +83,7 @@ function playerSeries(state: LeagueState): RecapLine[] {
       return;
     }
     series.set(key, {
+      playerId,
       showRank: false,
       value: pins,
       name: player.name,
@@ -87,13 +105,13 @@ function playerSeries(state: LeagueState): RecapLine[] {
     }
   }
 
-  return [...series.values()].filter((row) => row.games === 4);
+  return bestPerPlayer([...series.values()].filter((row) => row.games === 4));
 }
 
 function singles(state: LeagueState): RecapLine[] {
   const teams = new Map(state.teams.map((t) => [t.id, t.name]));
   const players = new Map(state.players.map((p) => [p.id, p]));
-  const rows: RecapLine[] = [];
+  const rows: (RecapLine & { playerId: string })[] = [];
 
   for (const match of state.matches) {
     for (const round of match.rounds) {
@@ -102,6 +120,7 @@ function singles(state: LeagueState): RecapLine[] {
           const player = players.get(game.homePlayerId);
           if (player) {
             rows.push({
+              playerId: player.id,
               showRank: false,
               value: scoredPins(game.homePins, player) ?? game.homePins,
               name: player.name,
@@ -113,6 +132,7 @@ function singles(state: LeagueState): RecapLine[] {
           const player = players.get(game.awayPlayerId);
           if (player) {
             rows.push({
+              playerId: player.id,
               showRank: false,
               value: scoredPins(game.awayPins, player) ?? game.awayPins,
               name: player.name,
@@ -123,7 +143,7 @@ function singles(state: LeagueState): RecapLine[] {
       }
     }
   }
-  return rows;
+  return bestPerPlayer(rows);
 }
 
 /** Najboljši ekipni izid po tekmi — vsaka ekipa največ enkrat (max kegljev). */
