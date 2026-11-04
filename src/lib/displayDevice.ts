@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 /** Način prikaza za TV/live board poglede. */
 export type DisplayDevice = "phone" | "tablet" | "desktop" | "tv";
 
+/** Samo jasni TV UA — NE SamsungBrowser (Samsung Internet na telefonih). */
 const TV_UA =
-  /Tizen|SmartTV|SMART-TV|SamsungBrowser|Web0S|WebOS|Viera|NetCast|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari/i;
+  /SmartTV|SMART-TV|Web0S|WebOS|Viera|NetCast|CrKey|AppleTV|BRAVIA|HbbTV|TV Safari|(?:Tizen.*TV|TV.*Tizen)/i;
 
 const STORAGE_KEY = "liga-display-device";
 
@@ -43,7 +44,11 @@ export function setDisplayDeviceOverride(device: DisplayDevice | null): void {
 }
 
 function looksLikeTvUa(): boolean {
-  return TV_UA.test(navigator.userAgent || "");
+  if (typeof window === "undefined") return false;
+  if (!TV_UA.test(navigator.userAgent || "")) return false;
+  // Varovalo: tudi ob TV-podobnem UA ne vsili TV layouta na telefonu (portrait/landscape).
+  const short = Math.min(window.innerWidth, window.innerHeight);
+  return short > 600;
 }
 
 /**
