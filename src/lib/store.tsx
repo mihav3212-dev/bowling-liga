@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { nominatedIds } from "./pairings";
 import { lineupLocked } from "./scoring";
 import { createSeed, createSeed2025 } from "./seed";
 import {
@@ -63,7 +62,6 @@ import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpe
 import {
   applyLineup,
   applyPlayerSubstitution,
-  playerOnOtherLane,
   repairDuplicateLanePlayers,
   rosterIdsForTeam,
   sanitizeLineup,

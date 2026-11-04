@@ -1,6 +1,15 @@
 import { emptyRounds, lineupSize, nominatedIds, pairingTemplate } from "./pairings";
 import { lineupLocked, MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
-import type { GameScore, Match, Player } from "./types";
+import type { GameScore, Match, MatchRound, Player } from "./types";
+
+/** Dovolj polj za menjavo (uradna tekma ali trening). */
+type LineupMatch = {
+  homeStarters: string[];
+  awayStarters: string[];
+  homeBench: string[];
+  awayBench: string[];
+  rounds: MatchRound[];
+};
 
 export function teamMatchSide(
   match: { homeTeamId: string; awayTeamId: string },
@@ -149,7 +158,7 @@ function sidePlayerKey(side: "home" | "away"): "homePlayerId" | "awayPlayerId" {
  * Igralci, ki so že bili v igri, a v zadnjem zapolnjenem krogu niso več —
  * po menjavi ne smejo nazaj.
  */
-export function substitutedOutIds(match: Match, side: "home" | "away"): Set<string> {
+export function substitutedOutIds(match: LineupMatch, side: "home" | "away"): Set<string> {
   const key = sidePlayerKey(side);
   const rounds = match.rounds ?? [];
   let lastIdx = -1;
@@ -177,13 +186,13 @@ export function substitutedOutIds(match: Match, side: "home" | "away"): Set<stri
  * Menjava: novi igralec na tej stezi + v vseh naslednjih krogih namesto odhajajočega.
  * Odhajajoči ne more več vstopiti.
  */
-export function applyPlayerSubstitution(
-  match: Match,
+export function applyPlayerSubstitution<T extends LineupMatch>(
+  match: T,
   roundIndex: number,
   gameIndex: number,
   side: "home" | "away",
   playerId: string,
-): Match {
+): T {
   const key = sidePlayerKey(side);
   const round = match.rounds[roundIndex];
   const game = round?.games[gameIndex];
