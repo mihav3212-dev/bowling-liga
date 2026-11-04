@@ -12,8 +12,12 @@ export function teamMatchSide(
   return null;
 }
 
-/** Po začetku tekme (ura ali prvi keglji) so sestave javne — TV / nasprotnik. */
-export function lineupsRevealed(match: Pick<Match, "rounds" | "startsAt">, now = Date.now()): boolean {
+/** Po začetku tekme (ura, prvi keglji ali ročni TV v živo) so sestave javne — TV / nasprotnik. */
+export function lineupsRevealed(
+  match: Pick<Match, "rounds" | "startsAt" | "liveOnTv">,
+  now = Date.now(),
+): boolean {
+  if (match.liveOnTv) return true;
   if (lineupLocked(match.rounds)) return true;
   if (!match.startsAt) return false;
   const start = new Date(match.startsAt).getTime();

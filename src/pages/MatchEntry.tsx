@@ -37,6 +37,15 @@ function playerName(roster: Player[], id: string): string {
   return player ? playerTag(player) : "—";
 }
 
+/** 0 = manjkajoči igralec; 1–59 = sumljivo nizko — vprašaj za potrditev. */
+const LOW_PINS_WARN_BELOW = 60;
+
+function confirmLowPins(pins: number): boolean {
+  return window.confirm(
+    `Vpisanih je samo ${pins} kegljev (običajno ≥ ${LOW_PINS_WARN_BELOW}).\n\nShranim ta vnos? (Prekliči = ponovni vnos)`,
+  );
+}
+
 export function PinField({
   raw,
   player,
@@ -76,13 +85,22 @@ export function PinField({
         onChange={(e) => {
           const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
           setDraft(next);
-          // Takoj v store/TV; draft med fokusom prepreči, da sync odreže števko.
+          // Med tipkanjem še ne opozarjaj — šele ob blur (npr. 5 → 55 → 155).
           onChange(parsePins(next));
         }}
         onBlur={() => {
-          onChange(parsePins(draft ?? ""));
+          const pins = parsePins(draft ?? "");
+          const previous = raw;
           setDraft(null);
           onEditingChange?.(false);
+          // Če je med tipkanjem že shranjena nizka vrednost, ob preklicu vrni prejšnjo.
+          if (pins != null && pins > 0 && pins < LOW_PINS_WARN_BELOW) {
+            if (!confirmLowPins(pins)) {
+              onChange(previous);
+              return;
+            }
+          }
+          if (pins !== raw) onChange(pins);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();

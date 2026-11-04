@@ -361,17 +361,22 @@ function LayoutPicker({
 
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
-/** Povečano kolo: uvod (proge) ~5 min, potem pregled; ob vpisu kegljev spet fokus. */
-const ROUND_FOCUS_DEFAULT_MS = 5 * 60 * 1000;
+/** 1. krog: 5 min uvod (proge); 2.–4. krog: krajši uvod novih parov. */
+const ROUND_FOCUS_FIRST_MS = 5 * 60 * 1000;
+const ROUND_FOCUS_LATER_MS = 2 * 60 * 1000;
 
-function readRoundFocusMs(): number {
+function readRoundFocusOverrideMs(): number | null {
   const params = new URLSearchParams(window.location.search);
   const raw = params.get("focusMs");
   const n = raw ? Number(raw) : NaN;
   if (Number.isFinite(n) && n >= 5_000 && n <= 30 * 60_000) return n;
-  // Predogled: kratek fokus (~30 s), da se hitro vidi pregled
   if (params.get("display") === "preview") return 30_000;
-  return ROUND_FOCUS_DEFAULT_MS;
+  return null;
+}
+
+function introFocusMs(round: number, overrideMs: number | null): number {
+  if (overrideMs != null) return overrideMs;
+  return round <= 1 ? ROUND_FOCUS_FIRST_MS : ROUND_FOCUS_LATER_MS;
 }
 
 function roundPinsComplete(r: RoundSummary): boolean {
@@ -390,14 +395,19 @@ type RoundFocusPhase = {
   kind: "intro" | "scoring";
 };
 
-function initialFocusPhase(rounds: RoundSummary[], focusMs: number): RoundFocusPhase {
+function initialFocusPhase(rounds: RoundSummary[], overrideMs: number | null): RoundFocusPhase {
   const open = rounds.find((r) => !roundPinsComplete(r));
   const focusRound = open?.round ?? rounds[0]?.round ?? 1;
   const current = rounds.find((r) => r.round === focusRound);
   if (current && roundHasAnyPins(current) && !roundPinsComplete(current)) {
     return { mode: "focus", focusRound, until: 0, kind: "scoring" };
   }
-  return { mode: "focus", focusRound, until: Date.now() + focusMs, kind: "intro" };
+  return {
+    mode: "focus",
+    focusRound,
+    until: Date.now() + introFocusMs(focusRound, overrideMs),
+    kind: "intro",
+  };
 }
 
 function useRoundFocusPhase(
@@ -406,16 +416,23 @@ function useRoundFocusPhase(
   matchKey: string,
   enabled: boolean,
 ): RoundFocusPhase {
-  const focusMs = useRef(readRoundFocusMs()).current;
-  const [phase, setPhase] = useState<RoundFocusPhase>(() => initialFocusPhase(rounds, focusMs));
+  const overrideMs = useRef(readRoundFocusOverrideMs()).current;
+  const [phase, setPhase] = useState<RoundFocusPhase>(() => initialFocusPhase(rounds, overrideMs));
   const keyRef = useRef(matchKey);
+  const wasEnabled = useRef(enabled);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (keyRef.current === matchKey) return;
+    if (!enabled) {
+      wasEnabled.current = false;
+      return;
+    }
+    const matchChanged = keyRef.current !== matchKey;
+    const justEnabled = !wasEnabled.current;
+    wasEnabled.current = true;
+    if (!matchChanged && !justEnabled) return;
     keyRef.current = matchKey;
-    setPhase(initialFocusPhase(rounds, focusMs));
-  }, [matchKey, rounds, focusMs, enabled]);
+    setPhase(initialFocusPhase(rounds, overrideMs));
+  }, [matchKey, rounds, overrideMs, enabled]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -436,10 +453,11 @@ function useRoundFocusPhase(
         if (p.mode === "focus") {
           if (focused && roundPinsComplete(focused)) {
             if (p.focusRound < maxRound) {
+              const nextRound = p.focusRound + 1;
               return {
                 mode: "focus",
-                focusRound: p.focusRound + 1,
-                until: now + focusMs,
+                focusRound: nextRound,
+                until: now + introFocusMs(nextRound, overrideMs),
                 kind: "intro",
               };
             }
@@ -449,7 +467,7 @@ function useRoundFocusPhase(
           if (p.kind === "intro" && focused && roundHasAnyPins(focused)) {
             return { mode: "focus", focusRound: p.focusRound, until: 0, kind: "scoring" };
           }
-          // Uvod: po 5 min skrij; scoring ostane, dokler krog ni končan
+          // Uvod: po času skrij; scoring ostane, dokler krog ni končan
           if (p.kind === "intro" && p.until > 0 && now >= p.until) {
             return { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" };
           }
@@ -458,10 +476,11 @@ function useRoundFocusPhase(
 
         // Pregled: ko začnejo vpisovati keglje tega kola → spet fokus
         if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
+          const nextRound = p.focusRound + 1;
           return {
             mode: "focus",
-            focusRound: p.focusRound + 1,
-            until: now + focusMs,
+            focusRound: nextRound,
+            until: now + introFocusMs(nextRound, overrideMs),
             kind: "intro",
           };
         }
@@ -474,7 +493,7 @@ function useRoundFocusPhase(
     tick();
     const id = window.setInterval(tick, 400);
     return () => window.clearInterval(id);
-  }, [rounds, matchComplete, focusMs, matchKey, enabled]);
+  }, [rounds, matchComplete, overrideMs, matchKey, enabled]);
 
   return phase;
 }

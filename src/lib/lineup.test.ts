@@ -69,7 +69,7 @@ describe("team lineup", () => {
     expect(forAway.homeStarters).toEqual(["", "", "", ""]);
   });
 
-  it("reveals both sides after start time or first pins", () => {
+  it("reveals both sides after start time, first pins, or liveOnTv", () => {
     const match = sampleMatch({ startsAt: "2020-01-01T18:00:00" });
     expect(lineupsRevealed(match)).toBe(true);
     expect(maskMatchLineups(match, { teamId: "h" }).awayStarters).toEqual(match.awayStarters);
@@ -90,6 +90,10 @@ describe("team lineup", () => {
       ],
     });
     expect(lineupsRevealed(scored)).toBe(true);
+
+    const forced = sampleMatch({ liveOnTv: true });
+    expect(lineupsRevealed(forced)).toBe(true);
+    expect(maskMatchLineups(forced, {}).awayStarters).toEqual(forced.awayStarters);
   });
 
   it("keeps full lineups for admin", () => {

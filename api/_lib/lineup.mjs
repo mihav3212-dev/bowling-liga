@@ -40,6 +40,7 @@ export function teamMatchSide(match, teamId) {
 }
 
 export function lineupsRevealed(match, now = Date.now()) {
+  if (match?.liveOnTv) return true;
   if (lineupLocked(match?.rounds)) return true;
   if (!match?.startsAt) return false;
   const start = new Date(match.startsAt).getTime();
