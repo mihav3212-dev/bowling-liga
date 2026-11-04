@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { TvScaleStage } from "../components/TvScaleStage";
-import { useDisplayDevice } from "../lib/displayDevice";
+import {
+  displayUsesScaleStage,
+  setDisplayDeviceOverride,
+  useDisplayDevice,
+  type DisplayDevice,
+} from "../lib/displayDevice";
 import { fetchLeague } from "../lib/leagueApi";
 import {
   buildLiveMatchView,
@@ -359,6 +364,30 @@ function LayoutPicker({
   );
 }
 
+/** Ročni preklop telefon ↔ TV, če avtomatika zgreši. */
+function DevicePicker({ device }: { device: DisplayDevice }) {
+  const mode: "phone" | "tv" =
+    device === "phone" || device === "tablet" ? "phone" : "tv";
+  return (
+    <div className="live-tv-device-toggle" role="group" aria-label="Naprava">
+      <button
+        type="button"
+        className={mode === "phone" ? "is-on" : ""}
+        onClick={() => setDisplayDeviceOverride("phone")}
+      >
+        Telefon
+      </button>
+      <button
+        type="button"
+        className={mode === "tv" ? "is-on" : ""}
+        onClick={() => setDisplayDeviceOverride("tv")}
+      >
+        TV
+      </button>
+    </div>
+  );
+}
+
 type RoundSummary = LiveMatchView["roundSummaries"][number];
 
 /** 1. krog: 5 min uvod (proge); 2.–4. krog: krajši uvod novih parov. */
@@ -636,7 +665,7 @@ function LiveMatchScreen({
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(shellRef);
   const device = useDisplayDevice();
   const handheld = device === "phone" || device === "tablet";
-  const scaleTv = device !== "phone";
+  const scaleTv = displayUsesScaleStage(device);
   /** Telefon/tablica vedno klasično; računalnik/TV lahko še kvadrate. */
   const effectiveLayout: LiveTvLayout = handheld ? "classic" : layout;
 
@@ -723,6 +752,7 @@ function LiveMatchScreen({
       )}
       <span className="live-tv-when">{m.startsAtLabel}</span>
       {rotateLabel ? <span className="live-tv-when">{rotateLabel}</span> : null}
+      <DevicePicker device={device} />
       {!handheld ? <LayoutPicker layout={layout} onChange={onLayoutChange} /> : null}
       <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
     </div>
@@ -980,7 +1010,7 @@ function LiveIdleScreen() {
   const shellRef = useRef<HTMLDivElement>(null);
   const { active: fullscreen, toggle: toggleFullscreen } = useLiveFullscreen(shellRef);
   const device = useDisplayDevice();
-  const scaleTv = device !== "phone";
+  const scaleTv = displayUsesScaleStage(device);
 
   return (
     <TvScaleStage shellRef={shellRef} enabled={scaleTv}>
@@ -998,6 +1028,7 @@ function LiveIdleScreen() {
             </div>
           </div>
           <div className="live-tv-meta">
+            <DevicePicker device={device} />
             <LiveFullscreenButton active={fullscreen} onToggle={toggleFullscreen} />
           </div>
         </header>

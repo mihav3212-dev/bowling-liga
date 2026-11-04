@@ -3403,14 +3403,16 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   font-size: 1rem;
 }
 
-.live-tv-layout-toggle {
+.live-tv-layout-toggle,
+.live-tv-device-toggle {
   display: inline-flex;
   border: 1px solid var(--tv-line);
   border-radius: 4px;
   overflow: hidden;
 }
 
-.live-tv-layout-toggle button {
+.live-tv-layout-toggle button,
+.live-tv-device-toggle button {
   appearance: none;
   border: 0;
   background: transparent;
@@ -3424,7 +3426,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   cursor: pointer;
 }
 
-.live-tv-layout-toggle button.is-on {
+.live-tv-layout-toggle button.is-on,
+.live-tv-device-toggle button.is-on {
   background: rgba(107, 156, 255, 0.18);
   color: var(--tv-accent);
 }
