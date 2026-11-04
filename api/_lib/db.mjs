@@ -768,13 +768,20 @@ export async function saveAdminMatch(pool, seasonId, incoming, opts = {}) {
           if (!cell || typeof cell !== "object") return game;
           return {
             ...game,
-            // Ne zbriši kegljev z undefined — samo eksplicitno poslana polja.
+            // Ohrani menjave in keglje iz klienta (ne samo keglje).
+            homePlayerId: Object.prototype.hasOwnProperty.call(cell, "homePlayerId")
+              ? cell.homePlayerId
+              : game.homePlayerId,
+            awayPlayerId: Object.prototype.hasOwnProperty.call(cell, "awayPlayerId")
+              ? cell.awayPlayerId
+              : game.awayPlayerId,
             homePins: Object.prototype.hasOwnProperty.call(cell, "homePins")
               ? cell.homePins
               : game.homePins,
             awayPins: Object.prototype.hasOwnProperty.call(cell, "awayPins")
               ? cell.awayPins
               : game.awayPins,
+            lane: Object.prototype.hasOwnProperty.call(cell, "lane") ? cell.lane : game.lane,
           };
         }),
       })),

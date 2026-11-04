@@ -116,24 +116,38 @@ export function applyLineup(
       ? { homeStarters: cleanStarters, homeBench: cleanBench }
       : { awayStarters: cleanStarters, awayBench: cleanBench }),
   };
+  // Po prvem keglju / že narejenih menjavah ne povoziti parov z A1–A4 iz sestave.
+  if (lineupLocked(match.rounds)) {
+    return next;
+  }
   const home = side === "home" ? cleanStarters : next.homeStarters;
   const away = side === "away" ? cleanStarters : next.awayStarters;
+  const nominated = new Set(nominatedIds(cleanStarters, cleanBench));
   const pairingSize = opts?.flexiblePairing ? lineupSize(home, away) : PLAYERS_ON_LANE;
   const template = emptyRounds(home, away, pairingSize);
   next.rounds = template.map((round, ri) => ({
-    games: round.games.map((game, gi) => ({
-      ...game,
-      homePins: match.rounds[ri]?.games[gi]?.homePins ?? null,
-      awayPins: match.rounds[ri]?.games[gi]?.awayPins ?? null,
-      homePlayerId:
-        side === "home"
-          ? game.homePlayerId
-          : match.rounds[ri]?.games[gi]?.homePlayerId || game.homePlayerId,
-      awayPlayerId:
-        side === "away"
-          ? game.awayPlayerId
-          : match.rounds[ri]?.games[gi]?.awayPlayerId || game.awayPlayerId,
-    })),
+    games: round.games.map((game, gi) => {
+      const prev = match.rounds[ri]?.games[gi];
+      const prevHome = prev?.homePlayerId ?? "";
+      const prevAway = prev?.awayPlayerId ?? "";
+      return {
+        ...game,
+        homePins: prev?.homePins ?? null,
+        awayPins: prev?.awayPins ?? null,
+        homePlayerId:
+          side === "home"
+            ? prevHome && nominated.has(prevHome)
+              ? prevHome
+              : game.homePlayerId
+            : prevHome || game.homePlayerId,
+        awayPlayerId:
+          side === "away"
+            ? prevAway && nominated.has(prevAway)
+              ? prevAway
+              : game.awayPlayerId
+            : prevAway || game.awayPlayerId,
+      };
+    }),
   }));
   return repairDuplicateLanePlayers(next);
 }
