@@ -33,6 +33,7 @@ export function TeamDetail({
     updateTeam,
     addPlayer,
     updatePlayer,
+    swapTeamPlayerNames,
     removePlayer,
     setTeamAccess,
     createTeamInvite,
@@ -522,9 +523,7 @@ export function TeamDetail({
                     <button
                       type="button"
                       className="linkish"
-                      onClick={() => {
-                        for (const p of players) updatePlayer(swapPlayerNameParts(p));
-                      }}
+                      onClick={() => swapTeamPlayerNames(team.id)}
                     >
                       Zamenjaj ime ↔ priimek pri vseh
                     </button>

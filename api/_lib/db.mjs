@@ -75,31 +75,14 @@ function composePlayerName(firstName, surname) {
   return [String(surname || "").trim(), String(firstName || "").trim()].filter(Boolean).join(" ");
 }
 
-/** Shema 3 = Ime|Priimek vnos, pravilna shramba. Iz 1 enkrat zamenjaj; iz 2 samo dvigni oznako. */
+/** Shema 3 = ne zamenjuj več ime↔priimek (ročni popravki se ne smejo povrniti). */
 function migratePlayerNames(value) {
   const prevSchema = Number(value?.playerNameSchema) || 1;
   const rawPlayers = Array.isArray(value?.players) ? value.players : [];
-  if (prevSchema >= 3) {
-    return { players: rawPlayers, playerNameSchema: prevSchema };
-  }
-  const players =
-    prevSchema >= 2
-      ? rawPlayers
-      : rawPlayers.map((player) => {
-          if (!player || typeof player !== "object") return player;
-          const firstName = String(player.firstName ?? "").trim();
-          const surname = String(player.surname ?? "").trim();
-          if (!firstName && !surname) return player;
-          const nextFirst = surname;
-          const nextSurname = firstName;
-          return {
-            ...player,
-            firstName: nextFirst,
-            surname: nextSurname,
-            name: composePlayerName(nextFirst, nextSurname) || String(player.name ?? "").trim(),
-          };
-        });
-  return { players, playerNameSchema: 3 };
+  return {
+    players: rawPlayers,
+    playerNameSchema: Math.max(prevSchema, 3),
+  };
 }
 
 function asState(data, opts = {}) {

@@ -58,34 +58,9 @@ describe("normalizePlayer", () => {
 });
 
 describe("normalizeLeagueState name schema", () => {
-  it("enkrat zamenja obrnjena firstName/surname polja (1→3)", () => {
+  it("ne zamenja firstName/surname, samo dvigne shemo", () => {
     const once = normalizeLeagueState({
       playerNameSchema: 1,
-      players: [
-        {
-          id: "p1",
-          teamId: "t1",
-          firstName: "HOJS",
-          surname: "SVEN",
-          name: "SVEN HOJS",
-          gender: "M" as const,
-          bzsMember: false,
-        },
-      ],
-    });
-    expect(once.players[0]?.firstName).toBe("SVEN");
-    expect(once.players[0]?.surname).toBe("HOJS");
-    expect(once.players[0]?.name).toBe("HOJS SVEN");
-    expect(once.playerNameSchema).toBe(3);
-
-    const twice = normalizeLeagueState(once);
-    expect(twice.players[0]?.firstName).toBe("SVEN");
-    expect(twice.players[0]?.surname).toBe("HOJS");
-  });
-
-  it("iz sheme 2 ne zamenja znova (samo dvigne na 3)", () => {
-    const next = normalizeLeagueState({
-      playerNameSchema: 2,
       players: [
         {
           id: "p1",
@@ -98,8 +73,12 @@ describe("normalizeLeagueState name schema", () => {
         },
       ],
     });
-    expect(next.players[0]?.firstName).toBe("SVEN");
-    expect(next.players[0]?.surname).toBe("HOJS");
-    expect(next.playerNameSchema).toBe(3);
+    expect(once.players[0]?.firstName).toBe("SVEN");
+    expect(once.players[0]?.surname).toBe("HOJS");
+    expect(once.playerNameSchema).toBe(3);
+
+    const twice = normalizeLeagueState(once);
+    expect(twice.players[0]?.firstName).toBe("SVEN");
+    expect(twice.players[0]?.surname).toBe("HOJS");
   });
 });

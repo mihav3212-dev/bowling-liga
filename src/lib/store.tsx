@@ -72,7 +72,7 @@ import { useAuth } from "./auth";
 import { cloneTeamsAndPlayers } from "./cloneRoster";
 import { uid } from "./ids";
 import { hashPassword } from "./passwords";
-import { normalizeLeagueState, normalizePlayer } from "./playerName";
+import { normalizeLeagueState, normalizePlayer, swapPlayerNameParts } from "./playerName";
 import {
   compactGames,
   compactTrainings,
@@ -106,6 +106,8 @@ type Store = {
   updateTeam: (id: string, patch: Partial<Omit<Team, "id">>) => void;
   addPlayer: (teamId: string, firstName: string, surname: string, gender: Gender, bzsMember: boolean) => void;
   updatePlayer: (player: Player) => void;
+  /** Zamenjaj firstName↔surname za vse člane ekipe (en zapis). */
+  swapTeamPlayerNames: (teamId: string) => void;
   removePlayer: (id: string) => void;
   generateSchedule: () => void;
   drawSchedule: (dates: string[]) => void;
@@ -457,10 +459,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!remoteRef.current || !team || !seasonIdRef.current) return;
     if (teamPerms(s.teams.find((item) => item.id === team)).season) return;
     const season = seasonIdRef.current;
-    const players = s.players.filter((player) => player.teamId === team);
+    // Posodobi ref takoj, da timeout shrani zadnje stanje (ne zastarelega zaprtja).
+    stateRef.current = s;
     if (rosterFlushTimer.current) clearTimeout(rosterFlushTimer.current);
     rosterFlushTimer.current = setTimeout(() => {
       rosterFlushTimer.current = undefined;
+      const players = stateRef.current.players.filter((player) => player.teamId === team);
       void runRemoteSave(async () =>
         commitVersionedSave(
           await saveTeamRoster(season, team, players, {
@@ -569,6 +573,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const next = {
             ...s,
             players: s.players.map((p) => (p.id === normalized.id ? normalized : p)),
+          };
+          flushRoster(next);
+          return next;
+        });
+      },
+      swapTeamPlayerNames: (teamId) => {
+        const viewer = viewerTeamRef.current;
+        if (viewer && (viewer !== teamId || !viewerMayRoster())) {
+          return;
+        }
+        update((s) => {
+          const next = {
+            ...s,
+            players: s.players.map((p) => (p.teamId === teamId ? swapPlayerNameParts(p) : p)),
           };
           flushRoster(next);
           return next;

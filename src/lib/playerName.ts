@@ -73,8 +73,8 @@ export function normalizePlayers(players: Player[] | undefined | null): Player[]
 }
 
 /**
- * 3 = vnos Ime|Priimek; shranjeno firstName/surname v pravem pomenu.
- * Ob 1→3 (ali 1→2) enkrat zamenjaj obrnjene vnose; 2→3 samo dvigne oznako (brez nove zamenjave).
+ * 3 = vnos Ime|Priimek; firstName/surname se ne smejo več samodejno zamenjavati.
+ * (Stara migracija 1→2 je pri shranjevanju/osvežitvi podrla ročne popravke.)
  */
 const PLAYER_NAME_SCHEMA = 3;
 
@@ -87,27 +87,14 @@ export function swapPlayerNameParts(player: Player): Player {
   });
 }
 
-/** Poravnaj firstName/surname (lestvica ostane Priimek Ime). */
+/** Normaliziraj igralce; nikoli več samodejno ne zamenjaj ime↔priimek. */
 export function normalizeLeagueState<
   T extends { players?: Player[] | null; playerNameSchema?: number },
 >(state: T): T {
   const prevSchema = state.playerNameSchema ?? 1;
-  const rawPlayers = Array.isArray(state.players) ? state.players : [];
-  const players = rawPlayers
-    .filter((p) => p && p.id && p.teamId)
-    .map((raw) => {
-      const hadParts =
-        Boolean(String(raw.firstName ?? "").trim()) || Boolean(String(raw.surname ?? "").trim());
-      let player = normalizePlayer(raw);
-      // Samo iz sheme 1: ena zamenjava. Shema 2 je že poravnala.
-      if (prevSchema < 2 && hadParts) {
-        player = swapPlayerNameParts(player);
-      }
-      return player;
-    });
   return {
     ...state,
-    players,
+    players: normalizePlayers(state.players),
     playerNameSchema: Math.max(prevSchema, PLAYER_NAME_SCHEMA),
   };
 }
