@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   applyLineup,
+  applyPlayerSubstitution,
   lineupsRevealed,
   maskMatchLineups,
   playerOnOtherLane,
   repairDuplicateLanePlayers,
   sanitizeLineup,
+  substitutedOutIds,
   teamMatchSide,
 } from "./lineup";
 import { emptyRounds } from "./pairings";
@@ -130,5 +132,25 @@ describe("team lineup", () => {
     expect(fixed.rounds[3].games[2].homePlayerId).toBe("h2");
     expect(fixed.rounds[1].games[0].homePlayerId).toBe("h3");
     expect(playerOnOtherLane(fixed.rounds[1].games, "home", "h3", 0)).toBe(false);
+  });
+
+  it("propagates a sub forward and blocks the replaced player from returning", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    // h1 is on lane index 2 in round 1 (OFFICIAL_4)
+    const subbed = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    expect(subbed.rounds[0]?.games.some((g) => g.homePlayerId === "h1")).toBe(true);
+    expect(subbed.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    for (let r = 1; r < 4; r++) {
+      expect(subbed.rounds[r]?.games.some((g) => g.homePlayerId === "h1")).toBe(false);
+      expect(subbed.rounds[r]?.games.some((g) => g.homePlayerId === "h5")).toBe(true);
+    }
+    expect(substitutedOutIds(subbed, "home").has("h1")).toBe(true);
+    const blocked = applyPlayerSubstitution(subbed, 2, 0, "home", "h1");
+    expect(blocked.rounds[2]?.games.some((g) => g.homePlayerId === "h1")).toBe(false);
   });
 });

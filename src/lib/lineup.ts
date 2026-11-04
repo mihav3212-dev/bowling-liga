@@ -1,4 +1,4 @@
-import { emptyRounds, lineupSize, pairingTemplate } from "./pairings";
+import { emptyRounds, lineupSize, nominatedIds, pairingTemplate } from "./pairings";
 import { lineupLocked, MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import type { GameScore, Match, Player } from "./types";
 
@@ -139,6 +139,97 @@ export function playerOnOtherLane(
   if (!playerId) return false;
   const key = side === "home" ? "homePlayerId" : "awayPlayerId";
   return games.some((game, index) => index !== gameIndex && game[key] === playerId);
+}
+
+function sidePlayerKey(side: "home" | "away"): "homePlayerId" | "awayPlayerId" {
+  return side === "home" ? "homePlayerId" : "awayPlayerId";
+}
+
+/**
+ * Igralci, ki so že bili v igri, a v zadnjem zapolnjenem krogu niso več —
+ * po menjavi ne smejo nazaj.
+ */
+export function substitutedOutIds(match: Match, side: "home" | "away"): Set<string> {
+  const key = sidePlayerKey(side);
+  const rounds = match.rounds ?? [];
+  let lastIdx = -1;
+  for (let i = rounds.length - 1; i >= 0; i--) {
+    if ((rounds[i]?.games ?? []).some((g) => Boolean(g[key]))) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx <= 0) return new Set();
+  const active = new Set(
+    (rounds[lastIdx]?.games ?? []).map((g) => g[key]).filter(Boolean) as string[],
+  );
+  const out = new Set<string>();
+  for (let i = 0; i < lastIdx; i++) {
+    for (const g of rounds[i]?.games ?? []) {
+      const id = g[key];
+      if (id && !active.has(id)) out.add(id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Menjava: novi igralec na tej stezi + v vseh naslednjih krogih namesto odhajajočega.
+ * Odhajajoči ne more več vstopiti.
+ */
+export function applyPlayerSubstitution(
+  match: Match,
+  roundIndex: number,
+  gameIndex: number,
+  side: "home" | "away",
+  playerId: string,
+): Match {
+  const key = sidePlayerKey(side);
+  const round = match.rounds[roundIndex];
+  const game = round?.games[gameIndex];
+  if (!game) return match;
+
+  const starters = side === "home" ? match.homeStarters : match.awayStarters;
+  const bench = side === "home" ? match.homeBench : match.awayBench;
+  const allowed = new Set(nominatedIds(starters ?? [], bench ?? []));
+  if (playerId && !allowed.has(playerId)) return match;
+  if (playerId && playerOnOtherLane(round.games, side, playerId, gameIndex)) return match;
+  if (playerId && substitutedOutIds(match, side).has(playerId)) return match;
+
+  const oldId = game[key] ?? "";
+
+  // Prazen vnos ali ista oseba / ni koga zamenjati → samo ta celica.
+  if (!playerId || !oldId || oldId === playerId) {
+    return {
+      ...match,
+      rounds: match.rounds.map((r, ri) => {
+        if (ri !== roundIndex) return r;
+        return {
+          games: r.games.map((g, gi) =>
+            gi !== gameIndex ? g : { ...g, [key]: playerId },
+          ),
+        };
+      }),
+    };
+  }
+
+  return {
+    ...match,
+    rounds: match.rounds.map((r, ri) => {
+      if (ri < roundIndex) return r;
+      return {
+        games: r.games.map((g, gi) => {
+          if (ri === roundIndex && gi === gameIndex) {
+            return { ...g, [key]: playerId };
+          }
+          if (g[key] === oldId) {
+            return { ...g, [key]: playerId };
+          }
+          return g;
+        }),
+      };
+    }),
+  };
 }
 
 /**

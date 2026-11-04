@@ -129,6 +129,76 @@ export function playerOnOtherLane(games, side, playerId, gameIndex) {
   return (games ?? []).some((game, index) => index !== gameIndex && game?.[key] === playerId);
 }
 
+function sidePlayerKey(side) {
+  return side === "home" ? "homePlayerId" : "awayPlayerId";
+}
+
+export function substitutedOutIds(match, side) {
+  const key = sidePlayerKey(side);
+  const rounds = match?.rounds ?? [];
+  let lastIdx = -1;
+  for (let i = rounds.length - 1; i >= 0; i--) {
+    if ((rounds[i]?.games ?? []).some((g) => Boolean(g?.[key]))) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx <= 0) return new Set();
+  const active = new Set((rounds[lastIdx]?.games ?? []).map((g) => g[key]).filter(Boolean));
+  const out = new Set();
+  for (let i = 0; i < lastIdx; i++) {
+    for (const g of rounds[i]?.games ?? []) {
+      const id = g[key];
+      if (id && !active.has(id)) out.add(id);
+    }
+  }
+  return out;
+}
+
+/** Menjava se ujame naprej po krogih; odhajajoči ne more nazaj. */
+export function applyPlayerSubstitution(match, roundIndex, gameIndex, side, playerId) {
+  const key = sidePlayerKey(side);
+  const round = match?.rounds?.[roundIndex];
+  const game = round?.games?.[gameIndex];
+  if (!game) return match;
+
+  const starters = side === "home" ? match.homeStarters : match.awayStarters;
+  const bench = side === "home" ? match.homeBench : match.awayBench;
+  const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
+  if (playerId && !allowed.has(playerId)) return match;
+  if (playerId && playerOnOtherLane(round.games, side, playerId, gameIndex)) return match;
+  if (playerId && substitutedOutIds(match, side).has(playerId)) return match;
+
+  const oldId = game[key] ?? "";
+  const pid = playerId || "";
+
+  if (!pid || !oldId || oldId === pid) {
+    return {
+      ...match,
+      rounds: match.rounds.map((r, ri) => {
+        if (ri !== roundIndex) return r;
+        return {
+          games: r.games.map((g, gi) => (gi !== gameIndex ? g : { ...g, [key]: pid })),
+        };
+      }),
+    };
+  }
+
+  return {
+    ...match,
+    rounds: match.rounds.map((r, ri) => {
+      if (ri < roundIndex) return r;
+      return {
+        games: r.games.map((g, gi) => {
+          if (ri === roundIndex && gi === gameIndex) return { ...g, [key]: pid };
+          if (g[key] === oldId) return { ...g, [key]: pid };
+          return g;
+        }),
+      };
+    }),
+  };
+}
+
 export function repairDuplicateLanePlayers(match) {
   let changed = false;
   const rounds = (match.rounds ?? []).map((round, ri) => {

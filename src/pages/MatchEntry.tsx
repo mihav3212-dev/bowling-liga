@@ -10,7 +10,7 @@ import {
   releaseMatchEditLock,
   releaseMatchEditLockBeacon,
 } from "../lib/leagueApi";
-import { lineupsRevealed, teamMatchSide } from "../lib/lineup";
+import { lineupsRevealed, substitutedOutIds, teamMatchSide } from "../lib/lineup";
 import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchPlayerStats, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
@@ -643,6 +643,8 @@ export function MatchEntry({
         const pair = pairingTemplate()[ri] ?? [];
         const roundTot = totals.rounds[ri];
         const lockRoundPlayers = pinsReadOnly || (Boolean(lineupTeamId) && !perms.lineup) || (ri === 0 && playersLocked);
+        const homeOut = substitutedOutIds(match, "home");
+        const awayOut = substitutedOutIds(match, "away");
         return (
         <div className="scorecard" key={ri} style={{ marginBottom: 16 }}>
           <h3>{ri + 1}. krog</h3>
@@ -690,7 +692,11 @@ export function MatchEntry({
                           >
                             <option value="">—</option>
                             {homePlayers
-                              .filter((p) => p.id === game.homePlayerId || !homeTaken.has(p.id))
+                              .filter(
+                                (p) =>
+                                  p.id === game.homePlayerId ||
+                                  (!homeTaken.has(p.id) && !homeOut.has(p.id)),
+                              )
                               .map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {playerTag(p)}
@@ -755,7 +761,11 @@ export function MatchEntry({
                           >
                             <option value="">—</option>
                             {awayPlayers
-                              .filter((p) => p.id === game.awayPlayerId || !awayTaken.has(p.id))
+                              .filter(
+                                (p) =>
+                                  p.id === game.awayPlayerId ||
+                                  (!awayTaken.has(p.id) && !awayOut.has(p.id)),
+                              )
                               .map((p) => (
                                 <option key={p.id} value={p.id}>
                                   {playerTag(p)}

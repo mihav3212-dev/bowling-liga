@@ -1,7 +1,14 @@
 import mysql from "mysql2/promise";
 import { loadFileConfig } from "./config.mjs";
 import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
-import { applyLineup, lineupLocked, playerOnOtherLane, sanitizeLineup, teamMatchSide } from "./lineup.mjs";
+import {
+  applyLineup,
+  applyPlayerSubstitution,
+  lineupLocked,
+  playerOnOtherLane,
+  sanitizeLineup,
+  teamMatchSide,
+} from "./lineup.mjs";
 import {
   findInviteTeam,
   hashInviteToken,
@@ -884,19 +891,38 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
         return null;
       }
       const pid = patch.playerId || "";
-      const starters = patch.side === "home" ? match.homeStarters : match.awayStarters;
-      const bench = patch.side === "home" ? match.homeBench : match.awayBench;
-      const allowed = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
-      if (pid && !allowed.has(pid)) {
+      const before = match;
+      const after = applyPlayerSubstitution(match, ri, gi, patch.side, pid);
+      const beforeId =
+        patch.side === "home"
+          ? before.rounds?.[ri]?.games?.[gi]?.homePlayerId
+          : before.rounds?.[ri]?.games?.[gi]?.awayPlayerId;
+      const afterId =
+        patch.side === "home"
+          ? after.rounds?.[ri]?.games?.[gi]?.homePlayerId
+          : after.rounds?.[ri]?.games?.[gi]?.awayPlayerId;
+      // Če se ni spremenilo (npr. prepovedana vrnitev), zavrni.
+      if (pid && beforeId === afterId && beforeId !== pid) {
         await conn.rollback();
         return null;
       }
-      if (playerOnOtherLane(match.rounds?.[ri]?.games, patch.side, pid, gi)) {
-        await conn.rollback();
-        return null;
-      }
-      if (patch.side === "home") nextGame.homePlayerId = pid;
-      else nextGame.awayPlayerId = pid;
+      const filledAfter = after.rounds.every((round) =>
+        round.games.every((item) => item.homePins != null && item.awayPins != null),
+      );
+      matches[index] = {
+        ...after,
+        status: filledAfter ? "done" : "scheduled",
+        ...(filledAfter ? { liveOnTv: undefined } : {}),
+      };
+      if (filledAfter) delete matches[index].liveOnTv;
+      const nextDataSub = { ...current.data, matches };
+      const payloadSub = preserveSecrets(asState(nextDataSub), current.data, { lockPerms: !admin });
+      await conn.execute(
+        "UPDATE seasons SET data = ?, updated_at = NOW() WHERE id = ? AND archived_at IS NULL",
+        [dump(payloadSub), id],
+      );
+      await conn.commit();
+      return getSeason(pool, id);
     }
     const rounds = match.rounds.map((round, r) =>
       r !== ri

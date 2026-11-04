@@ -62,6 +62,7 @@ import {
 import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpen } from "./access";
 import {
   applyLineup,
+  applyPlayerSubstitution,
   playerOnOtherLane,
   repairDuplicateLanePlayers,
   rosterIdsForTeam,
@@ -827,36 +828,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           if (!match || teamMatchSide(match, team) !== side) return;
         }
         const current = stateRef.current.matches.find((m) => m.id === matchId);
-        const games = current?.rounds[roundIndex]?.games ?? [];
-        if (playerOnOtherLane(games, side, playerId, gameIndex)) return;
+        if (!current) return;
+        if (roundIndex === 0 && lineupLocked(current.rounds)) return;
+        const nextMatch = applyPlayerSubstitution(current, roundIndex, gameIndex, side, playerId);
+        if (nextMatch === current) return;
         clearTimeout(saveTimer.current);
         saveTimer.current = undefined;
         touchLocal((s) => ({
           ...s,
-          matches: s.matches.map((m) => {
-            if (m.id !== matchId) return m;
-            const allowed = nominatedIds(
-              side === "home" ? m.homeStarters : m.awayStarters,
-              side === "home" ? m.homeBench : m.awayBench,
-            );
-            if (playerId && !allowed.includes(playerId)) return m;
-            if (playerOnOtherLane(m.rounds[roundIndex]?.games ?? [], side, playerId, gameIndex)) return m;
-            if (roundIndex === 0 && lineupLocked(m.rounds)) return m;
-            return {
-              ...m,
-              rounds: m.rounds.map((round, ri) => {
-                if (ri !== roundIndex) return round;
-                return {
-                  games: round.games.map((g, gi) => {
-                    if (gi !== gameIndex) return g;
-                    return side === "home"
-                      ? { ...g, homePlayerId: playerId }
-                      : { ...g, awayPlayerId: playerId };
-                  }),
-                };
-              }),
-            };
-          }),
+          matches: s.matches.map((m) => (m.id === matchId ? nextMatch : m)),
         }));
         if (remoteRef.current && seasonIdRef.current) {
           const season = seasonIdRef.current;
@@ -1077,29 +1057,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             getTeamSessions(s, teamId).map((session) => {
               if (session.id !== sessionId || !session.match) return session;
               const match = session.match;
-              const allowed = nominatedIds(
-                side === "home" ? match.homeStarters : match.awayStarters,
-                side === "home" ? match.homeBench : match.awayBench,
-              );
-              if (playerId && !allowed.includes(playerId)) return session;
               if (roundIndex === 0 && lineupLocked(match.rounds)) return session;
-              return {
-                ...session,
-                match: {
-                  ...match,
-                  rounds: match.rounds.map((round, ri) => {
-                    if (ri !== roundIndex) return round;
-                    return {
-                      games: round.games.map((g, gi) => {
-                        if (gi !== gameIndex) return g;
-                        return side === "home"
-                          ? { ...g, homePlayerId: playerId }
-                          : { ...g, awayPlayerId: playerId };
-                      }),
-                    };
-                  }),
-                },
-              };
+              const next = applyPlayerSubstitution(match, roundIndex, gameIndex, side, playerId);
+              if (next === match) return session;
+              return { ...session, match: next };
             }),
           ),
         ),
