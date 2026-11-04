@@ -37,13 +37,10 @@ function playerName(roster: Player[], id: string): string {
   return player ? playerTag(player) : "—";
 }
 
-/** 0 = manjkajoči igralec; 1–59 = sumljivo nizko — vprašaj za potrditev. */
-const LOW_PINS_WARN_BELOW = 60;
-
-function confirmLowPins(pins: number): boolean {
-  return window.confirm(
-    `Vpisanih je samo ${pins} kegljev (običajno ≥ ${LOW_PINS_WARN_BELOW}).\n\nShranim ta vnos? (Prekliči = ponovni vnos)`,
-  );
+/** Vnos, ki se začne z 1/2/3, mora biti trimesten (100–300); 0 = manjkajoči; 4–9 → 40–99. */
+function needsThreePinDigits(typed: string): boolean {
+  const first = typed[0];
+  return first === "1" || first === "2" || first === "3";
 }
 
 export function PinField({
@@ -68,7 +65,11 @@ export function PinField({
   const shown = editing ? draft : raw != null ? String(raw) : "";
   const draftNum = editing ? parsePins(draft) : raw;
   const draftFinal = scoredPins(draftNum, player);
-  const showAdj = draftNum != null && draftFinal != null && draftFinal !== draftNum;
+  const showAdj =
+    draftNum != null &&
+    draftFinal != null &&
+    draftFinal !== draftNum &&
+    !(editing && draft != null && needsThreePinDigits(draft) && draft.length < 3);
 
   return (
     <span className="pin-entry">
@@ -85,21 +86,21 @@ export function PinField({
         onChange={(e) => {
           const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
           setDraft(next);
-          // Med tipkanjem še ne opozarjaj — šele ob blur (npr. 5 → 55 → 155).
+          // 1xx/2xx/3xx šele ko so 3 števke — sicer TV ne utripa 1 → 15 → 155.
+          if (needsThreePinDigits(next) && next.length < 3) return;
           onChange(parsePins(next));
         }}
         onBlur={() => {
-          const pins = parsePins(draft ?? "");
+          const typed = draft ?? "";
           const previous = raw;
           setDraft(null);
           onEditingChange?.(false);
-          // Če je med tipkanjem že shranjena nizka vrednost, ob preklicu vrni prejšnjo.
-          if (pins != null && pins > 0 && pins < LOW_PINS_WARN_BELOW) {
-            if (!confirmLowPins(pins)) {
-              onChange(previous);
-              return;
-            }
+          if (needsThreePinDigits(typed) && typed.length > 0 && typed.length < 3) {
+            window.alert("Vnos, ki se začne z 1, 2 ali 3, mora biti trimestno število (npr. 155).");
+            onChange(previous);
+            return;
           }
+          const pins = parsePins(typed);
           if (pins !== raw) onChange(pins);
         }}
         onKeyDown={(e) => {
