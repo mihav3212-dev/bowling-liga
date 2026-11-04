@@ -126,24 +126,24 @@ function singles(state: LeagueState): RecapLine[] {
   return rows;
 }
 
+/** Najboljši ekipni izid po tekmi — vsaka ekipa največ enkrat (max kegljev). */
 function teamMatches(state: LeagueState): RecapLine[] {
   const teams = new Map(state.teams.map((t) => [t.id, t.name]));
-  const rows: RecapLine[] = [];
+  const best = new Map<string, RecapLine>();
+  const consider = (teamId: string, pins: number) => {
+    const name = teams.get(teamId) ?? "?";
+    const prev = best.get(teamId);
+    if (!prev || pins > prev.value) {
+      best.set(teamId, { showRank: false, value: pins, name });
+    }
+  };
   for (const match of state.matches) {
     const totals = matchTotals(match, state.players);
     if (!totals.complete) continue;
-    rows.push({
-      showRank: false,
-      value: totals.homePins,
-      name: teams.get(match.homeTeamId) ?? "?",
-    });
-    rows.push({
-      showRank: false,
-      value: totals.awayPins,
-      name: teams.get(match.awayTeamId) ?? "?",
-    });
+    consider(match.homeTeamId, totals.homePins);
+    consider(match.awayTeamId, totals.awayPins);
   }
-  return rows;
+  return [...best.values()];
 }
 
 export function computeWeekRecap(state: LeagueState): WeekRecap {
