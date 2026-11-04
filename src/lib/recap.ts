@@ -50,13 +50,21 @@ export function topPlaces(items: RecapLine[], places = 5): RecapLine[] {
   return out;
 }
 
-/** Vsak igralec največ enkrat — najboljši izid. */
+/** Ključ osebe: ime + ekipa (isti človek z več ID-ji ne sme biti 2×). */
+function personKey(row: Pick<RecapLine, "name" | "team"> & { playerId?: string }): string {
+  const name = row.name.trim().toLocaleLowerCase("sl");
+  const team = (row.team ?? "").trim().toLocaleLowerCase("sl");
+  return `${name}|${team}`;
+}
+
+/** Vsak posameznik največ enkrat — najboljši izid. */
 function bestPerPlayer(rows: (RecapLine & { playerId: string })[]): RecapLine[] {
   const best = new Map<string, RecapLine>();
   for (const row of rows) {
-    const prev = best.get(row.playerId);
+    const key = personKey(row);
+    const prev = best.get(key);
     if (!prev || row.value > prev.value) {
-      best.set(row.playerId, {
+      best.set(key, {
         showRank: false,
         value: row.value,
         name: row.name,

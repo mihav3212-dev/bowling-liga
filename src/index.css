@@ -2661,8 +2661,8 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv:not(.is-quad) .live-tv-round-card-totals {
-  /* Manjše od naslova kola — vse v eni vrstici (Velike / Male / keglji). */
-  font-size: clamp(0.72rem, 4.8cqi, 1.05rem);
+  /* Berljivo tudi na telefonu / manjšem scale. */
+  font-size: clamp(0.95rem, 5.5cqi, 1.35rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-round-duels {
@@ -2742,8 +2742,8 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
-  font-size: clamp(0.72rem, 4.8cqi, 1.05rem);
-  margin-bottom: 4px;
+  font-size: clamp(0.95rem, 5.5cqi, 1.35rem);
+  margin-bottom: 6px;
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-duels {
@@ -4384,9 +4384,27 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
     margin-bottom: 6px;
   }
 
+  .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-card-totals,
   .tv-scale-shell.is-fluid .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-round-card-totals {
-    font-size: 1.05rem;
-    margin-bottom: 8px;
+    font-size: clamp(1.2rem, 3.8vw, 1.45rem);
+    margin-bottom: 10px;
+    color: var(--tv-ink);
+  }
+
+  .tv-scale-shell.is-fluid .live-tv-stats-row.is-live-hero {
+    gap: 0.35em 0;
+  }
+
+  .tv-scale-shell.is-fluid .live-tv-stats-row.is-live-hero .live-tv-stats-row-item {
+    font-size: clamp(1.15rem, 3.6vw, 1.4rem);
+  }
+
+  .tv-scale-shell.is-fluid .live-tv-stats-row.is-live-hero .live-tv-stats-row-item strong {
+    font-size: clamp(1.85rem, 7vw, 2.6rem);
+  }
+
+  .tv-scale-shell.is-fluid .live-tv-team {
+    font-size: clamp(2rem, 8vw, 2.75rem);
   }
 
   .tv-scale-shell.is-fluid .live-tv:not(.is-quad) .live-tv-round-duels,

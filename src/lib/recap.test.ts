@@ -73,6 +73,40 @@ describe("topSingles / topSeries", () => {
     expect(bestSingle.map((r) => r.name)).toEqual(["h1"]);
     expect(bestSingle[0]?.value).toBe(250);
 
+    // Isti človek, dva playerId — še vedno en vnos z max
+    const dupState: LeagueState = {
+      ...state,
+      players: [
+        ...players,
+        {
+          id: "h1b",
+          teamId: "t1",
+          firstName: "",
+          surname: "",
+          name: "h1",
+          gender: "M",
+          bzsMember: false,
+        },
+      ],
+      matches: [
+        m1,
+        {
+          ...m2,
+          id: "m3",
+          homeStarters: ["h1b", "h2", "h3", "h4"],
+          rounds: m2.rounds.map((round) => ({
+            ...round,
+            games: round.games.map((g, i) =>
+              i === 0 ? { ...g, homePlayerId: "h1b", homePins: 260 } : g,
+            ),
+          })),
+        },
+      ],
+    };
+    const dup = computeWeekRecap(dupState);
+    expect(dup.topSingles.filter((r) => r.name === "h1")).toHaveLength(1);
+    expect(dup.topSingles.find((r) => r.name === "h1")?.value).toBe(260);
+
     expect(topSeries.filter((r) => r.name === "h1")).toHaveLength(1);
     expect(topSeries.find((r) => r.name === "h1")?.value).toBe(720);
     // m2: vsi domači 4×180 = 720
