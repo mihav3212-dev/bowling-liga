@@ -248,11 +248,7 @@ function LeagueApp() {
       commitNav({ ...cur, page: "schedule", detailTeamId: null }, "replace");
       return;
     }
-    // Gost brez ekipe ne odpre vpisa — šele ko auth ve, da ni prijave.
-    if (!admin && !loginTeamId && cur.page === "schedule" && cur.matchId) {
-      commitNav({ ...cur, matchId: null }, "replace");
-    }
-  }, [authReady, admin, canEdit, loginTeamId, page, matchId]);
+  }, [authReady, canEdit, loginTeamId, page, matchId]);
 
   useEffect(() => {
     if (admin || !training) return;
@@ -270,6 +266,16 @@ function LeagueApp() {
   }, [loginTeamId]);
 
   const legacyTraining = training && admin;
+
+  const scheduleMatch = matchId ? state.matches.find((m) => m.id === matchId) : undefined;
+  const teamCanEnterScheduleMatch =
+    Boolean(loginTeamId) &&
+    canOpenTeamMatch(loginTeam) &&
+    Boolean(
+      scheduleMatch &&
+        (scheduleMatch.homeTeamId === loginTeamId || scheduleMatch.awayTeamId === loginTeamId),
+    );
+  const scheduleOpensEntry = Boolean(matchId) && (canEdit || teamCanEnterScheduleMatch);
 
   if (setupNeeded === null) return null;
   if (setupNeeded) {
@@ -393,20 +399,7 @@ function LeagueApp() {
         </nav>
 
         {page === "schedule" && !matchId && (
-          <Matches
-            mode="schedule"
-            onOpen={canEdit || canOpenTeamMatch(loginTeam) ? openMatch : undefined}
-            canOpen={
-              canEdit
-                ? undefined
-                : (match) =>
-                    Boolean(
-                      loginTeamId &&
-                        (match.homeTeamId === loginTeamId || match.awayTeamId === loginTeamId) &&
-                        canOpenTeamMatch(loginTeam),
-                    )
-            }
-          />
+          <Matches mode="schedule" onOpen={openMatch} />
         )}
         {page === "results" && !matchId && (
           <>
@@ -414,14 +407,22 @@ function LeagueApp() {
             <PdfButton label="Izvozi PDF rezultatov" onExport={() => exportResultsPdf(state)} />
           </>
         )}
-        {page === "schedule" && matchId && (
+        {page === "schedule" && matchId && scheduleOpensEntry && (
           <MatchEntry
             matchId={matchId}
             onBack={() =>
               navigateBack(() => commitNav({ ...navRef.current, matchId: null }, "replace"))
             }
-            readOnly={!canEdit && !loginTeamId}
+            readOnly={false}
             lineupTeamId={canEdit ? null : loginTeamId}
+          />
+        )}
+        {page === "schedule" && matchId && !scheduleOpensEntry && (
+          <MatchResultPage
+            matchId={matchId}
+            onBack={() =>
+              navigateBack(() => commitNav({ ...navRef.current, matchId: null }, "replace"))
+            }
           />
         )}
         {page === "results" && matchId && !resultsEditing && (
