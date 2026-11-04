@@ -2789,7 +2789,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-scoreboard {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: clamp(12px, 3cqw, 40px);
   padding: clamp(12px, 2cqh, 20px) 0;
@@ -2798,6 +2798,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-side {
   min-width: 0;
+  overflow: hidden;
 }
 
 .live-tv-side.is-away {
@@ -2813,18 +2814,29 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-team {
+  margin: 0;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 800;
   font-size: clamp(2.4rem, 7cqw, 5.5rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  text-wrap: balance;
+  max-width: 100%;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+.live-tv-team-word {
+  display: inline;
+  white-space: nowrap;
 }
 
 .live-tv-center {
   text-align: center;
-  padding: 0 clamp(8px, 2cqw, 24px);
+  padding: 0 clamp(8px, 1.2cqw, 18px);
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .live-tv-score-label {
@@ -2880,18 +2892,23 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   margin-left: 0.25em;
 }
 
-/* Med tekmo: V / M / keglji v eni vrstici, kot prejšnje velike točke */
+/* Med tekmo: V / M / keglji v stolpcu — ožji center, več prostora za imena */
 .live-tv-stats-row.is-live-hero {
-  gap: 0.45em 2em;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.2em 0;
 }
 
 .live-tv-stats-row.is-live-hero .live-tv-stats-row-item {
-  font-size: clamp(1.35rem, 2.6cqw, 1.85rem);
+  font-size: clamp(1.15rem, 2.1cqw, 1.55rem);
 }
 
 .live-tv-stats-row.is-live-hero .live-tv-stats-row-item strong {
-  font-size: clamp(3.4rem, 9cqw, 6.5rem);
+  font-size: clamp(2.6rem, 6.5cqw, 4.75rem);
   line-height: 1;
+  margin-left: 0.3em;
 }
 
 /* Po koncu: spodnja vrstica malo večja, ker je v eni liniji */
@@ -3523,7 +3540,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-round-focus-overlay .live-tv-focus-overlay-panel .live-tv-round-card-totals {
-  font-size: clamp(1.2rem, 2.2cqw, 1.75rem);
+  font-size: clamp(1.65rem, 3.1cqw, 2.45rem);
   margin-bottom: 12px;
   flex-wrap: nowrap;
   white-space: nowrap;
@@ -3752,8 +3769,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv.is-quad.is-round-focus .live-tv-round-card.is-enlarged .live-tv-round-card-totals {
-  /* Ena vrstica, manjše od naslova kola */
-  font-size: clamp(1.35rem, 2.5cqw, 2rem);
+  /* Ena vrstica — berljivo z razdalje */
+  font-size: clamp(1.65rem, 3.1cqw, 2.45rem);
   margin-bottom: 12px;
   gap: 0.4em 1em;
   flex-wrap: nowrap;

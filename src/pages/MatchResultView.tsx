@@ -1,48 +1,10 @@
-import { Fragment, useLayoutEffect, useRef } from "react";
+import { Fragment } from "react";
+import { FitTeamName } from "../components/FitTeamName";
 import type { LiveMatchView } from "../lib/liveBoard";
 import type { MatchPlayerStat } from "../lib/scoring";
 import { exportMatchPdf } from "../lib/exportPdf";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
-
-/** Vsaka beseda v svoji vrstici; velikost se prilagodi najdaljši besedi (brez lomljenja sredi besede). */
-function FitTeamName({ name, className }: { name: string; className?: string }) {
-  const ref = useRef<HTMLHeadingElement>(null);
-  const words = name.trim().split(/\s+/).filter(Boolean);
-
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const box = el?.parentElement;
-    if (!el || !box) return;
-
-    const fit = () => {
-      const maxPx = Math.min(52, Math.max(20, box.clientWidth * 0.28));
-      const minPx = 12;
-      let size = maxPx;
-      el.style.fontSize = `${size}px`;
-      while (size > minPx && el.scrollWidth > box.clientWidth + 1) {
-        size -= 0.5;
-        el.style.fontSize = `${size}px`;
-      }
-    };
-
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(box);
-    return () => ro.disconnect();
-  }, [name]);
-
-  return (
-    <h1 ref={ref} className={className}>
-      {words.map((word, i) => (
-        <Fragment key={`${i}-${word}`}>
-          {i > 0 ? <br /> : null}
-          <span className="result-view-team-word">{word}</span>
-        </Fragment>
-      ))}
-    </h1>
-  );
-}
 
 /** Predogled / ogled končane tekme (zavihek Rezultati). */
 
@@ -208,7 +170,11 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {homeWins ? "Zmaga" : tied ? "Neodločeno" : "Domači"}
           </div>
-          <FitTeamName name={m.homeName} className="result-view-team" />
+          <FitTeamName
+            name={m.homeName}
+            className="result-view-team"
+            wordClassName="result-view-team-word"
+          />
         </div>
 
         <div className="result-view-center">
@@ -244,7 +210,11 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {awayWins ? "Zmaga" : tied ? "Neodločeno" : "Gostje"}
           </div>
-          <FitTeamName name={m.awayName} className="result-view-team" />
+          <FitTeamName
+            name={m.awayName}
+            className="result-view-team"
+            wordClassName="result-view-team-word"
+          />
         </div>
       </section>
 

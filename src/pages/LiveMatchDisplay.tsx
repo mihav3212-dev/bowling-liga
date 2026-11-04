@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { FitTeamName } from "../components/FitTeamName";
 import { TvScaleStage } from "../components/TvScaleStage";
 import {
   displayUsesScaleStage,
@@ -916,7 +917,14 @@ function LiveMatchScreen({
       <section className="live-tv-scoreboard">
         <div className={`live-tv-side is-home${homeWins ? " is-winner" : ""}`}>
           <div className="live-tv-side-label">{homeWins ? "Zmaga" : "Domači"}</div>
-          <h1 className="live-tv-team">{m.homeName}</h1>
+          <FitTeamName
+            name={m.homeName}
+            className="live-tv-team"
+            wordClassName="live-tv-team-word"
+            maxFontPx={84}
+            minFontPx={22}
+            widthFactor={0.92}
+          />
         </div>
 
         <div className="live-tv-center">
@@ -957,7 +965,14 @@ function LiveMatchScreen({
 
         <div className={`live-tv-side is-away${awayWins ? " is-winner" : ""}`}>
           <div className="live-tv-side-label">{awayWins ? "Zmaga" : "Gostje"}</div>
-          <h1 className="live-tv-team">{m.awayName}</h1>
+          <FitTeamName
+            name={m.awayName}
+            className="live-tv-team"
+            wordClassName="live-tv-team-word"
+            maxFontPx={84}
+            minFontPx={22}
+            widthFactor={0.92}
+          />
         </div>
       </section>
 
