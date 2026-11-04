@@ -889,18 +889,9 @@ select {
   cursor: default;
 }
 
-.live-now {
-  width: 66.666%;
-  border: 1px solid #ef4444;
-  border-radius: 8px;
-  padding: 12px 14px 8px;
-  margin-bottom: 22px;
-  background: rgba(220, 38, 38, 0.22);
-  color: #fff;
-}
-
-.live-now .live-badge {
+.live-badge {
   display: inline-block;
+  flex: 0 0 auto;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -909,95 +900,85 @@ select {
   background: #ef4444;
   padding: 3px 8px;
   border-radius: 4px;
-  margin-bottom: 8px;
+  align-self: center;
 }
 
-.live-now .round-title {
-  margin-top: 4px;
+.list .match-row.is-live {
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 4px 0;
+  background: rgba(220, 38, 38, 0.22);
+  color: #fff;
+  border-bottom-color: #ef4444;
+}
+
+.list .match-row.is-live .match-when {
   color: #fecaca;
 }
 
-.live-now .match-when {
-  color: #fecaca;
-}
-
-.live-now .match-names {
+.list .match-row.is-live .match-names {
   color: #fff;
   font-weight: 600;
 }
 
-.live-now .list .row {
+.list button.match-row.is-live.is-openable:hover,
+.list button.match-row.is-live.is-openable:focus-visible {
   color: #fff;
-  border-bottom-color: rgba(254, 202, 202, 0.35);
+  background: rgba(239, 68, 68, 0.35);
 }
 
-.live-now .list button.row:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+.list button.match-row.is-live .match-row-chevron {
+  color: #fecaca;
+  opacity: 1;
 }
 
-html[data-theme="light"] .live-now {
+html[data-theme="light"] .list .match-row.is-live {
   background: #fee2e2;
   color: #7f1d1d;
   border-color: #b91c1c;
 }
 
-html[data-theme="light"] .live-now .round-title,
-html[data-theme="light"] .live-now .match-when {
+html[data-theme="light"] .list .match-row.is-live .match-when {
   color: #991b1b;
 }
 
-html[data-theme="light"] .live-now .match-names,
-html[data-theme="light"] .live-now .list .row {
+html[data-theme="light"] .list .match-row.is-live .match-names {
   color: #7f1d1d;
 }
 
-html[data-theme="light"] .live-now .list .row {
-  border-bottom-color: rgba(185, 28, 28, 0.28);
-}
-
-html[data-theme="light"] .live-now .list button.row:hover {
+html[data-theme="light"] .list button.match-row.is-live.is-openable:hover,
+html[data-theme="light"] .list button.match-row.is-live.is-openable:focus-visible {
   color: #7f1d1d;
-  background: rgba(185, 28, 28, 0.1);
+  background: rgba(185, 28, 28, 0.12);
 }
 
 @media (prefers-color-scheme: light) {
-  html[data-theme="system"] .live-now {
+  html[data-theme="system"] .list .match-row.is-live {
     background: #fee2e2;
     color: #7f1d1d;
     border-color: #b91c1c;
   }
 
-  html[data-theme="system"] .live-now .round-title,
-  html[data-theme="system"] .live-now .match-when {
+  html[data-theme="system"] .list .match-row.is-live .match-when {
     color: #991b1b;
   }
 
-  html[data-theme="system"] .live-now .match-names,
-  html[data-theme="system"] .live-now .list .row {
+  html[data-theme="system"] .list .match-row.is-live .match-names {
     color: #7f1d1d;
   }
 
-  html[data-theme="system"] .live-now .list .row {
-    border-bottom-color: rgba(185, 28, 28, 0.28);
-  }
-
-  html[data-theme="system"] .live-now .list button.row:hover {
+  html[data-theme="system"] .list button.match-row.is-live.is-openable:hover,
+  html[data-theme="system"] .list button.match-row.is-live.is-openable:focus-visible {
     color: #7f1d1d;
-    background: rgba(185, 28, 28, 0.1);
-  }
-}
-
-@media (max-width: 640px) {
-  .live-now {
-    width: 100%;
-    max-width: none;
+    background: rgba(185, 28, 28, 0.12);
   }
 }
 
 .list .match-row {
   align-items: baseline;
   flex-wrap: wrap;
+  gap: 8px 12px;
 }
 
 .list button.match-row.is-openable {

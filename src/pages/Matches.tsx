@@ -67,6 +67,7 @@ export function Matches({
   const rounds = [...byRound.keys()].sort((a, b) => (mode === "results" ? b - a : a - b));
   const open = state.matches.filter((match) => !matchTotals(match, state.players).complete);
   const live = matchesShowingLive(open, now);
+  const liveIds = useMemo(() => new Set(live.map((m) => m.id)), [live]);
   const activeRound = useMemo(
     () => (mode === "schedule" ? activeScheduleRound(state, now) : null),
     [mode, state, now],
@@ -85,6 +86,7 @@ export function Matches({
     const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
     const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
     const totals = matchTotals(match, state.players);
+    const isLive = mode === "schedule" && liveIds.has(match.id);
     const row = (
       <>
         {mode === "schedule" && (
@@ -93,6 +95,7 @@ export function Matches({
         <span className="match-names">
           {home} – {away}
         </span>
+        {isLive && <span className="live-badge">V živo</span>}
         {mode === "results" && totals.complete && (
           <span className="match-scores mono">
             <span className="score-tocke">
@@ -108,9 +111,10 @@ export function Matches({
         )}
       </>
     );
+    const liveClass = isLive ? " is-live" : "";
     return onOpen && (!canOpen || canOpen(match)) ? (
       <button
-        className="row match-row is-openable"
+        className={`row match-row is-openable${liveClass}`}
         type="button"
         key={match.id}
         onClick={() => onOpen(match.id)}
@@ -121,7 +125,7 @@ export function Matches({
         </span>
       </button>
     ) : (
-      <div className="row match-row" key={match.id}>
+      <div className={`row match-row${liveClass}`} key={match.id}>
         {row}
       </div>
     );
@@ -133,39 +137,6 @@ export function Matches({
         <p className="muted" style={{ marginBottom: 20 }}>
           {catalog.intro}
         </p>
-      )}
-      {mode === "schedule" && live.length > 0 && (
-        <div className="live-now">
-          <span className="live-badge">V živo</span>
-          <h3 className="round-title">
-            {live[0].round}. kolo
-            {live[0].startsAt ? ` · ${formatMatchWhen(live[0].startsAt)}` : ""}
-          </h3>
-          <div className="list">
-            {live.map((match) => {
-              const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "?";
-              const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "?";
-              return (
-                <button
-                  className="row match-row is-openable"
-                  key={match.id}
-                  type="button"
-                  onClick={() => {
-                    window.open("/?display=live&device=tv", "_blank", "noopener,noreferrer");
-                  }}
-                >
-                  <span className="match-when mono">{formatMatchWhen(match.startsAt)}</span>
-                  <span className="match-names">
-                    {home} – {away}
-                  </span>
-                  <span className="match-row-chevron" aria-hidden="true">
-                    ›
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       )}
       {mode === "results" && rounds.length > 0 && (
         <p className="muted" style={{ marginBottom: 20 }}>
