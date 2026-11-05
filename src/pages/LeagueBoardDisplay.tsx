@@ -55,11 +55,8 @@ function slideDurationMs(id: SlideId, playerCount: number): number {
 
 function useFullscreen(rootRef: RefObject<HTMLElement | null>) {
   const [active, setActive] = useState(false);
-  useEffect(() => {
-    const sync = () => setActive(document.fullscreenElement === rootRef.current);
-    document.addEventListener("fullscreenchange", sync);
-    return () => document.removeEventListener("fullscreenchange", sync);
-  }, [rootRef]);
+  const toggleRef = useRef<() => void>(() => {});
+
   const toggle = async () => {
     const el = rootRef.current;
     if (!el) return;
@@ -70,6 +67,24 @@ function useFullscreen(rootRef: RefObject<HTMLElement | null>) {
       /* ignore */
     }
   };
+  toggleRef.current = () => void toggle();
+
+  useEffect(() => {
+    const sync = () => setActive(document.fullscreenElement === rootRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, [rootRef]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "F11") return;
+      e.preventDefault();
+      toggleRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return { active, toggle };
 }
 
@@ -126,7 +141,7 @@ function BoardHeader({
           type="button"
           className="liga-board-fs"
           onClick={() => void onFullscreen()}
-          title={fullscreen ? "Izhod iz celozaslonskega" : "Cel zaslon"}
+          title={fullscreen ? "Izhod (F11 ali Esc)" : "Cel zaslon (F11)"}
         >
           {fullscreen ? "Zapri" : "Cel zaslon"}
         </button>

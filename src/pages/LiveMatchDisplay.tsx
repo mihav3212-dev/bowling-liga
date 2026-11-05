@@ -23,14 +23,7 @@ import type { LeagueState } from "../lib/types";
 
 function useLiveFullscreen(rootRef: RefObject<HTMLElement | null>) {
   const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const sync = () => {
-      setActive(document.fullscreenElement === rootRef.current);
-    };
-    document.addEventListener("fullscreenchange", sync);
-    return () => document.removeEventListener("fullscreenchange", sync);
-  }, [rootRef]);
+  const toggleRef = useRef<() => void>(() => {});
 
   const toggle = async () => {
     const el = rootRef.current;
@@ -45,6 +38,26 @@ function useLiveFullscreen(rootRef: RefObject<HTMLElement | null>) {
       // Brskalnik ali politika lahko zavrne fullscreen.
     }
   };
+  toggleRef.current = () => void toggle();
+
+  useEffect(() => {
+    const sync = () => {
+      setActive(document.fullscreenElement === rootRef.current);
+    };
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, [rootRef]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // F11 = cel zaslon (ne F / Ctrl+F / F5 — F5 osveži stran).
+      if (e.key !== "F11") return;
+      e.preventDefault();
+      toggleRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return { active, toggle };
 }
@@ -61,7 +74,7 @@ function LiveFullscreenButton({
       type="button"
       className={`live-tv-fs-btn${active ? " is-on" : ""}`}
       onClick={() => void onToggle()}
-      title={active ? "Izhod iz celozaslonskega (Esc)" : "Celozaslonski prikaz"}
+      title={active ? "Izhod (F11 ali Esc)" : "Cel zaslon (F11)"}
     >
       {active ? "Zapri cel zaslon" : "Cel zaslon"}
     </button>
