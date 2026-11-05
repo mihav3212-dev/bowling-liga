@@ -48,12 +48,12 @@ function PinField({
           if (readOnly) return;
           const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
           setDraft(next);
-          onChange(parsePins(next));
         }}
         onBlur={() => {
           if (readOnly || draft === null) return;
-          onChange(parsePins(draft));
+          const pins = parsePins(draft);
           setDraft(null);
+          if (pins !== raw) onChange(pins);
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur();

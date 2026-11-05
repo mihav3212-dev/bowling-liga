@@ -37,7 +37,7 @@ function playerName(roster: Player[], id: string): string {
   return player ? playerTag(player) : "—";
 }
 
-/** Vnos, ki se začne z 1/2/3, mora biti trimesten (100–300); 0 = manjkajoči; 4–9 → 40–99. */
+/** Vnos, ki se začne z 1/2/3, mora biti trimesten (100–300); 0 = manjkajoči. */
 function needsThreePinDigits(typed: string): boolean {
   const first = typed[0];
   return first === "1" || first === "2" || first === "3";
@@ -56,7 +56,7 @@ export function PinField({
   onChange: (pins: number | null) => void;
   onEditingChange?: (editing: boolean) => void;
 }) {
-  /** Med tipkanjem držimo niz lokalno — sicer vsaka števka gre v store/bazo in sync lahko odreže npr. 155 → 15. */
+  /** Med tipkanjem samo lokalni draft — v bazo/TV šele ob blur (zapustitev polja). */
   const [draft, setDraft] = useState<string | null>(null);
   const final = scoredPins(raw, player);
   if (readOnly) return <>{final ?? "—"}</>;
@@ -86,18 +86,13 @@ export function PinField({
         onChange={(e) => {
           const next = e.target.value.replace(/[^\d]/g, "").slice(0, 3);
           setDraft(next);
-          // 1xx/2xx/3xx šele ko so 3 števke — sicer TV ne utripa 1 → 15 → 155.
-          if (needsThreePinDigits(next) && next.length < 3) return;
-          onChange(parsePins(next));
         }}
         onBlur={() => {
           const typed = draft ?? "";
-          const previous = raw;
           setDraft(null);
           onEditingChange?.(false);
           if (needsThreePinDigits(typed) && typed.length > 0 && typed.length < 3) {
             window.alert("Vnos, ki se začne z 1, 2 ali 3, mora biti trimestno število (npr. 155).");
-            onChange(previous);
             return;
           }
           const pins = parsePins(typed);
