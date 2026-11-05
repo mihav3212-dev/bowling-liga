@@ -407,6 +407,8 @@ type RoundSummary = LiveMatchView["roundSummaries"][number];
 /** 1. krog: 5 min uvod (proge); 2.–4. krog: krajši uvod novih parov. */
 const ROUND_FOCUS_FIRST_MS = 5 * 60 * 1000;
 const ROUND_FOCUS_LATER_MS = 2 * 60 * 1000;
+/** Po vseh kegljih v krogu: še malo pokaži rezultat, preden gre na naslednji krog. */
+const ROUND_FOCUS_RESULTS_MS = 5_000;
 
 function readRoundFocusOverrideMs(): number | null {
   const params = new URLSearchParams(window.location.search);
@@ -433,9 +435,9 @@ function roundHasAnyPins(r: RoundSummary): boolean {
 type RoundFocusPhase = {
   mode: "focus" | "overview";
   focusRound: number;
-  /** Uvodni fokus: skrij po `until`. Pri scoringu timer ni aktiven. */
+  /** Uvod / rezultat: skrij ali naprej po `until`. Pri scoringu timer ni aktiven. */
   until: number;
-  kind: "intro" | "scoring";
+  kind: "intro" | "scoring" | "results";
 };
 
 function initialFocusPhase(rounds: RoundSummary[], overrideMs: number | null): RoundFocusPhase {
@@ -487,24 +489,38 @@ function useRoundFocusPhase(
       );
       return;
     }
+    const advanceAfterResults = (p: RoundFocusPhase, now: number): RoundFocusPhase => {
+      const maxRound = Math.max(1, rounds.length);
+      if (p.focusRound < maxRound) {
+        const nextRound = p.focusRound + 1;
+        return {
+          mode: "focus",
+          focusRound: nextRound,
+          until: now + introFocusMs(nextRound, overrideMs),
+          kind: "intro",
+        };
+      }
+      return { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" };
+    };
+
     const tick = () => {
       setPhase((p) => {
         const now = Date.now();
-        const maxRound = Math.max(1, rounds.length);
         const focused = rounds.find((r) => r.round === p.focusRound);
 
         if (p.mode === "focus") {
           if (focused && roundPinsComplete(focused)) {
-            if (p.focusRound < maxRound) {
-              const nextRound = p.focusRound + 1;
+            // Najprej 5 s pokaži končni rezultat kroga
+            if (p.kind !== "results") {
               return {
                 mode: "focus",
-                focusRound: nextRound,
-                until: now + introFocusMs(nextRound, overrideMs),
-                kind: "intro",
+                focusRound: p.focusRound,
+                until: now + ROUND_FOCUS_RESULTS_MS,
+                kind: "results",
               };
             }
-            return { mode: "overview", focusRound: p.focusRound, until: 0, kind: "intro" };
+            if (p.until > 0 && now < p.until) return p;
+            return advanceAfterResults(p, now);
           }
           // Med uvodom že vpisujejo → ostani v fokusu do konca kroga
           if (p.kind === "intro" && focused && roundHasAnyPins(focused)) {
@@ -517,15 +533,20 @@ function useRoundFocusPhase(
           return p;
         }
 
-        // Pregled: ko začnejo vpisovati keglje tega kola → spet fokus
-        if (focused && roundPinsComplete(focused) && p.focusRound < maxRound) {
-          const nextRound = p.focusRound + 1;
-          return {
-            mode: "focus",
-            focusRound: nextRound,
-            until: now + introFocusMs(nextRound, overrideMs),
-            kind: "intro",
-          };
+        // Pregled: krog končan → 5 s rezultat (če še nismo), potem naslednji; sicer fokus ob vpisovanju
+        if (focused && roundPinsComplete(focused)) {
+          if (p.kind !== "results") {
+            return {
+              mode: "focus",
+              focusRound: p.focusRound,
+              until: now + ROUND_FOCUS_RESULTS_MS,
+              kind: "results",
+            };
+          }
+          if (p.until > 0 && now < p.until) {
+            return { mode: "focus", focusRound: p.focusRound, until: p.until, kind: "results" };
+          }
+          return advanceAfterResults(p, now);
         }
         if (focused && roundHasAnyPins(focused) && !roundPinsComplete(focused)) {
           return { mode: "focus", focusRound: p.focusRound, until: 0, kind: "scoring" };
@@ -704,7 +725,7 @@ function LiveMatchScreen({
   /** Zoom-in/out fokus (klasično + kvadrati); ostane mountan med izhodom. */
   const [focusOverlay, setFocusOverlay] = useState<{
     round: RoundSummary;
-    kind: "intro" | "scoring";
+    kind: "intro" | "scoring" | "results";
     exiting: boolean;
   } | null>(null);
 
@@ -759,7 +780,11 @@ function LiveMatchScreen({
           {showRoundFocus || focusOverlayVisible ? (
             <span className="live-tv-when">
               {formatMatchRound(focusOverlay?.round.round ?? roundPhase.focusRound)}
-              {(focusOverlay?.kind ?? roundPhase.kind) === "intro" ? " · steze" : " · vpis"}
+              {(focusOverlay?.kind ?? roundPhase.kind) === "intro"
+                ? " · steze"
+                : (focusOverlay?.kind ?? roundPhase.kind) === "results"
+                  ? " · rezultat"
+                  : " · vpis"}
             </span>
           ) : null}
         </>
@@ -1023,7 +1048,12 @@ function LiveMatchScreen({
         >
           <div className="live-tv-focus-overlay-panel">
             <div className="live-tv-focus-overlay-label">
-              {focusOverlay.kind === "intro" ? "Steze · kdo igra" : "Vpis kegljev"} ·{" "}
+              {focusOverlay.kind === "intro"
+                ? "Steze · kdo igra"
+                : focusOverlay.kind === "results"
+                  ? "Rezultat kroga"
+                  : "Vpis kegljev"}{" "}
+              ·{" "}
               {formatMatchRound(focusOverlay.round.round)}
             </div>
             <RoundCard r={overlayRound} enlarged />
