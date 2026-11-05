@@ -11,6 +11,7 @@ import {
   seasonRoundCount,
 } from "./standings";
 import { pairingTemplate, slotLabel } from "./pairings";
+import { playerDisplayName, sortTeamRoster } from "./playerName";
 import { matchTotals, scoreGame, scoredPins } from "./scoring";
 import type { LeagueState } from "./types";
 
@@ -448,7 +449,10 @@ function drawRegistrationPage(
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const innerW = pageW - margin * 2;
-  const players = state.players.filter((p) => p.teamId === team.id);
+  const players = sortTeamRoster(
+    state.players.filter((p) => p.teamId === team.id),
+    team.captain,
+  );
 
   doc.setFont("FreeSans", "normal");
   doc.setFontSize(14);
@@ -473,7 +477,7 @@ function drawRegistrationPage(
 
   doc.setFont("FreeSans", "normal");
   doc.setFontSize(13);
-  doc.text("Ime in priimek", pageW / 2, 124, { align: "center" });
+  doc.text("Priimek in Ime", pageW / 2, 124, { align: "center" });
 
   const slots = Math.max(10, players.length);
   let y = 138;
@@ -488,10 +492,10 @@ function drawRegistrationPage(
     doc.text(n, margin, y);
     doc.setLineWidth(0.3);
     doc.line(margin + 12, y + 1.2, pageW - margin, y + 1.2);
-    const name = players[i]?.name;
-    if (name) {
+    const player = players[i];
+    if (player) {
       doc.setFont("FreeSans", "bold");
-      doc.text(name, margin + 14, y);
+      doc.text(playerDisplayName(player), margin + 14, y);
     }
     y += 12;
   }

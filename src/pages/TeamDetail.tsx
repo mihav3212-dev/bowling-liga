@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { exportRegistrationPdf } from "../lib/exportPdf";
 import type { Gender } from "../lib/types";
 import { teamRosterWindowOpen } from "../lib/access";
-import { swapPlayerNameParts } from "../lib/playerName";
+import { sortTeamRoster, swapPlayerNameParts } from "../lib/playerName";
 import { computePlayerDetailStats } from "../lib/standings";
 import { useStore } from "../lib/store";
 import { formatInviteCode, formatInviteUntil, inviteStillOpen } from "../lib/invite";
@@ -40,7 +40,10 @@ export function TeamDetail({
     saveTeamRosterNow,
   } = useStore();
   const team = state.teams.find((t) => t.id === teamId);
-  const players = state.players.filter((p) => p.teamId === teamId);
+  const players = sortTeamRoster(
+    state.players.filter((p) => p.teamId === teamId),
+    team?.captain,
+  );
   const [firstName, setFirstName] = useState("");
   const [surname, setSurname] = useState("");
   const [gender, setGender] = useState<Gender>("M");

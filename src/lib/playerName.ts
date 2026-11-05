@@ -72,6 +72,55 @@ export function normalizePlayers(players: Player[] | undefined | null): Player[]
     .map((p) => normalizePlayer(p));
 }
 
+function foldName(s: string): string {
+  return s.trim().toLocaleLowerCase("sl").replace(/\s+/g, " ");
+}
+
+/** Ali je igralec vodja ekipe (polje captain je prosto besedilo). */
+export function playerMatchesCaptain(
+  player: Pick<Player, "name" | "firstName" | "surname">,
+  captain?: string | null,
+): boolean {
+  const cap = foldName(captain ?? "");
+  if (!cap) return false;
+  const n = normalizePlayer({
+    id: "_",
+    teamId: "_",
+    name: player.name,
+    firstName: player.firstName,
+    surname: player.surname,
+  });
+  const variants = [
+    n.name,
+    composePlayerName(n.firstName, n.surname),
+    composePlayerName(n.surname, n.firstName),
+    `${n.firstName} ${n.surname}`,
+    `${n.surname} ${n.firstName}`,
+  ]
+    .map(foldName)
+    .filter(Boolean);
+  return variants.some((v) => v === cap);
+}
+
+/** Abeceda po priimku, nato imenu; vodja ekipe vedno prvi. */
+export function sortTeamRoster<T extends Pick<Player, "name" | "firstName" | "surname">>(
+  players: T[],
+  captain?: string | null,
+): T[] {
+  return [...players].sort((a, b) => {
+    const aCap = playerMatchesCaptain(a, captain);
+    const bCap = playerMatchesCaptain(b, captain);
+    if (aCap !== bCap) return aCap ? -1 : 1;
+    const aSur = (a.surname || splitPlayerName(a.name).surname).toLocaleUpperCase("sl");
+    const bSur = (b.surname || splitPlayerName(b.name).surname).toLocaleUpperCase("sl");
+    const bySur = aSur.localeCompare(bSur, "sl");
+    if (bySur !== 0) return bySur;
+    const aFirst = (a.firstName || splitPlayerName(a.name).firstName).toLocaleUpperCase("sl");
+    const bFirst = (b.firstName || splitPlayerName(b.name).firstName).toLocaleUpperCase("sl");
+    return aFirst.localeCompare(bFirst, "sl");
+  });
+}
+
 /**
  * 3 = vnos Ime|Priimek; firstName/surname se ne smejo več samodejno zamenjavati.
  * (Stara migracija 1→2 je pri shranjevanju/osvežitvi podrla ročne popravke.)
