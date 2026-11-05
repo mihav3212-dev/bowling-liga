@@ -46,7 +46,7 @@ export function PlayerDetail({
   const hasMatch = stats.games > 0;
   const hasTraining = Boolean(training && training.games > 0);
   const delta =
-    hasMatch && hasTraining && training ? training.avg - stats.avg : null;
+    hasMatch && hasTraining && training ? stats.avg - training.avg : null;
 
   return (
     <section className="panel player-detail">
@@ -77,7 +77,7 @@ export function PlayerDetail({
                     {delta >= 0 ? "+" : ""}
                     {fmtAvg(delta)}
                   </strong>
-                  <span className="muted"> (trening − tekma)</span>
+                  <span className="muted"> (tekma − trening)</span>
                 </>
               )}
             </p>
