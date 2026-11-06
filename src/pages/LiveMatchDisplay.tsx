@@ -408,7 +408,7 @@ type RoundSummary = LiveMatchView["roundSummaries"][number];
 const ROUND_FOCUS_FIRST_MS = 5 * 60 * 1000;
 const ROUND_FOCUS_LATER_MS = 2 * 60 * 1000;
 /** Po vseh kegljih v krogu: še malo pokaži rezultat, preden gre na naslednji krog. */
-const ROUND_FOCUS_RESULTS_MS = 5_000;
+const ROUND_FOCUS_RESULTS_MS = 8_000;
 
 function readRoundFocusOverrideMs(): number | null {
   const params = new URLSearchParams(window.location.search);
