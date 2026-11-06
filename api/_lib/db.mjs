@@ -19,7 +19,7 @@ import {
 } from "./passwords.mjs";
 import { cloneTeamsAndPlayers } from "./cloneRoster.mjs";
 import { preserveSecrets } from "./sanitize.mjs";
-import { setAdminPassword } from "./session.mjs";
+import { setAdminPassword, setDisplayPassword } from "./session.mjs";
 
 let cached;
 
@@ -215,6 +215,7 @@ export async function ensureSchema(pool, seed) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   );
   await syncAdminPassword(pool, seed);
+  await syncDisplayPassword(pool);
 }
 
 /** Koliko obnovitvenih točk hranimo na sezono. */
@@ -443,6 +444,34 @@ export async function syncAdminPassword(pool, seed) {
     setAdminPassword(fromEnv);
   }
   return fromEnv;
+}
+
+export async function syncDisplayPassword(pool) {
+  const rows = await exec(pool, "SELECT value FROM settings WHERE name = ? LIMIT 1", ["display_password"]);
+  const fromDb = rows[0]?.value;
+  if (typeof fromDb === "string" && fromDb.trim()) {
+    setDisplayPassword(fromDb.trim());
+    return fromDb.trim();
+  }
+  setDisplayPassword("");
+  return "";
+}
+
+/** Admin: nastavi ali zbriši geslo za TV prikaz. */
+export async function setDisplayPasswordSetting(pool, password) {
+  const pw = String(password ?? "").trim();
+  if (!pw) {
+    await exec(pool, "DELETE FROM settings WHERE name = ?", ["display_password"]);
+    setDisplayPassword("");
+    return { ok: true, hasDisplayPassword: false };
+  }
+  await exec(
+    pool,
+    "INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)",
+    ["display_password", pw],
+  );
+  setDisplayPassword(pw);
+  return { ok: true, hasDisplayPassword: true };
 }
 
 export async function listSeasons(pool, { includeTraining = false } = {}) {

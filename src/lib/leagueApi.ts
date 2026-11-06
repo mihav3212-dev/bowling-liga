@@ -326,6 +326,30 @@ export async function setTeamPassword(
   return (await res.json()) as LeaguePayload;
 }
 
+export async function getDisplayPasswordStatus(): Promise<{ hasDisplayPassword: boolean }> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "getDisplayPassword" }),
+  });
+  if (!res.ok) throw new Error("display");
+  const body = (await res.json()) as { hasDisplayPassword?: boolean };
+  return { hasDisplayPassword: Boolean(body.hasDisplayPassword) };
+}
+
+export async function setDisplayPassword(password: string): Promise<{ hasDisplayPassword: boolean }> {
+  const res = await fetch("/api/league", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "setDisplayPassword", password }),
+  });
+  if (!res.ok) throw new Error("display");
+  const body = (await res.json()) as { hasDisplayPassword?: boolean };
+  return { hasDisplayPassword: Boolean(body.hasDisplayPassword) };
+}
+
 export type InvitePreview = { ok: boolean; teamName?: string; expiresAt?: string; error?: string };
 
 export async function createTeamInvite(

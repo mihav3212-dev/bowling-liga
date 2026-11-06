@@ -148,6 +148,7 @@ if ($route === 'me') {
         'teamId' => $session['teamId'],
         'teamName' => $teamName,
         'display' => !empty($session['display']),
+        'hasDisplayPassword' => !empty($session['admin']) && display_password() !== '',
     ]);
 }
 
@@ -408,6 +409,21 @@ if ($route === 'league') {
                     'current' => present_season($current, $viewer),
                     'seasons' => list_seasons($pdo, true),
                 ]);
+            }
+            if ($action === 'getDisplayPassword') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                json_out(200, [
+                    'ok' => true,
+                    'hasDisplayPassword' => display_password() !== '',
+                ]);
+            }
+            if ($action === 'setDisplayPassword') {
+                if (empty($viewer['admin'])) {
+                    json_out(401, ['ok' => false]);
+                }
+                json_out(200, set_display_password_setting($pdo, $body['password'] ?? ''));
             }
             if ($action === 'claimEditLock' || $action === 'heartbeatEditLock' || $action === 'releaseEditLock') {
                 if (empty($viewer['admin']) && empty($viewer['teamId'])) {

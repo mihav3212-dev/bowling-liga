@@ -97,20 +97,49 @@ function password_ok($password)
     return is_string($password) && $expected !== '' && hash_equals($expected, $password);
 }
 
+function set_display_password($value)
+{
+    $GLOBALS['liga_display_password'] = is_string($value) ? $value : '';
+}
+
 function display_password()
 {
+    $cached = $GLOBALS['liga_display_password'] ?? '';
+    if (is_string($cached) && $cached !== '') {
+        return $cached;
+    }
     $env = getenv('DISPLAY_PASSWORD');
     if (is_string($env) && $env !== '') {
         return $env;
     }
     $tv = getenv('TV_PASSWORD');
-    return is_string($tv) ? $tv : '';
+    if (is_string($tv) && $tv !== '') {
+        return $tv;
+    }
+    // Fallback: data/config.json (stari hosting)
+    if (!function_exists('load_config')) {
+        require_once __DIR__ . '/config.php';
+    }
+    $cfg = load_config();
+    if (!is_array($cfg)) {
+        return '';
+    }
+    $fromCfg = $cfg['displayPassword'] ?? $cfg['tvPassword'] ?? '';
+    return is_string($fromCfg) ? $fromCfg : '';
 }
 
 function display_password_ok($password)
 {
     $expected = display_password();
-    return is_string($password) && $expected !== '' && hash_equals($expected, $password);
+    if (!is_string($password) || $expected === '') {
+        return false;
+    }
+    if (hash_equals($expected, $password)) {
+        return true;
+    }
+    // Koda iz Admina (ABCD-EFGH) — primerjaj tudi brez vezaja
+    $norm = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $password) ?? '');
+    return $norm !== '' && hash_equals($expected, $norm);
 }
 
 function is_secure_request()

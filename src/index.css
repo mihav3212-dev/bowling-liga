@@ -790,7 +790,7 @@ select {
   right: 0;
   top: calc(100% + 8px);
   z-index: 20;
-  width: min(18rem, calc(100vw - 32px));
+  width: min(20rem, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
   background: var(--surface);
   border: 1px solid var(--header-line);

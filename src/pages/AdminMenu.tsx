@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { exportLastRoundBackup } from "../lib/exportPdf";
+import { formatInviteCode, newInviteToken } from "../lib/invite";
+import { getDisplayPasswordStatus, setDisplayPassword } from "../lib/leagueApi";
 import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
 import { lastCompletedRound } from "../lib/standings";
@@ -46,7 +48,7 @@ export function AdminMenu({
   const fileRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
-  const [panel, setPanel] = useState<"home" | "seasons" | "edit">("home");
+  const [panel, setPanel] = useState<"home" | "seasons" | "edit" | "tv">("home");
   const [rescheduleOpen, setRescheduleOpen] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
   const [swapHomeAwayOpen, setSwapHomeAwayOpen] = useState(false);
@@ -54,11 +56,34 @@ export function AdminMenu({
   const [addMatchOpen, setAddMatchOpen] = useState(false);
   const [snapshotsOpen, setSnapshotsOpen] = useState(false);
   const [backupBusy, setBackupBusy] = useState(false);
+  const [tvBusy, setTvBusy] = useState(false);
+  const [hasTvPassword, setHasTvPassword] = useState(false);
+  const [tvCode, setTvCode] = useState("");
+  const [tvManual, setTvManual] = useState("");
+  const [tvNote, setTvNote] = useState("");
 
   const closeMenu = () => {
     setOpen(false);
     setPanel("home");
+    setTvCode("");
+    setTvManual("");
+    setTvNote("");
   };
+
+  useEffect(() => {
+    if (!open || panel !== "tv" || !remote) return;
+    let cancelled = false;
+    getDisplayPasswordStatus()
+      .then((s) => {
+        if (!cancelled) setHasTvPassword(s.hasDisplayPassword);
+      })
+      .catch(() => {
+        if (!cancelled) setHasTvPassword(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, panel, remote]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,7 +100,7 @@ export function AdminMenu({
         return;
       }
       if (panel === "edit") setPanel("seasons");
-      else if (panel === "seasons") setPanel("home");
+      else if (panel === "seasons" || panel === "tv") setPanel("home");
       else closeMenu();
     };
     document.addEventListener("keydown", onKey);
@@ -184,16 +209,8 @@ export function AdminMenu({
             >
               Dovoljenja ekip
             </button>
-            <button
-              className="ghost"
-              type="button"
-              title="TV: lestvica, igralci, razpored, rezultati zadnjega kola — samodejna menjava."
-              onClick={() => {
-                closeMenu();
-                window.open("/?display=board", "_blank", "noopener,noreferrer");
-              }}
-            >
-              TV pregled lige
+            <button className="ghost" type="button" onClick={() => setPanel("tv")}>
+              TV / bowling ekran
             </button>
             <button className="primary" type="button" onClick={() => setPanel("seasons")}>
               Urejaj sezone
@@ -201,6 +218,158 @@ export function AdminMenu({
             <button className="ghost" type="button" onClick={() => void logout()}>
               Odjava
             </button>
+          </>
+        )}
+        {panel === "tv" && (
+          <>
+            <button className="ghost admin-menu-back" type="button" onClick={() => setPanel("home")}>
+              Nazaj
+            </button>
+            <p className="muted admin-menu-current">TV / bowling ekran</p>
+            {!remote ? (
+              <p className="muted admin-menu-hint">
+                TV geslo deluje, ko je vklopljena skupna baza (MySQL / hosting).
+              </p>
+            ) : (
+              <>
+                <p className="muted admin-menu-hint">
+                  Ustvari geslo in ga vpiši na TV (polje zgoraj desno). Potem odpri{" "}
+                  <strong>TV živo</strong> ali <strong>TV liga</strong>.{" "}
+                  {hasTvPassword
+                    ? "Geslo je nastavljeno (vrednosti admin ne vidi nazaj)."
+                    : "Geslo še ni nastavljeno."}
+                </p>
+                <div className="row-actions" style={{ marginBottom: 8 }}>
+                  <button
+                    className="primary"
+                    type="button"
+                    disabled={tvBusy}
+                    onClick={async () => {
+                      setTvBusy(true);
+                      setTvNote("");
+                      try {
+                        const token = newInviteToken();
+                        await setDisplayPassword(token);
+                        const code = formatInviteCode(token);
+                        setTvCode(code);
+                        setHasTvPassword(true);
+                        try {
+                          await navigator.clipboard.writeText(code);
+                          setTvNote("Geslo je v odložišču — vpiši ga na TV.");
+                        } catch {
+                          setTvNote("Skopiraj geslo in ga vpiši na TV.");
+                        }
+                      } catch {
+                        window.alert("Gesla ni bilo mogoče shraniti.");
+                      } finally {
+                        setTvBusy(false);
+                      }
+                    }}
+                  >
+                    {tvBusy ? "…" : hasTvPassword || tvCode ? "Novo geslo" : "Ustvari TV geslo"}
+                  </button>
+                  {tvCode && (
+                    <button
+                      className="ghost"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(tvCode);
+                          setTvNote("Geslo je v odložišču.");
+                        } catch {
+                          setTvNote("Označi geslo in ga skopiraj.");
+                        }
+                      }}
+                    >
+                      Kopiraj
+                    </button>
+                  )}
+                </div>
+                {tvCode && (
+                  <p className="invite-code-block" aria-label="TV geslo">
+                    <span className="muted">Geslo</span>
+                    <strong className="invite-code">{tvCode}</strong>
+                  </p>
+                )}
+                {tvNote && <p className="muted">{tvNote}</p>}
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Ali vpiši svoje geslo:
+                </p>
+                <form
+                  className="form-row"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const pw = tvManual.trim();
+                    if (!pw) return;
+                    setTvBusy(true);
+                    try {
+                      await setDisplayPassword(pw);
+                      setHasTvPassword(true);
+                      setTvCode(pw.length === 8 ? formatInviteCode(pw) : pw);
+                      setTvManual("");
+                      setTvNote("Geslo shranjeno.");
+                    } catch {
+                      window.alert("Gesla ni bilo mogoče shraniti.");
+                    } finally {
+                      setTvBusy(false);
+                    }
+                  }}
+                >
+                  <input
+                    type="password"
+                    value={tvManual}
+                    onChange={(e) => setTvManual(e.target.value)}
+                    placeholder={hasTvPassword ? "Novo TV geslo" : "TV geslo"}
+                    autoComplete="new-password"
+                  />
+                  <button className="primary" type="submit" disabled={tvBusy || !tvManual.trim()}>
+                    {tvBusy ? "…" : "Nastavi"}
+                  </button>
+                </form>
+                {hasTvPassword && (
+                  <button
+                    className="danger"
+                    type="button"
+                    disabled={tvBusy}
+                    style={{ marginTop: 8 }}
+                    onClick={async () => {
+                      if (!window.confirm("Odstranim TV geslo? Prijava na ekranu ne bo več delovala.")) {
+                        return;
+                      }
+                      setTvBusy(true);
+                      try {
+                        await setDisplayPassword("");
+                        setHasTvPassword(false);
+                        setTvCode("");
+                        setTvNote("TV geslo odstranjeno.");
+                      } catch {
+                        window.alert("Gesla ni bilo mogoče odstraniti.");
+                      } finally {
+                        setTvBusy(false);
+                      }
+                    }}
+                  >
+                    Odstrani geslo
+                  </button>
+                )}
+              </>
+            )}
+            <div className="row-actions" style={{ marginTop: 12 }}>
+              <button
+                className="ghost"
+                type="button"
+                onClick={() => window.open("/?display=live", "_blank", "noopener,noreferrer")}
+              >
+                Odpri TV živo
+              </button>
+              <button
+                className="ghost"
+                type="button"
+                onClick={() => window.open("/?display=board", "_blank", "noopener,noreferrer")}
+              >
+                Odpri TV liga
+              </button>
+            </div>
           </>
         )}
         {panel === "seasons" && (

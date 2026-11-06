@@ -76,13 +76,27 @@ export function passwordOk(password) {
   return passwordMatches(password, adminPassword());
 }
 
-/** Geslo za TV / bowling prikaz (klik na živo → ?display=live). */
+let cachedDisplay = "";
+
+export function setDisplayPassword(value) {
+  cachedDisplay = typeof value === "string" ? value : "";
+}
+
+/** Geslo za TV / bowling prikaz (klik na živo → ?display=live). Prednost: baza → env. */
 export function displayPassword() {
+  if (cachedDisplay) return cachedDisplay;
   return process.env.DISPLAY_PASSWORD || process.env.TV_PASSWORD || "";
 }
 
 export function displayPasswordOk(password) {
-  return passwordMatches(password, displayPassword());
+  const expected = displayPassword();
+  if (passwordMatches(password, expected)) return true;
+  // Koda iz Admina (ABCD-EFGH) — primerjaj tudi brez vezaja
+  const norm = String(password ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/gi, "");
+  return Boolean(norm) && passwordMatches(norm, expected);
 }
 
 export function cookieHeader(token, secure) {

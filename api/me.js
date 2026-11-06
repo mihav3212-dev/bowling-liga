@@ -1,4 +1,4 @@
-import { readSession, readToken } from "./_lib/session.mjs";
+import { displayPassword, readSession, readToken } from "./_lib/session.mjs";
 import { ensureSchema, getCurrentSeason, getSql } from "./_lib/db.mjs";
 
 export async function handleMe(req, res) {
@@ -27,6 +27,7 @@ export async function handleMe(req, res) {
       teamId: session.teamId,
       teamName,
       display: Boolean(session.display),
+      hasDisplayPassword: Boolean(session.admin && displayPassword()),
     }),
   );
 }

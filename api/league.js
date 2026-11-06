@@ -1,4 +1,4 @@
-import { readSession, readToken } from "./_lib/session.mjs";
+import { displayPassword, readSession, readToken } from "./_lib/session.mjs";
 import { sanitizeState } from "./_lib/sanitize.mjs";
 import {
   archiveCurrent,
@@ -20,6 +20,7 @@ import {
   saveTeamRoster,
   saveTeamTrainings,
   setTeamPassword,
+  setDisplayPasswordSetting,
   createTeamInvite,
   previewTeamInvite,
   claimTeamInvite,
@@ -293,6 +294,26 @@ export async function handleLeague(req, res) {
           current: presentSeason(current, viewer),
           seasons: await listSeasons(sql, { includeTraining: true }),
         });
+        return;
+      }
+      if (body.action === "getDisplayPassword") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        json(res, 200, {
+          ok: true,
+          hasDisplayPassword: Boolean(displayPassword()),
+        });
+        return;
+      }
+      if (body.action === "setDisplayPassword") {
+        if (!viewer.admin) {
+          json(res, 401, { ok: false });
+          return;
+        }
+        const result = await setDisplayPasswordSetting(sql, body.password ?? "");
+        json(res, 200, result);
         return;
       }
       if (body.action === "createInvite") {

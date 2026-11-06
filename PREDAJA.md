@@ -156,17 +156,28 @@ Pavza: opomba pri zadnjem kolu pred premorom, ali vrstica samo `kolo;opomba`. Im
 
 ---
 
-## 7. Pred prvim kolo (checklist)
+## 7. TV / bowling ekran (geslo za prikaz)
+
+1. Prijava kot admin → **Admin → TV / bowling ekran**.
+2. **Ustvari TV geslo** (ali vpiši svoje) — koda gre v odložišče.
+3. Na TV odpri domeno → vpiši geslo zgoraj desno → **TV živo** / **TV liga**.
+
+Geslo je v MySQL tabeli `settings` (`display_password`). Admin ga ne vidi nazaj; novo geslo prejšnje zamenja.
+
+---
+
+## 8. Pred prvim kolo (checklist)
 
 1. Hosting: `dist/` v `public_html`, MySQL, namestitev, admin geslo.
 2. WordPress meni **Liga** → `https://liga.bowlinglenart.si`.
 3. Ekipe: gesla + dovoljenja (sestava vklopljena, urejanje sezone izklopljeno).
 4. Preizkus: prijava ene ekipe → razpored → sestava; admin reset gesla; telefon (razpored, igralci).
 5. Izvoz JSON.
+6. (opcijsko) Admin → TV / bowling ekran → ustvari geslo.
 
 ---
 
-## 8. Kaj vzdrževalec ne rabi
+## 9. Kaj vzdrževalec ne rabi
 
 - Kopirati mape v `wp-content`.
 - Spreminjati točkovanja v kodi (`src/lib/scoring.ts`), razen če se spremenijo klubska pravila.

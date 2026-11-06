@@ -142,6 +142,7 @@ function ensure_schema(PDO $pdo, $seed = '')
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
     sync_admin_password($pdo, $seed);
+    sync_display_password($pdo);
 }
 
 define('SNAPSHOT_KEEP', 10);
@@ -430,6 +431,36 @@ function sync_admin_password(PDO $pdo, $seed = '')
         set_admin_password($fromSeed);
     }
     return $fromSeed;
+}
+
+function sync_display_password(PDO $pdo)
+{
+    $rows = q_all($pdo, 'SELECT value FROM settings WHERE name = ? LIMIT 1', ['display_password']);
+    $fromDb = $rows[0]['value'] ?? '';
+    if (is_string($fromDb) && trim($fromDb) !== '') {
+        set_display_password(trim($fromDb));
+        return trim($fromDb);
+    }
+    set_display_password('');
+    return '';
+}
+
+/** Admin: nastavi ali zbriši geslo za TV prikaz. */
+function set_display_password_setting(PDO $pdo, $password)
+{
+    $pw = trim((string) $password);
+    if ($pw === '') {
+        q_run($pdo, 'DELETE FROM settings WHERE name = ?', ['display_password']);
+        set_display_password('');
+        return ['ok' => true, 'hasDisplayPassword' => false];
+    }
+    q_run(
+        $pdo,
+        'INSERT INTO settings (name, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)',
+        ['display_password', $pw]
+    );
+    set_display_password($pw);
+    return ['ok' => true, 'hasDisplayPassword' => true];
 }
 
 function list_seasons(PDO $pdo, $includeTraining = false)
