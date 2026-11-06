@@ -12,7 +12,7 @@ import {
   computePlayerStandings,
   computeStandings,
   lastCompletedRound,
-  playersByAverage,
+  splitPlayerStandingsByQualify,
   type PlayerStandingRow,
   type StandingRow,
 } from "../lib/standings";
@@ -375,15 +375,59 @@ function PlayerPodium({ row, place }: { row: PlayerStandingRow; place: 1 | 2 | 3
   );
 }
 
+function PlayersBoardTable({
+  rows,
+  rankFrom,
+}: {
+  rows: PlayerStandingRow[];
+  rankFrom: number;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <table className="liga-board-table is-players-board is-sticky-head">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Igralec</th>
+          <th>Ekipa</th>
+          <th>Keglji</th>
+          <th>Igre</th>
+          <th>Povp.</th>
+          <th>Najb.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={row.player.id}>
+            <td className="mono liga-board-rank">{rankFrom + i}</td>
+            <td className="liga-board-name">{playerDisplayName(row.player)}</td>
+            <td className="liga-board-team">{row.teamName}</td>
+            <td className="mono">{row.pins}</td>
+            <td className="mono">{row.games}</td>
+            <td className="mono liga-board-pts">{row.avg.toFixed(1)}</td>
+            <td className="mono">{row.best}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }) {
-  const players = playersByAverage(computePlayerStandings(state));
-  const top = players.slice(0, 3);
-  const rest = players.slice(3);
+  const { qualified, rest: underQualify, split } = splitPlayerStandingsByQualify(
+    state,
+    computePlayerStandings(state),
+  );
+  // Pred splitom: vsi v qualified; po splitu: podium/uradna iz ≥ 70 %.
+  const primary = qualified;
+  const top = primary.slice(0, 3);
+  const primaryTail = primary.slice(3);
+  const scrollRowCount = primaryTail.length + (split ? underQualify.length : 0);
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!active || rest.length === 0) return;
+    if (!active || scrollRowCount === 0) return;
     const viewport = viewportRef.current;
     const track = trackRef.current;
     if (!viewport || !track) return;
@@ -394,7 +438,6 @@ function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }
     let offset = 0;
     let phase: "waitTop" | "scroll" | "waitBottom" | "done" = "waitTop";
     let phaseUntil = last + 1600;
-    // Native scroll so sticky thead stays visible.
     track.style.transform = "";
     viewport.scrollTop = 0;
 
@@ -412,7 +455,6 @@ function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }
             phaseUntil = t + 2400;
           }
         } else if (phase === "waitBottom" && t >= phaseUntil) {
-          // One pass only — hold at bottom until the slide advances.
           phase = "done";
         }
       }
@@ -421,14 +463,14 @@ function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [active, rest.length]);
+  }, [active, scrollRowCount, split]);
 
   // Podium order visually: 2 · 1 · 3
   const podiumOrder =
     top.length >= 3 ? [top[1]!, top[0]!, top[2]!] : top.length === 2 ? [top[1]!, top[0]!] : top;
 
   return (
-    <div className="liga-board-slide is-players">
+    <div className={`liga-board-slide is-players${split ? " is-players-split" : ""}`}>
       <div className="liga-board-players-bg" aria-hidden>
         <img src="/liga-board-players-bg.jpg" alt="" />
       </div>
@@ -437,42 +479,32 @@ function PlayersSlide({ state, active }: { state: LeagueState; active: boolean }
         {top.length > 0 ? (
           <div className="liga-board-podium-row">
             {podiumOrder.map((row) => {
-              const place = (players.indexOf(row) + 1) as 1 | 2 | 3;
+              const place = (primary.indexOf(row) + 1) as 1 | 2 | 3;
               return <PlayerPodium key={row.player.id} row={row} place={place} />;
             })}
           </div>
         ) : (
           <p className="liga-board-empty">Še ni odigranih iger.</p>
         )}
-        {rest.length > 0 ? (
+        {scrollRowCount > 0 ? (
           <div className="liga-board-panel liga-board-scroll-viewport is-rest" ref={viewportRef}>
             <div className="liga-board-scroll-track" ref={trackRef}>
-              <table className="liga-board-table is-players-board is-sticky-head">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Igralec</th>
-                    <th>Ekipa</th>
-                    <th>Keglji</th>
-                    <th>Igre</th>
-                    <th>Povp.</th>
-                    <th>Najb.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rest.map((row, i) => (
-                    <tr key={row.player.id}>
-                      <td className="mono liga-board-rank">{i + 4}</td>
-                      <td className="liga-board-name">{playerDisplayName(row.player)}</td>
-                      <td className="liga-board-team">{row.teamName}</td>
-                      <td className="mono">{row.pins}</td>
-                      <td className="mono">{row.games}</td>
-                      <td className="mono liga-board-pts">{row.avg.toFixed(1)}</td>
-                      <td className="mono">{row.best}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {split ? (
+                <>
+                  <h3 className="liga-board-players-section">≥ 70 % tekem</h3>
+                  <PlayersBoardTable rows={primaryTail} rankFrom={4} />
+                  {primaryTail.length === 0 && primary.length > 0 ? (
+                    <p className="liga-board-players-section-note">Vsi uradni so na stopničkah.</p>
+                  ) : null}
+                  <h3 className="liga-board-players-section">{"< 70 % tekem"}</h3>
+                  <PlayersBoardTable rows={underQualify} rankFrom={1} />
+                  {underQualify.length === 0 ? (
+                    <p className="liga-board-players-section-note">Ni igralcev pod 70 %.</p>
+                  ) : null}
+                </>
+              ) : (
+                <PlayersBoardTable rows={primaryTail} rankFrom={4} />
+              )}
             </div>
           </div>
         ) : null}
@@ -700,10 +732,15 @@ function LeagueBoardScreen({ state }: { state: LeagueState }) {
   const [now, setNow] = useState(() => Date.now());
   const slides = useMemo(() => slideList(state, now), [state, now]);
   const slideKey = slides.join("|");
-  const playerCount = useMemo(
-    () => playersByAverage(computePlayerStandings(state)).length,
-    [state],
-  );
+  const playerCount = useMemo(() => {
+    const { qualified, rest, split } = splitPlayerStandingsByQualify(
+      state,
+      computePlayerStandings(state),
+    );
+    if (!split) return qualified.length;
+    // Vrstice v scrollu: uradni od 4. naprej + vsi pod 70 %.
+    return Math.max(0, qualified.length - 3) + rest.length;
+  }, [state]);
   const [index, setIndex] = useState(0);
   const [progressKey, setProgressKey] = useState(0);
   const safeIndex = slides.length ? index % slides.length : 0;

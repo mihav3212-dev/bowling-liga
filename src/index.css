@@ -7136,6 +7136,30 @@ body:has(.board-view) {
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 12px), transparent 100%);
 }
 
+.liga-board-players-section {
+  margin: 18px 0 10px;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4f2ef;
+}
+
+.liga-board-players-section:first-child {
+  margin-top: 8px;
+}
+
+.liga-board-players-section-note {
+  margin: 0 0 12px;
+  color: rgba(244, 242, 239, 0.55);
+  font-size: 0.95rem;
+}
+
+.liga-board-slide.is-players-split .liga-board-table + .liga-board-players-section {
+  margin-top: 22px;
+}
+
 .liga-board-slide.is-players .liga-board-scroll-viewport.is-rest::-webkit-scrollbar {
   display: none;
 }
