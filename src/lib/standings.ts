@@ -270,6 +270,90 @@ export function playersByAverage(rows: PlayerStandingRow[]): PlayerStandingRow[]
   });
 }
 
+/** Igralec mora imeti ≥ 70 % odigranih tekem svoje ekipe za uradno lestvico. */
+export const PLAYER_QUALIFY_MATCH_RATIO = 0.7;
+
+/**
+ * Dve lestvici (kvalificirani / preostali) šele, ko je zaključenih ≥ polovica krogov.
+ * Pred tem ostane ena skupna — zgodaj v sezoni je 70 % še nestabilno.
+ */
+export const PLAYER_SPLIT_SEASON_RATIO = 0.5;
+
+/** Koliko tekem ekipe mora imeti igralec (zaokroženo navzgor). */
+export function requiredQualifyMatches(teamMatchesPlayed: number): number {
+  if (teamMatchesPlayed <= 0) return 0;
+  return Math.ceil(teamMatchesPlayed * PLAYER_QUALIFY_MATCH_RATIO);
+}
+
+/** Število zaključenih tekem po ekipi. */
+export function teamCompletedMatchCounts(state: LeagueState): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const team of state.teams) counts.set(team.id, 0);
+  for (const match of state.matches) {
+    if (!matchTotals(match, state.players).complete) continue;
+    counts.set(match.homeTeamId, (counts.get(match.homeTeamId) ?? 0) + 1);
+    counts.set(match.awayTeamId, (counts.get(match.awayTeamId) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** Število tekem, kjer je igralec oddal vsaj eno igro z keglji. */
+export function playerMatchAppearanceCounts(state: LeagueState): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const match of state.matches) {
+    const seen = new Set<string>();
+    for (const round of match.rounds) {
+      for (const game of round.games) {
+        const home = state.players.find((p) => p.id === game.homePlayerId);
+        const away = state.players.find((p) => p.id === game.awayPlayerId);
+        if (scoredPins(game.homePins, home) != null) seen.add(game.homePlayerId);
+        if (scoredPins(game.awayPins, away) != null) seen.add(game.awayPlayerId);
+      }
+    }
+    for (const id of seen) {
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+export function shouldSplitPlayerStandings(state: LeagueState): boolean {
+  const totalRounds = seasonRoundCount(state);
+  if (totalRounds <= 0) return false;
+  const done = lastCompletedRound(state);
+  return done >= Math.ceil(totalRounds * PLAYER_SPLIT_SEASON_RATIO);
+}
+
+export type PlayerStandingSplit = {
+  qualified: PlayerStandingRow[];
+  rest: PlayerStandingRow[];
+  /** Ali naj UI pokaže dve lestvici. */
+  split: boolean;
+};
+
+/** Razdeli igralce: ≥ 70 % tekem ekipe vs. preostali (sicer vse v qualified, rest prazen). */
+export function splitPlayerStandingsByQualify(
+  state: LeagueState,
+  rows: PlayerStandingRow[],
+): PlayerStandingSplit {
+  const sorted = playersByAverage(rows);
+  if (!shouldSplitPlayerStandings(state)) {
+    return { qualified: sorted, rest: [], split: false };
+  }
+  const teamPlayed = teamCompletedMatchCounts(state);
+  const appearances = playerMatchAppearanceCounts(state);
+  const qualified: PlayerStandingRow[] = [];
+  const rest: PlayerStandingRow[] = [];
+  for (const row of sorted) {
+    const teamMatches = teamPlayed.get(row.player.teamId) ?? 0;
+    const need = requiredQualifyMatches(teamMatches);
+    const played = appearances.get(row.player.id) ?? 0;
+    if (need > 0 && played >= need) qualified.push(row);
+    else rest.push(row);
+  }
+  return { qualified, rest, split: true };
+}
+
 export function playersByHighs(
   rows: PlayerStandingRow[],
   key: "over200" | "over220" | "over240",

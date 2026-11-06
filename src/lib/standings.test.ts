@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeStandings } from "./standings";
+import {
+  computePlayerStandings,
+  computeStandings,
+  requiredQualifyMatches,
+  shouldSplitPlayerStandings,
+  splitPlayerStandingsByQualify,
+} from "./standings";
 import type { LeagueState, Match, Player, Team } from "./types";
 
 function team(id: string, name = id): Team {
@@ -100,5 +106,53 @@ describe("lestvica ekip — razvrstitev", () => {
     expect(rows[1].team.id).toBe("b");
     expect(rows[0].big).toBe(rows[1].big);
     expect(rows[0].velike).toBeGreaterThanOrEqual(rows[1].velike);
+  });
+});
+
+describe("lestvica igralcev — 70 % tekem", () => {
+  it("zahteva ceil(70 %) tekem ekipe", () => {
+    expect(requiredQualifyMatches(0)).toBe(0);
+    expect(requiredQualifyMatches(10)).toBe(7);
+    expect(requiredQualifyMatches(1)).toBe(1);
+  });
+
+  it("pred polovico sezone ne loči lestvic", () => {
+    const teams = [team("a", "A"), team("b", "B")];
+    const players = [player("pa", "a"), player("pb", "b")];
+    // 13 krogov v razporedu, zaključena samo 3 → pod 50 %
+    const matches = Array.from({ length: 13 }, (_, i) =>
+      sweepMatch(`m${i + 1}`, "a", "b", "pa", "pb", 150, 100, i + 1),
+    ).map((m, i) => (i < 3 ? m : { ...m, rounds: [], status: "scheduled" as const }));
+    const s = state(teams, players, matches);
+    expect(shouldSplitPlayerStandings(s)).toBe(false);
+    const split = splitPlayerStandingsByQualify(s, computePlayerStandings(s));
+    expect(split.split).toBe(false);
+    expect(split.rest).toEqual([]);
+  });
+
+  it("po polovici sezone loči ≥ 70 % in preostale", () => {
+    const teams = [team("a", "A"), team("b", "B")];
+    const players = [
+      player("pa", "a"),
+      player("pa2", "a"),
+      player("pb", "b"),
+    ];
+    // 10 krogov; 5 zaključenih (= 50 %) — pa igra samo v 2, pa2 v vseh 5
+    const matches = Array.from({ length: 10 }, (_, i) => {
+      const round = i + 1;
+      const homePlayer = i < 2 ? "pa" : "pa2";
+      const m = sweepMatch(`m${round}`, "a", "b", homePlayer, "pb", 160, 100, round);
+      if (i >= 5) return { ...m, rounds: [], status: "scheduled" as const };
+      return m;
+    });
+    const s = state(teams, players, matches);
+    expect(shouldSplitPlayerStandings(s)).toBe(true);
+    const split = splitPlayerStandingsByQualify(s, computePlayerStandings(s));
+    expect(split.split).toBe(true);
+    // Ekipa A: 5 tekem → treba 4. pa ima 2 → rest; pa2 ima 3 → rest; pb ima 5 → qualified
+    // Wait: pa plays rounds 1-2, pa2 plays 3-5 = 3 matches. need 4 for qualify.
+    // pb plays all 5 → qualified.
+    expect(split.qualified.map((r) => r.player.id)).toEqual(["pb"]);
+    expect(split.rest.map((r) => r.player.id).sort()).toEqual(["pa", "pa2"]);
   });
 });
