@@ -185,6 +185,7 @@ function LeagueApp() {
   const openMatch = (id: string) => {
     setResultsEditing(false);
     commitNav({ ...navRef.current, matchId: id, detailTeamId: null }, "push");
+    window.scrollTo(0, 0);
   };
 
   useEffect(() => {
