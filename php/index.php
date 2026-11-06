@@ -102,6 +102,10 @@ if ($route === 'login') {
             set_liga_cookie(sign_token(['a' => 1]), $secure);
             json_out(200, ['ok' => true, 'admin' => true]);
         }
+        if (display_password_ok($password)) {
+            set_liga_cookie(sign_token(['d' => 1]), $secure);
+            json_out(200, ['ok' => true, 'display' => true]);
+        }
         if ($pdo) {
             $current = get_current_season($pdo);
             foreach ($current['data']['teams'] ?? [] as $team) {
@@ -139,7 +143,12 @@ if ($route === 'me') {
             $teamName = null;
         }
     }
-    json_out(200, ['admin' => !empty($session['admin']), 'teamId' => $session['teamId'], 'teamName' => $teamName]);
+    json_out(200, [
+        'admin' => !empty($session['admin']),
+        'teamId' => $session['teamId'],
+        'teamName' => $teamName,
+        'display' => !empty($session['display']),
+    ]);
 }
 
 if ($route === 'league') {

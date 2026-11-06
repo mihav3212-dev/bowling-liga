@@ -13,6 +13,8 @@ const TEAM_KEY = "liga-team-local";
 
 type Auth = {
   admin: boolean;
+  /** Profil za TV / bowling: klik na živo odpre ?display=live. */
+  display: boolean;
   teamId: string | null;
   teamName: string | null;
   ready: boolean;
@@ -22,7 +24,13 @@ type Auth = {
 
 const Ctx = createContext<Auth | null>(null);
 
-type Me = { admin?: boolean; teamId?: string | null; teamName?: string | null; ok?: boolean };
+type Me = {
+  admin?: boolean;
+  display?: boolean;
+  teamId?: string | null;
+  teamName?: string | null;
+  ok?: boolean;
+};
 
 async function readJson(res: Response): Promise<Me> {
   try {
@@ -46,6 +54,7 @@ function readLocalTeam(): { teamId: string; teamName: string } | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [admin, setAdmin] = useState(false);
+  const [display, setDisplay] = useState(false);
   const [teamId, setTeamId] = useState<string | null>(null);
   const [teamName, setTeamName] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -58,6 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         if (data.admin) {
           setAdmin(true);
+          setDisplay(false);
+          setTeamId(null);
+          setTeamName(null);
+          sessionStorage.removeItem(TEAM_KEY);
+          return;
+        }
+        if (data.display) {
+          setAdmin(false);
+          setDisplay(true);
           setTeamId(null);
           setTeamName(null);
           sessionStorage.removeItem(TEAM_KEY);
@@ -65,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (data.teamId) {
           setAdmin(false);
+          setDisplay(false);
           setTeamId(data.teamId);
           setTeamName(data.teamName ?? null);
           sessionStorage.removeItem(TEAM_KEY);
@@ -72,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const local = readLocalTeam();
         setAdmin(false);
+        setDisplay(false);
         setTeamId(local?.teamId ?? null);
         setTeamName(local?.teamName ?? null);
       })
@@ -79,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           const local = readLocalTeam();
           setAdmin(false);
+          setDisplay(false);
           setTeamId(local?.teamId ?? null);
           setTeamName(local?.teamName ?? null);
         }
@@ -94,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const api = useMemo<Auth>(
     () => ({
       admin,
+      display,
       teamId,
       teamName,
       ready,
@@ -107,6 +129,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await readJson(res);
         if (res.ok && data.admin) {
           setAdmin(true);
+          setDisplay(false);
+          setTeamId(null);
+          setTeamName(null);
+          sessionStorage.removeItem(TEAM_KEY);
+          return true;
+        }
+        if (res.ok && data.display) {
+          setAdmin(false);
+          setDisplay(true);
           setTeamId(null);
           setTeamName(null);
           sessionStorage.removeItem(TEAM_KEY);
@@ -114,6 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         if (res.ok && data.teamId) {
           setAdmin(false);
+          setDisplay(false);
           setTeamId(data.teamId);
           setTeamName(data.teamName ?? null);
           sessionStorage.removeItem(TEAM_KEY);
@@ -122,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         for (const team of currentVaultOfficialTeams()) {
           if (await verifyPassword(password, team.passwordHash)) {
             setAdmin(false);
+            setDisplay(false);
             setTeamId(team.id);
             setTeamName(team.name);
             sessionStorage.setItem(TEAM_KEY, JSON.stringify({ teamId: team.id, teamName: team.name }));
@@ -134,11 +167,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await fetch("/api/logout", { method: "POST", credentials: "same-origin" });
         sessionStorage.removeItem(TEAM_KEY);
         setAdmin(false);
+        setDisplay(false);
         setTeamId(null);
         setTeamName(null);
       },
     }),
-    [admin, teamId, teamName, ready],
+    [admin, display, teamId, teamName, ready],
   );
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

@@ -841,6 +841,12 @@ select {
   justify-content: flex-end;
 }
 
+.header-login-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .header-login input {
   background: var(--input-bg);
   border-color: var(--header-line);

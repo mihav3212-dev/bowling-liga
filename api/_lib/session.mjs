@@ -40,14 +40,14 @@ export function tokenValid(token) {
 }
 
 export function readSession(token) {
-  const empty = { admin: false, teamId: null };
+  const empty = { admin: false, teamId: null, display: false };
   if (!token || !adminPassword()) return empty;
   const parts = String(token).split(".");
   if (parts.length === 2) {
     const [exp, sig] = parts;
     if (!exp || !sig || Number(exp) < Date.now()) return empty;
     if (!sameHex(sig, hmac(exp))) return empty;
-    return { admin: true, teamId: null };
+    return { admin: true, teamId: null, display: false };
   }
   if (parts.length !== 3) return empty;
   const [exp, body, sig] = parts;
@@ -55,21 +55,34 @@ export function readSession(token) {
   if (!sameHex(sig, hmac(`${exp}.${body}`))) return empty;
   try {
     const data = JSON.parse(Buffer.from(body, "base64url").toString("utf8"));
-    if (data?.a) return { admin: true, teamId: null };
-    if (typeof data?.t === "string" && data.t) return { admin: false, teamId: data.t };
+    if (data?.a) return { admin: true, teamId: null, display: false };
+    if (data?.d) return { admin: false, teamId: null, display: true };
+    if (typeof data?.t === "string" && data.t) return { admin: false, teamId: data.t, display: false };
   } catch {
     return empty;
   }
   return empty;
 }
 
-export function passwordOk(password) {
-  const expected = adminPassword();
+function passwordMatches(password, expected) {
   if (!expected || typeof password !== "string") return false;
   const a = Buffer.from(password);
   const b = Buffer.from(expected);
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
+}
+
+export function passwordOk(password) {
+  return passwordMatches(password, adminPassword());
+}
+
+/** Geslo za TV / bowling prikaz (klik na živo → ?display=live). */
+export function displayPassword() {
+  return process.env.DISPLAY_PASSWORD || process.env.TV_PASSWORD || "";
+}
+
+export function displayPasswordOk(password) {
+  return passwordMatches(password, displayPassword());
 }
 
 export function cookieHeader(token, secure) {

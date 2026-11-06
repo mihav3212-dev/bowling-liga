@@ -4,7 +4,7 @@ import { looksLikeInviteCode, normalizeInviteToken } from "../lib/invite";
 import { previewTeamInvite } from "../lib/leagueApi";
 
 export function Login({ onInviteCode }: { onInviteCode?: (token: string) => void }) {
-  const { admin, teamId, ready, login, logout } = useAuth();
+  const { admin, display, teamId, ready, login, logout } = useAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -12,6 +12,17 @@ export function Login({ onInviteCode }: { onInviteCode?: (token: string) => void
   if (!ready) return null;
 
   if (admin) return null;
+
+  if (display) {
+    return (
+      <div className="header-login-status">
+        <span className="muted">Prikaz TV</span>
+        <button className="ghost header-logout" type="button" onClick={() => void logout()}>
+          Odjava
+        </button>
+      </div>
+    );
+  }
 
   if (teamId) {
     return (

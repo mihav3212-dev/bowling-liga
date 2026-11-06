@@ -1,4 +1,10 @@
-import { cookieHeader, isSecureRequest, passwordOk, signToken } from "./_lib/session.mjs";
+import {
+  cookieHeader,
+  displayPasswordOk,
+  isSecureRequest,
+  passwordOk,
+  signToken,
+} from "./_lib/session.mjs";
 import { verifyPassword } from "./_lib/passwords.mjs";
 import { ensureSchema, getCurrentSeason, getSql } from "./_lib/db.mjs";
 
@@ -36,6 +42,10 @@ export async function handleLogin(req, res) {
     if (sql) await ensureSchema(sql);
     if (passwordOk(password)) {
       json(res, 200, { ok: true, admin: true }, cookieHeader(signToken({ a: 1 }), secure));
+      return;
+    }
+    if (displayPasswordOk(password)) {
+      json(res, 200, { ok: true, display: true }, cookieHeader(signToken({ d: 1 }), secure));
       return;
     }
     if (sql) {

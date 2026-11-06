@@ -20,6 +20,8 @@ import { MatchResultPage } from "./pages/MatchResultPage";
 import { NewSeasonDialog } from "./pages/NewSeasonDialog";
 import { exportResultsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
+import { matchesShowingLive } from "./lib/live";
+import { matchTotals } from "./lib/scoring";
 import { publicSeasonId } from "./lib/storage";
 import { canOpenTeamMatch, canTeam, teamPerms } from "./lib/access";
 import { useStore } from "./lib/store";
@@ -108,7 +110,7 @@ export function App() {
 }
 
 function LeagueApp() {
-  const { admin, teamId: loginTeamId, teamName, ready: authReady } = useAuth();
+  const { admin, display, teamId: loginTeamId, teamName, ready: authReady } = useAuth();
   const {
     state,
     remote,
@@ -183,9 +185,16 @@ function LeagueApp() {
   };
 
   const openMatch = (id: string) => {
+    if (display) {
+      const open = state.matches.filter((m) => !matchTotals(m, state.players).complete);
+      const live = matchesShowingLive(open, Date.now());
+      if (live.some((m) => m.id === id)) {
+        window.location.assign(`${window.location.pathname}?display=live`);
+        return;
+      }
+    }
     setResultsEditing(false);
     commitNav({ ...navRef.current, matchId: id, detailTeamId: null }, "push");
-    window.scrollTo(0, 0);
   };
 
   useEffect(() => {
@@ -358,6 +367,11 @@ function LeagueApp() {
             {loginTeamId && (
               <span className="season-note" style={{ margin: 0 }}>
                 Prijava: Moja ekipa{teamName ? ` (${teamName})` : ""}. Dovoljenja nastavi admin.
+              </span>
+            )}
+            {display && (
+              <span className="season-note" style={{ margin: 0 }}>
+                Prijava: TV prikaz — živa tekma odpre celozaslonski live.
               </span>
             )}
           </div>

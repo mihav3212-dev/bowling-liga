@@ -6,11 +6,13 @@ import { MatchResultView } from "./MatchResultView";
 export function MatchResultPage({
   matchId,
   onBack,
+  backLabel,
   canEdit,
   onEdit,
 }: {
   matchId: string;
   onBack: () => void;
+  backLabel?: string;
   canEdit?: boolean;
   onEdit?: () => void;
 }) {
@@ -26,6 +28,7 @@ export function MatchResultPage({
       view={view}
       matchId={matchId}
       onBack={onBack}
+      backLabel={backLabel}
       onEdit={canEdit ? onEdit : undefined}
       playerStats={playerStats}
     />

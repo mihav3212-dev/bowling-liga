@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { FitTeamName } from "../components/FitTeamName";
 import type { LiveMatchView } from "../lib/liveBoard";
 import type { MatchPlayerStat } from "../lib/scoring";
@@ -107,6 +107,7 @@ type Props = {
   view?: LiveMatchView;
   preview?: boolean;
   onBack?: () => void;
+  backLabel?: string;
   onEdit?: () => void;
   playerStats?: MatchPlayerStat[];
   matchId?: string;
@@ -116,25 +117,37 @@ export function MatchResultView({
   view = PREVIEW,
   preview = false,
   onBack,
+  backLabel = "← Nazaj",
   onEdit,
   playerStats = [],
   matchId,
 }: Props) {
   const { state } = useStore();
+  const rootRef = useRef<HTMLDivElement>(null);
   const m = view;
   const homeWins = (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
   const awayWins = (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
   const tied = m.complete && (m.homeMatch ?? 0) === (m.awayMatch ?? 0);
 
+  useEffect(() => {
+    if (preview) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const id = window.requestAnimationFrame(() => {
+      el.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [preview, matchId, m.homeName, m.awayName, m.startsAtLabel]);
+
   return (
-    <div className="result-view">
+    <div className="result-view" ref={rootRef}>
       <div className="result-view-glow" aria-hidden />
 
       {(onBack || preview || onEdit) && (
         <div className="result-view-toolbar">
           {onBack ? (
             <button type="button" className="ghost result-view-back" onClick={onBack}>
-              ← Nazaj na rezultate
+              {backLabel}
             </button>
           ) : preview ? (
             <span className="result-view-preview-tag">Predogled · zavihek Rezultati</span>

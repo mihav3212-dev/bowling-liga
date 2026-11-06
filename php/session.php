@@ -49,7 +49,7 @@ function sign_token(array $payload)
 
 function read_session($token)
 {
-    $empty = ['admin' => false, 'teamId' => null];
+    $empty = ['admin' => false, 'teamId' => null, 'display' => false];
     if (!$token || admin_password() === '') {
         return $empty;
     }
@@ -63,7 +63,7 @@ function read_session($token)
         if (!hash_equals(liga_hmac($exp), $sig)) {
             return $empty;
         }
-        return ['admin' => true, 'teamId' => null];
+        return ['admin' => true, 'teamId' => null, 'display' => false];
     }
     if (count($parts) !== 3) {
         return $empty;
@@ -80,10 +80,13 @@ function read_session($token)
         return $empty;
     }
     if (!empty($data['a'])) {
-        return ['admin' => true, 'teamId' => null];
+        return ['admin' => true, 'teamId' => null, 'display' => false];
+    }
+    if (!empty($data['d'])) {
+        return ['admin' => false, 'teamId' => null, 'display' => true];
     }
     if (!empty($data['t']) && is_string($data['t'])) {
-        return ['admin' => false, 'teamId' => $data['t']];
+        return ['admin' => false, 'teamId' => $data['t'], 'display' => false];
     }
     return $empty;
 }
@@ -91,6 +94,22 @@ function read_session($token)
 function password_ok($password)
 {
     $expected = admin_password();
+    return is_string($password) && $expected !== '' && hash_equals($expected, $password);
+}
+
+function display_password()
+{
+    $env = getenv('DISPLAY_PASSWORD');
+    if (is_string($env) && $env !== '') {
+        return $env;
+    }
+    $tv = getenv('TV_PASSWORD');
+    return is_string($tv) ? $tv : '';
+}
+
+function display_password_ok($password)
+{
+    $expected = display_password();
     return is_string($password) && $expected !== '' && hash_equals($expected, $password);
 }
 
