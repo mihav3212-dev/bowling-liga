@@ -4523,6 +4523,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   --accent: #6b9cff;
   --round: #6b9cff;
   --score: #b04fc4;
+  /* Pod lepljivimi zavihki — ob odprtju ostane viden Nazaj. */
+  scroll-margin-top: 4.75rem;
   position: relative;
   isolation: isolate;
   box-sizing: border-box;
