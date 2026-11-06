@@ -859,11 +859,20 @@ select {
 }
 
 .header-login .ghost,
-.header-logout {
+.header-logout,
+a.header-logout {
   color: var(--header-fg);
   border-color: var(--header-line);
   background: transparent;
   min-height: 40px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid var(--header-line);
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .login-error {

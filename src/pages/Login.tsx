@@ -17,6 +17,12 @@ export function Login({ onInviteCode }: { onInviteCode?: (token: string) => void
     return (
       <div className="header-login-status">
         <span className="muted">Prikaz TV</span>
+        <a className="ghost header-logout" href="/?display=live">
+          TV živo
+        </a>
+        <a className="ghost header-logout" href="/?display=board">
+          TV liga
+        </a>
         <button className="ghost header-logout" type="button" onClick={() => void logout()}>
           Odjava
         </button>

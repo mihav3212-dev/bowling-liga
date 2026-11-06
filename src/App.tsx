@@ -371,7 +371,7 @@ function LeagueApp() {
             )}
             {display && (
               <span className="season-note" style={{ margin: 0 }}>
-                Prijava: TV prikaz — živa tekma odpre celozaslonski live.
+                Prijava: TV prikaz — živa tekma → live; zgoraj tudi TV liga (lestvica).
               </span>
             )}
           </div>
