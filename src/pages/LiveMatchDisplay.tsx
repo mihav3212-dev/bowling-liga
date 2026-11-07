@@ -1014,6 +1014,8 @@ function LiveMatchScreen({
               maxFontPx={84}
               minFontPx={22}
               widthFactor={0.92}
+              fitGroup={`live-${phaseKey}`}
+              sizeScale={homeWins ? 1.14 : 1}
             />
           </div>
         </div>
@@ -1071,6 +1073,8 @@ function LiveMatchScreen({
               maxFontPx={84}
               minFontPx={22}
               widthFactor={0.92}
+              fitGroup={`live-${phaseKey}`}
+              sizeScale={awayWins ? 1.14 : 1}
             />
           </div>
         </div>

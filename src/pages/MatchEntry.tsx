@@ -43,6 +43,15 @@ function needsThreePinDigits(typed: string): boolean {
   return first === "1" || first === "2" || first === "3";
 }
 
+/** 0 = manjkajoči igralec; 1–59 = sumljivo nizko — vprašaj za potrditev. */
+const LOW_PINS_WARN_BELOW = 60;
+
+function confirmLowPins(pins: number): boolean {
+  return window.confirm(
+    `Vpisanih je samo ${pins} kegljev (običajno ≥ ${LOW_PINS_WARN_BELOW}).\n\nShranim ta vnos? (Prekliči = ponovni vnos)`,
+  );
+}
+
 export function PinField({
   raw,
   player,
@@ -89,6 +98,7 @@ export function PinField({
         }}
         onBlur={() => {
           const typed = draft ?? "";
+          const previous = raw;
           setDraft(null);
           onEditingChange?.(false);
           if (needsThreePinDigits(typed) && typed.length > 0 && typed.length < 3) {
@@ -96,6 +106,12 @@ export function PinField({
             return;
           }
           const pins = parsePins(typed);
+          if (pins != null && pins > 0 && pins < LOW_PINS_WARN_BELOW) {
+            if (!confirmLowPins(pins)) {
+              onChange(previous);
+              return;
+            }
+          }
           if (pins !== raw) onChange(pins);
         }}
         onKeyDown={(e) => {
@@ -273,7 +289,6 @@ export function MatchEntry({
     setPins,
     setRoundPlayer,
     setMatchLiveOnTv,
-    deleteMatch,
     saveMatchLineupNow,
     saveShownMatch,
     syncFromRemote,
@@ -878,31 +893,25 @@ export function MatchEntry({
 
       <div className="match-actions">
         {!hideScores && (
-          <PdfButton label="Izvozi zapisnik PDF" onExport={() => exportMatchPdf(state, match.id)} />
-        )}
-        {canForceTv && (
-          <button
-            className="ghost"
-            type="button"
-            title="Odstrani to tekmo iz razporeda (npr. ekipa ni igrala)."
-            onClick={() => {
-              const hasPins = match.rounds.some((r) =>
-                r.games.some((g) => g.homePins != null || g.awayPins != null),
-              );
-              const warn = hasPins || totals.complete ? " Ima že rezultate." : "";
-              if (
-                !window.confirm(
-                  `Res zbrišem tekmo ${home?.name ?? "?"} — ${away?.name ?? "?"} (${match.round}. kolo)?${warn}`,
-                )
-              ) {
-                return;
+          <PdfButton
+            label="Izvozi zapisnik PDF"
+            onExport={async () => {
+              const canSave = !readOnly || teamLineup;
+              if (canSave) {
+                setSaving(true);
+                setSaveNote("");
+                const ok = teamLineup
+                  ? await saveMatchLineupNow(match.id)
+                  : await saveShownMatch(match.id);
+                setSaving(false);
+                if (!ok) {
+                  setSaveNote("Shranjevanje ni uspelo. Poskusi znova, ne zapiraj tekme.");
+                  return;
+                }
               }
-              deleteMatch(match.id);
-              onBack();
+              await exportMatchPdf(state, match.id);
             }}
-          >
-            Izbriši tekmo
-          </button>
+          />
         )}
         {(!readOnly || teamLineup) && (
           <>

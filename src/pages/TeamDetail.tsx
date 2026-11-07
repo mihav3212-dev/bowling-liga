@@ -608,7 +608,10 @@ export function TeamDetail({
                           <button
                             className="danger"
                             type="button"
-                            onClick={() => removePlayer(p.id)}
+                            onClick={() => {
+                              if (!window.confirm("Res želite odstraniti igralca?")) return;
+                              removePlayer(p.id);
+                            }}
                           >
                             Odstrani
                           </button>

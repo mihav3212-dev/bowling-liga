@@ -1,6 +1,5 @@
 import { Fragment, useEffect, useRef } from "react";
 import { FitTeamName } from "../components/FitTeamName";
-import { NeonTrophy } from "../components/NeonTrophy";
 import type { LiveMatchView } from "../lib/liveBoard";
 import type { MatchPlayerStat } from "../lib/scoring";
 import { exportMatchPdf } from "../lib/exportPdf";
@@ -184,16 +183,17 @@ export function MatchResultView({
       <section className="result-view-scoreboard">
         <div className={`result-view-side is-home${homeWins ? " is-winner" : ""}`}>
           <div className="result-view-side-label">
-            {homeWins ? "Zmaga" : tied ? "Neodločeno" : "Domači"}
+            {homeWins ? "Zmagovalci" : awayWins ? "Poraženci" : tied ? "Neodločeno" : "Domači"}
           </div>
           <div className={`result-view-name-row${homeWins ? " is-winner" : ""}`}>
-            {homeWins ? <NeonTrophy /> : null}
             <FitTeamName
               name={m.homeName}
               className="result-view-team"
               wordClassName="result-view-team-word"
               neonLetters={homeWins}
               neonTone="cyan"
+              fitGroup={`result-${matchId}`}
+              sizeScale={homeWins ? 1.14 : 1}
             />
           </div>
         </div>
@@ -263,16 +263,17 @@ export function MatchResultView({
 
         <div className={`result-view-side is-away${awayWins ? " is-winner" : ""}`}>
           <div className="result-view-side-label">
-            {awayWins ? "Zmaga" : tied ? "Neodločeno" : "Gostje"}
+            {awayWins ? "Zmagovalci" : homeWins ? "Poraženci" : tied ? "Neodločeno" : "Gostje"}
           </div>
           <div className={`result-view-name-row is-away${awayWins ? " is-winner" : ""}`}>
-            {awayWins ? <NeonTrophy /> : null}
             <FitTeamName
               name={m.awayName}
               className="result-view-team"
               wordClassName="result-view-team-word"
               neonLetters={awayWins}
               neonTone="magenta"
+              fitGroup={`result-${matchId}`}
+              sizeScale={awayWins ? 1.14 : 1}
             />
           </div>
         </div>
