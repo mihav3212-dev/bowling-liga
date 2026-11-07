@@ -9,6 +9,7 @@ export function FitTeamName({
   className,
   wordClassName = "fit-team-name-word",
   neonLetters = false,
+  neonTone = "cyan",
   maxFontPx,
   minFontPx = 12,
   widthFactor = 0.28,
@@ -18,6 +19,8 @@ export function FitTeamName({
   wordClassName?: string;
   /** Vsaka črka v svojem spanu — za neon obrobo. */
   neonLetters?: boolean;
+  /** Enobarvni neon: cyan = domači, magenta = gostje. */
+  neonTone?: "cyan" | "magenta";
   /** Zgornja meja velikosti; če ni podana, iz širine stolpca. */
   maxFontPx?: number;
   minFontPx?: number;
@@ -25,6 +28,7 @@ export function FitTeamName({
 }) {
   const ref = useRef<HTMLHeadingElement>(null);
   const words = name.trim().split(/\s+/).filter(Boolean);
+  const neonT = neonTone === "magenta" ? "1" : "0";
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -47,13 +51,12 @@ export function FitTeamName({
     const ro = new ResizeObserver(fit);
     ro.observe(box);
     return () => ro.disconnect();
-  }, [name, maxFontPx, minFontPx, widthFactor, neonLetters]);
+  }, [name, maxFontPx, minFontPx, widthFactor, neonLetters, neonTone]);
 
   return (
     <h1 ref={ref} className={className}>
       {words.map((word, i) => {
         const chars = Array.from(word);
-        const last = Math.max(1, chars.length - 1);
         return (
           <Fragment key={`${i}-${word}`}>
             {i > 0 ? <br /> : null}
@@ -63,7 +66,7 @@ export function FitTeamName({
                     <span
                       key={`${i}-${j}`}
                       className="neon-letter"
-                      style={{ "--neon-t": String(j / last) } as CSSProperties}
+                      style={{ "--neon-t": neonT } as CSSProperties}
                     >
                       {ch}
                     </span>

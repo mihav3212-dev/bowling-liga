@@ -193,6 +193,7 @@ export function MatchResultView({
               className="result-view-team"
               wordClassName="result-view-team-word"
               neonLetters={homeWins}
+              neonTone="cyan"
             />
           </div>
         </div>
@@ -271,6 +272,7 @@ export function MatchResultView({
               className="result-view-team"
               wordClassName="result-view-team-word"
               neonLetters={awayWins}
+              neonTone="magenta"
             />
           </div>
         </div>

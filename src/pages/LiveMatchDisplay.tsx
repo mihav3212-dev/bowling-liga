@@ -898,6 +898,7 @@ function LiveMatchScreen({
                     className="live-quad-mid-team"
                     wordClassName="live-quad-mid-team-word"
                     neonLetters
+                    neonTone="cyan"
                     maxFontPx={52}
                     minFontPx={16}
                     widthFactor={0.95}
@@ -927,6 +928,7 @@ function LiveMatchScreen({
                     className="live-quad-mid-team"
                     wordClassName="live-quad-mid-team-word"
                     neonLetters
+                    neonTone="magenta"
                     maxFontPx={52}
                     minFontPx={16}
                     widthFactor={0.95}
@@ -1008,6 +1010,7 @@ function LiveMatchScreen({
               className="live-tv-team"
               wordClassName="live-tv-team-word"
               neonLetters={homeWins}
+              neonTone="cyan"
               maxFontPx={84}
               minFontPx={22}
               widthFactor={0.92}
@@ -1064,6 +1067,7 @@ function LiveMatchScreen({
               className="live-tv-team"
               wordClassName="live-tv-team-word"
               neonLetters={awayWins}
+              neonTone="magenta"
               maxFontPx={84}
               minFontPx={22}
               widthFactor={0.92}
