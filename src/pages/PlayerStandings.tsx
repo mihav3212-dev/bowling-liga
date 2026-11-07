@@ -118,8 +118,8 @@ export function PlayerStandings() {
           </>
         ) : (
           <p className="board-view-note">
-            Keglji na tekmo, skupaj, odigrane igre in povprečje. Po 3. kolu lahko preklopiš med
-            uradno lestvico (≥ 70&nbsp;% tekem) in preostalimi.
+            Keglji na tekmo, skupaj, odigrane igre in povprečje. Po polovici sezone lahko preklopiš
+            med uradno lestvico (≥ 70&nbsp;% tekem) in preostalimi.
           </p>
         )}
         <p className="board-view-note board-view-scroll-hint">Podrsaj vodoravno za kola.</p>
