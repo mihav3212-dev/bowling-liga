@@ -5850,6 +5850,17 @@ body:has(.board-view) {
     text-align: center;
   }
 
+  /* Enako kot levo: ime + oznaka na sredini stolpca (ne porinjeno desno) */
+  .result-view-name-row,
+  .result-view-name-row.is-away,
+  .result-view-name-row.is-winner {
+    justify-content: center;
+  }
+
+  .result-view-side.is-winner .result-view-team {
+    font-style: normal;
+  }
+
   .result-view-name-row .neon-trophy,
   .result-view-name-row.is-winner .neon-trophy {
     width: clamp(1.55rem, 7.5vw, 2.1rem);
