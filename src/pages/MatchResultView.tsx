@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef } from "react";
 import { FitTeamName } from "../components/FitTeamName";
+import { NeonTrophy } from "../components/NeonTrophy";
 import type { LiveMatchView } from "../lib/liveBoard";
 import type { MatchPlayerStat } from "../lib/scoring";
 import { exportMatchPdf } from "../lib/exportPdf";
@@ -125,9 +126,11 @@ export function MatchResultView({
   const { state } = useStore();
   const rootRef = useRef<HTMLDivElement>(null);
   const m = view;
-  const homeWins = (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
-  const awayWins = (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
+  const homeWins = m.complete && (m.homeMatch ?? 0) > (m.awayMatch ?? 0);
+  const awayWins = m.complete && (m.awayMatch ?? 0) > (m.homeMatch ?? 0);
   const tied = m.complete && (m.homeMatch ?? 0) === (m.awayMatch ?? 0);
+  /** Neon stil krogov tudi med tekmo (ogled iz razporeda). */
+  const neonRounds = true;
 
   useEffect(() => {
     if (preview) return;
@@ -140,7 +143,7 @@ export function MatchResultView({
   }, [preview, matchId, m.homeName, m.awayName, m.startsAtLabel]);
 
   return (
-    <div className="result-view" ref={rootRef}>
+    <div className={`result-view${neonRounds ? " is-neon" : ""}`} ref={rootRef}>
       <div className="result-view-glow" aria-hidden />
 
       {(onBack || preview || onEdit) && (
@@ -183,37 +186,75 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {homeWins ? "Zmaga" : tied ? "Neodločeno" : "Domači"}
           </div>
-          <FitTeamName
-            name={m.homeName}
-            className="result-view-team"
-            wordClassName="result-view-team-word"
-          />
+          <div className={`result-view-name-row${homeWins ? " is-winner" : ""}`}>
+            {homeWins ? <NeonTrophy /> : null}
+            <FitTeamName
+              name={m.homeName}
+              className="result-view-team"
+              wordClassName="result-view-team-word"
+              neonLetters={homeWins}
+            />
+          </div>
         </div>
 
         <div className="result-view-center">
-          <div className="result-view-score-label">Končne točke</div>
-          <div className="result-view-score">
-            <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-            <span className="result-view-score-sep">:</span>
-            <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+          <div className="result-view-score-label is-neon-final">Končne točke</div>
+          <div className="result-view-score is-neon-final">
+            <span className={`neon-digit is-neon-cyan${homeWins ? " is-winner" : ""}`}>
+              {m.homeMatch ?? "·"}
+            </span>
+            <span className="result-view-score-sep is-neon-final">:</span>
+            <span className={`neon-digit is-neon-magenta${awayWins ? " is-winner" : ""}`}>
+              {m.awayMatch ?? "·"}
+            </span>
           </div>
-          <div className="result-view-stats-featured">
+          <div className="result-view-stats-featured is-neon-pair">
             <div className="result-view-stat-block">
               <span className="result-view-stat-label">Velike</span>
               <strong>
-                {m.homeBig}:{m.awayBig}
+                <span
+                  className={`is-neon-cyan${(m.homeBig ?? 0) > (m.awayBig ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.homeBig ?? "·"}
+                </span>
+                <span className="result-view-score-sep">:</span>
+                <span
+                  className={`is-neon-magenta${(m.awayBig ?? 0) > (m.homeBig ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.awayBig ?? "·"}
+                </span>
               </strong>
             </div>
             <div className="result-view-stat-block">
               <span className="result-view-stat-label">Male</span>
               <strong>
-                {m.homeSmall}:{m.awaySmall}
+                <span
+                  className={`is-neon-cyan${(m.homeSmall ?? 0) > (m.awaySmall ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.homeSmall ?? "·"}
+                </span>
+                <span className="result-view-score-sep">:</span>
+                <span
+                  className={`is-neon-magenta${(m.awaySmall ?? 0) > (m.homeSmall ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.awaySmall ?? "·"}
+                </span>
               </strong>
             </div>
             <div className="result-view-stat-block">
               <span className="result-view-stat-label">Keglji</span>
               <strong>
-                {m.homePins}:{m.awayPins}
+                <span
+                  className={`is-neon-cyan${(m.homePins ?? 0) > (m.awayPins ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.homePins ?? "·"}
+                </span>
+                <span className="result-view-score-sep">:</span>
+                <span
+                  className={`is-neon-magenta${(m.awayPins ?? 0) > (m.homePins ?? 0) ? " is-lead" : ""}`}
+                >
+                  {m.awayPins ?? "·"}
+                </span>
               </strong>
             </div>
           </div>
@@ -223,11 +264,15 @@ export function MatchResultView({
           <div className="result-view-side-label">
             {awayWins ? "Zmaga" : tied ? "Neodločeno" : "Gostje"}
           </div>
-          <FitTeamName
-            name={m.awayName}
-            className="result-view-team"
-            wordClassName="result-view-team-word"
-          />
+          <div className={`result-view-name-row is-away${awayWins ? " is-winner" : ""}`}>
+            {awayWins ? <NeonTrophy /> : null}
+            <FitTeamName
+              name={m.awayName}
+              className="result-view-team"
+              wordClassName="result-view-team-word"
+              neonLetters={awayWins}
+            />
+          </div>
         </div>
       </section>
 
@@ -243,28 +288,61 @@ export function MatchResultView({
                   : r.homeSmall > r.awaySmall
                     ? "home"
                     : "away";
+            const bigLead =
+              r.homeBig == null || r.awayBig == null
+                ? "open"
+                : r.homeBig === r.awayBig
+                  ? "tie"
+                  : r.homeBig > r.awayBig
+                    ? "home"
+                    : "away";
+            const pinsLead =
+              r.homePins == null || r.awayPins == null
+                ? "open"
+                : r.homePins === r.awayPins
+                  ? "tie"
+                  : r.homePins > r.awayPins
+                    ? "home"
+                    : "away";
             return (
-              <article key={r.round} className="result-view-round">
+              <article
+                key={r.round}
+                className={`result-view-round${neonRounds ? " is-neon" : ""}`}
+              >
                 <div className="result-view-round-num">{r.round}. krog</div>
                 <dl className="result-view-round-stats">
                   <div className="result-view-round-stat">
                     <dt>Male točke</dt>
-                    <dd>
-                      <span className={smallLead === "home" ? "is-lead" : undefined}>
+                    <dd className={neonRounds ? "is-neon-pair" : undefined}>
+                      <span
+                        className={`is-neon-cyan${smallLead === "home" ? " is-lead" : ""}`}
+                      >
                         {r.homeSmall ?? "·"}
                       </span>
                       <span className="result-view-score-sep">:</span>
-                      <span className={smallLead === "away" ? "is-lead" : undefined}>
+                      <span
+                        className={`is-neon-magenta${smallLead === "away" ? " is-lead" : ""}`}
+                      >
                         {r.awaySmall ?? "·"}
                       </span>
                     </dd>
                   </div>
                   <div className="result-view-round-stat">
                     <dt>Velike točke</dt>
-                    <dd>
+                    <dd className={neonRounds ? "is-neon-pair" : undefined}>
                       {r.homeBig != null && r.awayBig != null ? (
                         <>
-                          {r.homeBig}:{r.awayBig}
+                          <span
+                            className={`is-neon-cyan${bigLead === "home" ? " is-lead" : ""}`}
+                          >
+                            {r.homeBig}
+                          </span>
+                          <span className="result-view-score-sep">:</span>
+                          <span
+                            className={`is-neon-magenta${bigLead === "away" ? " is-lead" : ""}`}
+                          >
+                            {r.awayBig}
+                          </span>
                         </>
                       ) : (
                         "·:·"
@@ -273,10 +351,24 @@ export function MatchResultView({
                   </div>
                   <div className="result-view-round-stat">
                     <dt>Keglji</dt>
-                    <dd>
-                      {r.homePins != null && r.awayPins != null
-                        ? `${r.homePins}:${r.awayPins}`
-                        : "—:—"}
+                    <dd className={neonRounds ? "is-neon-pair" : undefined}>
+                      {r.homePins != null && r.awayPins != null ? (
+                        <>
+                          <span
+                            className={`is-neon-cyan${pinsLead === "home" ? " is-lead" : ""}`}
+                          >
+                            {r.homePins}
+                          </span>
+                          <span className="result-view-score-sep">:</span>
+                          <span
+                            className={`is-neon-magenta${pinsLead === "away" ? " is-lead" : ""}`}
+                          >
+                            {r.awayPins}
+                          </span>
+                        </>
+                      ) : (
+                        "—:—"
+                      )}
                     </dd>
                   </div>
                 </dl>
@@ -288,7 +380,10 @@ export function MatchResultView({
                         ? `(${d.homeSmall}:${d.awaySmall})`
                         : null;
                     return (
-                      <div key={d.lane} className="result-view-duel">
+                      <div
+                        key={d.lane}
+                        className={`result-view-duel${neonRounds ? " is-neon" : ""}`}
+                      >
                         <span className="result-view-lane">S{d.lane}</span>
                         <span
                           className={`result-view-duel-name is-home${dLead === "home" ? " is-lead" : ""}`}
@@ -296,7 +391,7 @@ export function MatchResultView({
                           {d.homeName}
                         </span>
                         <span
-                          className={`result-view-duel-pins is-home${dLead === "home" ? " is-lead" : ""}`}
+                          className={`result-view-duel-pins is-home is-neon-cyan${dLead === "home" ? " is-lead" : ""}`}
                         >
                           {pinsLabel(d.homePins)}
                         </span>
@@ -308,7 +403,7 @@ export function MatchResultView({
                           )}
                         </span>
                         <span
-                          className={`result-view-duel-pins is-away${dLead === "away" ? " is-lead" : ""}`}
+                          className={`result-view-duel-pins is-away is-neon-magenta${dLead === "away" ? " is-lead" : ""}`}
                         >
                           {pinsLabel(d.awayPins)}
                         </span>

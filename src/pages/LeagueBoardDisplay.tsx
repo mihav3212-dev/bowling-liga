@@ -40,6 +40,16 @@ function qrImageUrl(data: string): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=480x480&margin=12&color=0c0b0b&bgcolor=f4f2ef&data=${encodeURIComponent(data)}`;
 }
 
+/** Deep link na zapisnik tekme (telefon po skenu QR). */
+function matchDetailUrl(matchId: string): string {
+  const origin =
+    typeof window !== "undefined" &&
+    !/^https?:\/\/(localhost|127\.)/i.test(window.location.origin)
+      ? window.location.origin
+      : LEAGUE_WEB_URL;
+  return `${origin}/?page=results&match=${encodeURIComponent(matchId)}`;
+}
+
 function slideDurationMs(id: SlideId, playerCount: number): number {
   if (id === "promo") return PROMO_MS;
   if (id === "standings") return 28_000;
@@ -677,23 +687,34 @@ function ResultsSlide({ state }: { state: LeagueState }) {
                       Keglji <strong>{t.homePins}:{t.awayPins}</strong>
                     </span>
                   </div>
-                  <div className="liga-board-result-rounds">
-                    <div className="liga-board-result-round is-labels">
-                      <span className="liga-board-result-round-num">Krog</span>
-                      <span>Keglji</span>
-                      <span>Velike</span>
-                    </div>
-                    {t.rounds.map((r, i) => (
-                      <div key={i} className="liga-board-result-round">
-                        <span className="liga-board-result-round-num">{i + 1}.</span>
-                        <span className="mono is-pins">
-                          {r.homePins}:{r.awayPins}
-                        </span>
-                        <span className="mono">
-                          {r.homeBig}:{r.awayBig}
-                        </span>
+                  <div className="liga-board-result-body">
+                    <div className="liga-board-result-rounds">
+                      <div className="liga-board-result-round is-labels">
+                        <span className="liga-board-result-round-num">Krog</span>
+                        <span>Keglji</span>
+                        <span>Velike</span>
                       </div>
-                    ))}
+                      {t.rounds.map((r, i) => (
+                        <div key={i} className="liga-board-result-round">
+                          <span className="liga-board-result-round-num">{i + 1}.</span>
+                          <span className="mono is-pins">
+                            {r.homePins}:{r.awayPins}
+                          </span>
+                          <span className="mono is-big">
+                            {r.homeBig}:{r.awayBig}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="liga-board-result-qr">
+                      <img
+                        src={qrImageUrl(matchDetailUrl(match.id))}
+                        alt={`QR za ${home} – ${away}`}
+                        width={160}
+                        height={160}
+                      />
+                      <span>Podrobnosti</span>
+                    </div>
                   </div>
                 </article>
               );

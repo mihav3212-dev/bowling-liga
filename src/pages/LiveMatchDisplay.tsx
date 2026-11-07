@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { FitTeamName } from "../components/FitTeamName";
+import { NeonTrophy } from "../components/NeonTrophy";
 import { TvScaleStage } from "../components/TvScaleStage";
 import {
   displayUsesScaleStage,
@@ -567,12 +568,15 @@ function RoundCard({
   variant = "classic",
   enlarged = false,
   hideLane = false,
+  neon = false,
 }: {
   r: RoundSummary;
   variant?: LiveTvLayout;
   enlarged?: boolean;
   /** Klasični pregled: S1–S4 so zunaj mreže, v kartici jih skrijemo. */
   hideLane?: boolean;
+  /** Cyan/magenta neon (final / zmagovalec). */
+  neon?: boolean;
 }) {
   const bigLead =
     r.homeBig == null || r.awayBig == null
@@ -590,16 +594,20 @@ function RoundCard({
       : "— kegljev";
   return (
     <div
-      className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}${hideLane ? " is-no-lane" : ""}`}
+      className={`live-tv-round-card${openRound ? " is-open" : ""}${quad ? " is-quad" : ""}${enlarged ? " is-enlarged" : ""}${hideLane ? " is-no-lane" : ""}${neon ? " is-neon" : ""}`}
     >
       <div className="live-tv-round-card-num">{formatMatchRound(r.round)}</div>
       <div className="live-tv-round-card-totals">
         <span className="live-tv-round-card-totals-line">
           Velike{" "}
-          <strong>
-            <span className={bigLead === "home" ? "is-lead" : undefined}>{r.homeBig ?? "·"}</span>
+          <strong className={neon ? "is-neon-pair" : undefined}>
+            <span className={`is-neon-cyan${bigLead === "home" ? " is-lead" : ""}`}>
+              {r.homeBig ?? "·"}
+            </span>
             <span className="live-tv-duel-vs">:</span>
-            <span className={bigLead === "away" ? "is-lead" : undefined}>{r.awayBig ?? "·"}</span>
+            <span className={`is-neon-magenta${bigLead === "away" ? " is-lead" : ""}`}>
+              {r.awayBig ?? "·"}
+            </span>
           </strong>
           <span className="live-tv-totals-sep" aria-hidden>
             ·
@@ -623,7 +631,7 @@ function RoundCard({
           return (
             <div
               key={d.lane}
-              className={`live-tv-mini-duel${hideLane ? " is-no-lane" : ""}`}
+              className={`live-tv-mini-duel${hideLane ? " is-no-lane" : ""}${neon ? " is-neon" : ""}`}
               data-lane={d.lane}
             >
               {hideLane ? null : (
@@ -645,11 +653,15 @@ function RoundCard({
                   {shortTvPersonNameFromParts(homeFirst, homeSur)}
                 </span>
               )}
-              <span className={`live-tv-mini-pins${dLead === "home" ? " is-lead" : ""}`}>
+              <span
+                className={`live-tv-mini-pins is-neon-cyan${dLead === "home" ? " is-lead" : ""}`}
+              >
                 {pinsLabel(d.homePins)}
               </span>
               <span className="live-tv-mini-sep">–</span>
-              <span className={`live-tv-mini-pins${dLead === "away" ? " is-lead" : ""}`}>
+              <span
+                className={`live-tv-mini-pins is-neon-magenta${dLead === "away" ? " is-lead" : ""}`}
+              >
                 {pinsLabel(d.awayPins)}
               </span>
               {stackNames ? (
@@ -819,7 +831,7 @@ function LiveMatchScreen({
         <div className="live-quad-stage">
           <div className={`live-quad-board${complete ? " is-complete" : ""}`}>
             <div className="live-quad-cell is-r1">
-              <RoundCard r={r1} variant="quad" />
+              <RoundCard r={r1} variant="quad" neon={complete} />
             </div>
             {complete ? (
               <div className="live-quad-spine live-quad-spine-final">
@@ -837,11 +849,15 @@ function LiveMatchScreen({
                     </strong>
                   </div>
                   <div className="live-quad-stat is-match is-inline">
-                    <span>Končne točke</span>
-                    <strong>
-                      <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                      <span className="live-tv-score-sep">:</span>
-                      <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+                    <span className="is-neon-final">Končne točke</span>
+                    <strong className="is-neon-final">
+                      <span className={`neon-digit is-neon-cyan${homeWins ? " is-winner" : ""}`}>
+                        {m.homeMatch ?? "·"}
+                      </span>
+                      <span className="live-tv-score-sep is-neon-final">:</span>
+                      <span className={`neon-digit is-neon-magenta${awayWins ? " is-winner" : ""}`}>
+                        {m.awayMatch ?? "·"}
+                      </span>
                     </strong>
                   </div>
                   <div className="live-quad-stat is-match is-inline is-pins">
@@ -869,12 +885,27 @@ function LiveMatchScreen({
               </div>
             )}
             <div className="live-quad-cell is-r2">
-              <RoundCard r={r2} variant="quad" />
+              <RoundCard r={r2} variant="quad" neon={complete} />
             </div>
 
             <div className={`live-quad-mid-label is-home${homeWins ? " is-winner" : ""}`}>
-              <span className="live-quad-mid-side">Domači</span>
-              <span className="live-quad-mid-team">{m.homeName}</span>
+              <span className="live-quad-mid-side">{homeWins ? "Zmaga" : "Domači"}</span>
+              <div className={`live-quad-mid-name-row${homeWins ? " is-winner" : ""}`}>
+                {homeWins ? <NeonTrophy /> : null}
+                {homeWins ? (
+                  <FitTeamName
+                    name={m.homeName}
+                    className="live-quad-mid-team"
+                    wordClassName="live-quad-mid-team-word"
+                    neonLetters
+                    maxFontPx={52}
+                    minFontPx={16}
+                    widthFactor={0.95}
+                  />
+                ) : (
+                  <span className="live-quad-mid-team">{m.homeName}</span>
+                )}
+              </div>
             </div>
             {complete ? null : (
               <div className="live-quad-spine live-quad-spine-mid">
@@ -887,16 +918,31 @@ function LiveMatchScreen({
               </div>
             )}
             <div className={`live-quad-mid-label is-away${awayWins ? " is-winner" : ""}`}>
-              <span className="live-quad-mid-side">Gostje</span>
-              <span className="live-quad-mid-team">{m.awayName}</span>
+              <span className="live-quad-mid-side">{awayWins ? "Zmaga" : "Gostje"}</span>
+              <div className={`live-quad-mid-name-row is-away${awayWins ? " is-winner" : ""}`}>
+                {awayWins ? <NeonTrophy /> : null}
+                {awayWins ? (
+                  <FitTeamName
+                    name={m.awayName}
+                    className="live-quad-mid-team"
+                    wordClassName="live-quad-mid-team-word"
+                    neonLetters
+                    maxFontPx={52}
+                    minFontPx={16}
+                    widthFactor={0.95}
+                  />
+                ) : (
+                  <span className="live-quad-mid-team">{m.awayName}</span>
+                )}
+              </div>
             </div>
 
             <div className="live-quad-cell is-r3">
-              <RoundCard r={r3} variant="quad" />
+              <RoundCard r={r3} variant="quad" neon={complete} />
             </div>
             {complete ? null : <div className="live-quad-spine live-quad-spine-bot" aria-hidden />}
             <div className="live-quad-cell is-r4">
-              <RoundCard r={r4} variant="quad" />
+              <RoundCard r={r4} variant="quad" neon={complete} />
             </div>
           </div>
 
@@ -926,7 +972,7 @@ function LiveMatchScreen({
                   <span className="live-quad-mid-team">{m.awayName}</span>
                 </div>
               </div>
-              <RoundCard r={overlayRound} variant="quad" enlarged />
+              <RoundCard r={overlayRound} variant="quad" enlarged neon={complete} />
             </div>
           ) : null}
         </div>
@@ -955,24 +1001,32 @@ function LiveMatchScreen({
       <section className="live-tv-scoreboard">
         <div className={`live-tv-side is-home${homeWins ? " is-winner" : ""}`}>
           <div className="live-tv-side-label">{homeWins ? "Zmaga" : "Domači"}</div>
-          <FitTeamName
-            name={m.homeName}
-            className="live-tv-team"
-            wordClassName="live-tv-team-word"
-            maxFontPx={84}
-            minFontPx={22}
-            widthFactor={0.92}
-          />
+          <div className={`live-tv-name-row${homeWins ? " is-winner" : ""}`}>
+            {homeWins ? <NeonTrophy /> : null}
+            <FitTeamName
+              name={m.homeName}
+              className="live-tv-team"
+              wordClassName="live-tv-team-word"
+              neonLetters={homeWins}
+              maxFontPx={84}
+              minFontPx={22}
+              widthFactor={0.92}
+            />
+          </div>
         </div>
 
         <div className="live-tv-center">
           {complete ? (
             <>
-              <div className="live-tv-score-label">Končne točke</div>
-              <div className="live-tv-score">
-                <span className={homeWins ? "is-winner" : undefined}>{m.homeMatch ?? "·"}</span>
-                <span className="live-tv-score-sep">:</span>
-                <span className={awayWins ? "is-winner" : undefined}>{m.awayMatch ?? "·"}</span>
+              <div className="live-tv-score-label is-neon-final">Končne točke</div>
+              <div className="live-tv-score is-neon-final">
+                <span className={`neon-digit is-neon-cyan${homeWins ? " is-winner" : ""}`}>
+                  {m.homeMatch ?? "·"}
+                </span>
+                <span className="live-tv-score-sep is-neon-final">:</span>
+                <span className={`neon-digit is-neon-magenta${awayWins ? " is-winner" : ""}`}>
+                  {m.awayMatch ?? "·"}
+                </span>
               </div>
               <div className="live-tv-stats-row is-final-sub">
                 <span className="live-tv-stats-row-item">
@@ -1003,14 +1057,18 @@ function LiveMatchScreen({
 
         <div className={`live-tv-side is-away${awayWins ? " is-winner" : ""}`}>
           <div className="live-tv-side-label">{awayWins ? "Zmaga" : "Gostje"}</div>
-          <FitTeamName
-            name={m.awayName}
-            className="live-tv-team"
-            wordClassName="live-tv-team-word"
-            maxFontPx={84}
-            minFontPx={22}
-            widthFactor={0.92}
-          />
+          <div className={`live-tv-name-row is-away${awayWins ? " is-winner" : ""}`}>
+            {awayWins ? <NeonTrophy /> : null}
+            <FitTeamName
+              name={m.awayName}
+              className="live-tv-team"
+              wordClassName="live-tv-team-word"
+              neonLetters={awayWins}
+              maxFontPx={84}
+              minFontPx={22}
+              widthFactor={0.92}
+            />
+          </div>
         </div>
       </section>
 
@@ -1035,7 +1093,7 @@ function LiveMatchScreen({
           </aside>
           <div className="live-tv-rounds-grid">
             {m.roundSummaries.map((r) => (
-              <RoundCard key={r.round} r={r} hideLane />
+              <RoundCard key={r.round} r={r} hideLane neon={complete} />
             ))}
           </div>
         </div>
@@ -1056,7 +1114,7 @@ function LiveMatchScreen({
               ·{" "}
               {formatMatchRound(focusOverlay.round.round)}
             </div>
-            <RoundCard r={overlayRound} enlarged />
+            <RoundCard r={overlayRound} enlarged neon={complete} />
           </div>
         </div>
       ) : null}
