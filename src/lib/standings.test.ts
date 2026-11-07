@@ -116,13 +116,12 @@ describe("lestvica igralcev — 70 % tekem", () => {
     expect(requiredQualifyMatches(1)).toBe(1);
   });
 
-  it("pred polovico sezone ne loči lestvic", () => {
+  it("pred 3. kolo ne loči lestvic", () => {
     const teams = [team("a", "A"), team("b", "B")];
     const players = [player("pa", "a"), player("pb", "b")];
-    // 13 krogov v razporedu, zaključena samo 3 → pod 50 %
     const matches = Array.from({ length: 13 }, (_, i) =>
       sweepMatch(`m${i + 1}`, "a", "b", "pa", "pb", 150, 100, i + 1),
-    ).map((m, i) => (i < 3 ? m : { ...m, rounds: [], status: "scheduled" as const }));
+    ).map((m, i) => (i < 2 ? m : { ...m, rounds: [], status: "scheduled" as const }));
     const s = state(teams, players, matches);
     expect(shouldSplitPlayerStandings(s)).toBe(false);
     const split = splitPlayerStandingsByQualify(s, computePlayerStandings(s));
@@ -130,28 +129,26 @@ describe("lestvica igralcev — 70 % tekem", () => {
     expect(split.rest).toEqual([]);
   });
 
-  it("po polovici sezone loči ≥ 70 % in preostale", () => {
+  it("od 3. kola loči ≥ 70 % in preostale", () => {
     const teams = [team("a", "A"), team("b", "B")];
     const players = [
       player("pa", "a"),
       player("pa2", "a"),
       player("pb", "b"),
     ];
-    // 10 krogov; 5 zaključenih (= 50 %) — pa igra samo v 2, pa2 v vseh 5
+    // 3 zaključena kola — pa v 2, pa2 v 1, pb v vseh 3
     const matches = Array.from({ length: 10 }, (_, i) => {
       const round = i + 1;
       const homePlayer = i < 2 ? "pa" : "pa2";
       const m = sweepMatch(`m${round}`, "a", "b", homePlayer, "pb", 160, 100, round);
-      if (i >= 5) return { ...m, rounds: [], status: "scheduled" as const };
+      if (i >= 3) return { ...m, rounds: [], status: "scheduled" as const };
       return m;
     });
     const s = state(teams, players, matches);
     expect(shouldSplitPlayerStandings(s)).toBe(true);
     const split = splitPlayerStandingsByQualify(s, computePlayerStandings(s));
     expect(split.split).toBe(true);
-    // Ekipa A: 5 tekem → treba 4. pa ima 2 → rest; pa2 ima 3 → rest; pb ima 5 → qualified
-    // Wait: pa plays rounds 1-2, pa2 plays 3-5 = 3 matches. need 4 for qualify.
-    // pb plays all 5 → qualified.
+    // Ekipa A: 3 tekme → treba 3 (ceil 0.7*3). pa ima 2 → rest; pa2 ima 1 → rest; pb 3 → qualified
     expect(split.qualified.map((r) => r.player.id)).toEqual(["pb"]);
     expect(split.rest.map((r) => r.player.id).sort()).toEqual(["pa", "pa2"]);
   });

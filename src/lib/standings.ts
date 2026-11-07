@@ -274,10 +274,10 @@ export function playersByAverage(rows: PlayerStandingRow[]): PlayerStandingRow[]
 export const PLAYER_QUALIFY_MATCH_RATIO = 0.7;
 
 /**
- * Dve lestvici (kvalificirani / preostali) šele, ko je zaključenih ≥ polovica krogov.
- * Pred tem ostane ena skupna — zgodaj v sezoni je 70 % še nestabilno.
+ * Dve lestvici (kvalificirani / preostali), ko je zaključenih ≥ toliko krogov.
+ * Pred tem ostane ena skupna.
  */
-export const PLAYER_SPLIT_SEASON_RATIO = 0.5;
+export const PLAYER_SPLIT_MIN_ROUNDS = 3;
 
 /** Koliko tekem ekipe mora imeti igralec (zaokroženo navzgor). */
 export function requiredQualifyMatches(teamMatchesPlayed: number): number {
@@ -318,10 +318,7 @@ export function playerMatchAppearanceCounts(state: LeagueState): Map<string, num
 }
 
 export function shouldSplitPlayerStandings(state: LeagueState): boolean {
-  const totalRounds = seasonRoundCount(state);
-  if (totalRounds <= 0) return false;
-  const done = lastCompletedRound(state);
-  return done >= Math.ceil(totalRounds * PLAYER_SPLIT_SEASON_RATIO);
+  return lastCompletedRound(state) >= PLAYER_SPLIT_MIN_ROUNDS;
 }
 
 export type PlayerStandingSplit = {
