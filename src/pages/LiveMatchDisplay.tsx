@@ -1011,7 +1011,7 @@ function LiveMatchScreen({
               wordClassName="live-tv-team-word"
               neonLetters={homeWins}
               neonTone="cyan"
-              maxFontPx={84}
+              maxFontPx={96}
               minFontPx={22}
               widthFactor={0.92}
               fitGroup={`live-${phaseKey}`}
@@ -1070,7 +1070,7 @@ function LiveMatchScreen({
               wordClassName="live-tv-team-word"
               neonLetters={awayWins}
               neonTone="magenta"
-              maxFontPx={84}
+              maxFontPx={96}
               minFontPx={22}
               widthFactor={0.92}
               fitGroup={`live-${phaseKey}`}

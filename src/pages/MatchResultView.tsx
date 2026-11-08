@@ -192,6 +192,8 @@ export function MatchResultView({
               wordClassName="result-view-team-word"
               neonLetters={homeWins}
               neonTone="cyan"
+              maxFontPx={78}
+              widthFactor={0.48}
               fitGroup={`result-${matchId}`}
               sizeScale={homeWins ? 1.14 : 1}
             />
@@ -272,6 +274,8 @@ export function MatchResultView({
               wordClassName="result-view-team-word"
               neonLetters={awayWins}
               neonTone="magenta"
+              maxFontPx={78}
+              widthFactor={0.48}
               fitGroup={`result-${matchId}`}
               sizeScale={awayWins ? 1.14 : 1}
             />

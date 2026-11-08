@@ -14,33 +14,35 @@ html[data-theme="dark"] {
   --input-bg: #161515;
   --input-fg: #f4f2ef;
   --surface: #111;
-  /* Modra ↔ vijolična (isto kot TV board: #6b9cff / #b04fc4). */
-  --copper: #6b9cff;
+  /* Modra ↔ vijolična (isto kot TV board: #4169e1 / #b04fc4). */
+  --copper: #4169e1;
   --copper-2: #b04fc4;
-  --accent: #6b9cff;
-  --round: #6b9cff;
+  --accent: #4169e1;
+  --round: #4169e1;
   --green: #7cffb2;
   --line: rgba(255, 255, 255, 0.1);
   --card: #141312;
   --row-alt: rgba(255, 255, 255, 0.03);
   --table-head: #161515;
   --score: #b04fc4;
-  /* Neon tema — bližje accent modri (#6b9cff) in vijolični (#b04fc4) */
-  --neon-cyan: #6b9cff;
-  --neon-cyan-soft: #5a8ce8;
-  --neon-cyan-fill: #9bb8ff;
-  --neon-cyan-stroke: #4a7ad4;
-  --neon-magenta: #b04fc4;
-  --neon-magenta-soft: #9a45ad;
-  --neon-magenta-fill: #d08ae0;
-  --neon-magenta-stroke: #9439a8;
-  --neon-cyan-rgb: 107, 156, 255;
-  --neon-magenta-rgb: 176, 79, 196;
-  /* Barve kot na pokalu (električna modra / vijolična) */
-  --neon-trophy-blue: #5eb4ff;
-  --neon-trophy-blue-stroke: #3a8ad0;
-  --neon-trophy-purple: #c060e8;
-  --neon-trophy-purple-stroke: #9a3fc4;
+  /* Neon tema — sredina med prejšnjo #4169e1 in čisto #0000ff */
+  /* Malo svetlejša od #2b69ff, da se na temni podlagi bolje bere */
+  --neon-cyan: #4169e1;
+  --neon-cyan-soft: #4169e1;
+  --neon-cyan-fill: #4169e1;
+  --neon-cyan-stroke: #4169e1;
+  /* Vijolična v istem rangu, odtenek prejšnje */
+  --neon-magenta: #ad18c7;
+  --neon-magenta-soft: #ad18c7;
+  --neon-magenta-fill: #ad18c7;
+  --neon-magenta-stroke: #ad18c7;
+  --neon-cyan-rgb: 65, 105, 225;
+  --neon-magenta-rgb: 173, 24, 199;
+  /* Ime zmagovalca in končne točke: ista vmesna modra / vijolična */
+  --neon-trophy-blue: #4169e1;
+  --neon-trophy-blue-stroke: #4169e1;
+  --neon-trophy-purple: #ad18c7;
+  --neon-trophy-purple-stroke: #ad18c7;
 }
 
 html[data-theme="light"] {
@@ -58,15 +60,15 @@ html[data-theme="light"] {
   --input-bg: #ffffff;
   --input-fg: #111;
   --surface: #ffffff;
-  --copper: #6b9cff;
+  --copper: #4169e1;
   --copper-2: #b04fc4;
-  --accent: #3d7ae8;
-  --round: #6b9cff;
+  --accent: #4169e1;
+  --round: #4169e1;
   --green: #0a7a3e;
   --line: rgba(0, 0, 0, 0.12);
   --card: #ffffff;
-  --row-alt: rgba(107, 156, 255, 0.08);
-  --table-head: #e8efff;
+  --row-alt: rgba(65, 105, 225, 0.08);
+  --table-head: #e7ebfb;
   --score: #b04fc4;
 }
 
@@ -86,15 +88,15 @@ html[data-theme="light"] {
     --input-bg: #ffffff;
     --input-fg: #111;
     --surface: #ffffff;
-    --copper: #6b9cff;
+    --copper: #4169e1;
     --copper-2: #b04fc4;
-    --accent: #3d7ae8;
-    --round: #6b9cff;
+    --accent: #4169e1;
+    --round: #4169e1;
     --green: #0a7a3e;
     --line: rgba(0, 0, 0, 0.12);
     --card: #ffffff;
-    --row-alt: rgba(107, 156, 255, 0.08);
-    --table-head: #e8efff;
+    --row-alt: rgba(65, 105, 225, 0.08);
+    --table-head: #e7ebfb;
     --score: #b04fc4;
   }
 }
@@ -278,7 +280,7 @@ a {
 
 .scorecard th,
 .scorecard td {
-  border-bottom: 1px dashed #c5cbe8;
+  border-bottom: 1px dashed #c5ccef;
   padding: 8px 6px;
   text-align: left;
   vertical-align: middle;
@@ -288,7 +290,7 @@ a {
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #5a64a0;
+  color: #4169e1;
 }
 
 .scorecard .t-cell {
@@ -315,7 +317,7 @@ a {
   min-width: 1.6rem;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-weight: 650;
-  color: #0006ff;
+  color: #4169e1;
 }
 
 .player-pick {
@@ -421,7 +423,7 @@ select {
 .scorecard select {
   background: #fff;
   color: #111;
-  border-color: #c5cbe8;
+  border-color: #c5ccef;
   width: 100%;
   min-width: 72px;
   max-width: 220px;
@@ -434,7 +436,7 @@ select {
 }
 
 .scorecard .slot-tag {
-  color: #5a64a0;
+  color: #4169e1;
 }
 
 .pin-entry {
@@ -710,7 +712,7 @@ select {
 }
 
 .match-summary .sum-box {
-  background: #dfe6ff;
+  background: #d9e0fb;
   color: #111;
   border-radius: 6px;
   text-align: center;
@@ -1517,7 +1519,7 @@ button.linkish {
   background: none;
   border: none;
   padding: 0;
-  color: var(--accent, #5b8def);
+  color: var(--accent, #4169e1);
   text-decoration: underline;
   cursor: pointer;
   font: inherit;
@@ -1590,7 +1592,7 @@ button.linkish {
 }
 
 .player-avg-chart-season {
-  stroke: var(--copper, #6b9cff);
+  stroke: var(--copper, #4169e1);
   stroke-width: 1.5;
   stroke-dasharray: 5 4;
   opacity: 0.85;
@@ -1661,8 +1663,8 @@ button.linkish {
 }
 
 .reschedule-slots .ghost.is-on {
-  border-color: var(--accent, #6b9cff);
-  color: var(--accent, #6b9cff);
+  border-color: var(--accent, #4169e1);
+  color: var(--accent, #4169e1);
 }
 
 .player-detail-table {
@@ -1722,7 +1724,7 @@ button.linkish {
 }
 
 .live-tv-force-btn:hover {
-  border-color: var(--accent, #6b9cff);
+  border-color: var(--accent, #4169e1);
 }
 
 .live-tv-force-btn.is-on {
@@ -1959,7 +1961,7 @@ button.linkish {
   }
 
   .scorecard.match-summary tr {
-    border: 1px solid #c5cbe8;
+    border: 1px solid #c5ccef;
     border-radius: 8px;
     margin-bottom: 10px;
     padding: 6px 8px 2px;
@@ -1979,7 +1981,7 @@ button.linkish {
     font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #5a64a0;
+    color: #4169e1;
   }
 
   .scorecard.match-summary td:not([data-label])::before {
@@ -1998,7 +2000,7 @@ button.linkish {
     row-gap: 8px;
     align-items: center;
     width: 100%;
-    border: 1px solid #c5cbe8;
+    border: 1px solid #c5ccef;
     border-radius: 12px;
     margin-bottom: 10px;
     padding: 10px 12px 12px;
@@ -2021,7 +2023,7 @@ button.linkish {
     font-size: 10px;
     letter-spacing: 0.07em;
     text-transform: uppercase;
-    color: #5a64a0;
+    color: #4169e1;
   }
 
   .scorecard:not(.match-summary) .duel-lane {
@@ -2393,10 +2395,10 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv {
-  --tv-bg: #0c0b0b;
+  --tv-bg: #07060a;
   --tv-ink: #f4f2ef;
   --tv-muted: #9a9690;
-  --tv-accent: #6b9cff;
+  --tv-accent: #4169e1;
   --tv-live: #b04fc4;
   --tv-line: rgba(255, 255, 255, 0.1);
   position: relative;
@@ -2424,7 +2426,7 @@ html[data-device="tv"] .liga-board-promo-logo,
   inset: -20% 10% auto;
   height: 55%;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(107, 156, 255, 0.18), transparent 55%),
+    radial-gradient(ellipse at 30% 20%, rgba(65, 105, 225, 0.18), transparent 55%),
     radial-gradient(ellipse at 70% 10%, rgba(176, 79, 196, 0.16), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -2545,7 +2547,7 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv:not(.is-quad) .live-tv-side-label {
-  font-size: clamp(1.05rem, 1.7cqw, 1.35rem);
+  font-size: clamp(1.2rem, 1.95cqw, 1.55rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-team {
@@ -2557,7 +2559,7 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv:not(.is-quad) .live-tv-score {
-  font-size: clamp(4rem, 10.5cqw, 8.25rem);
+  font-size: clamp(4.6rem, 12cqw, 9.4rem);
 }
 
 .live-tv:not(.is-quad) .live-tv-stat-label {
@@ -2730,7 +2732,7 @@ html[data-device="tv"] .liga-board-promo-logo,
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-score {
-  font-size: clamp(3.2rem, 8.5cqw, 6.5rem);
+  font-size: clamp(3.7rem, 9.8cqw, 7.4rem);
 }
 
 .live-tv:not(.is-quad):not(.is-fullscreen) .live-tv-stat-block strong {
@@ -2953,7 +2955,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-stats-row.is-final-sub .live-tv-stats-row-item strong {
-  font-size: clamp(2rem, 4cqw, 3.1rem);
+  font-size: clamp(2.3rem, 4.6cqw, 3.55rem);
   line-height: 1.05;
 }
 
@@ -3069,8 +3071,8 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-duel.is-open {
-  border-color: rgba(107, 156, 255, 0.28);
-  background: rgba(107, 156, 255, 0.06);
+  border-color: rgba(65, 105, 225, 0.28);
+  background: rgba(65, 105, 225, 0.06);
 }
 
 .live-tv-lane-num {
@@ -3131,7 +3133,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-tv.is-final {
   background:
     radial-gradient(ellipse 120% 80% at 50% 110%, rgba(30, 20, 45, 0.95) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 15% 35%, rgba(40, 90, 140, 0.14), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 15% 35%, rgba(65, 105, 225, 0.14), transparent 70%),
     radial-gradient(ellipse 70% 50% at 85% 40%, rgba(90, 30, 110, 0.12), transparent 70%),
     #07060a;
 }
@@ -3142,7 +3144,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   width: auto;
   opacity: 1;
   background:
-    radial-gradient(ellipse 55% 40% at 22% 18%, rgba(70, 170, 255, 0.14), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 22% 18%, rgba(65, 105, 225, 0.14), transparent 70%),
     radial-gradient(ellipse 55% 40% at 78% 22%, rgba(200, 70, 255, 0.12), transparent 70%),
     radial-gradient(ellipse 90% 35% at 50% 100%, rgba(80, 40, 120, 0.22), transparent 75%),
     linear-gradient(
@@ -3169,7 +3171,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   background:
     linear-gradient(
       to bottom,
-      rgba(90, 200, 255, 0.22) 0%,
+      rgba(65, 105, 225, 0.22) 0%,
       rgba(200, 80, 255, 0.16) 35%,
       transparent 100%
     );
@@ -3269,15 +3271,12 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 /*
  * Neon pri krogih:
- * - povzetek (Velike): rahla barva strani, sijaj na vodilnem
+ * - povzetek (Velike): barva samo na zmagovalcu, poraženec bel
  * - dueli: neon SAMO na ime + keglje zmagovalca (ostalo belo)
  */
-.live-tv-round-card.is-neon .is-neon-pair .is-neon-cyan {
-  color: var(--neon-cyan-soft);
-}
-
+.live-tv-round-card.is-neon .is-neon-pair .is-neon-cyan,
 .live-tv-round-card.is-neon .is-neon-pair .is-neon-magenta {
-  color: var(--neon-magenta-soft);
+  color: var(--tv-ink);
 }
 
 .live-tv-round-card.is-neon .is-neon-pair .is-neon-cyan.is-lead {
@@ -3582,7 +3581,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 .live-tv-layout-toggle button.is-on,
 .live-tv-device-toggle button.is-on {
-  background: rgba(107, 156, 255, 0.18);
+  background: rgba(65, 105, 225, 0.18);
   color: var(--tv-accent);
 }
 
@@ -4261,15 +4260,15 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 .live-quad-mid-label.is-home.is-winner .live-quad-mid-side {
   color: var(--neon-trophy-blue);
   text-shadow:
-    0 0 1px rgba(94, 180, 255, 0.85),
-    0 0 5px rgba(94, 180, 255, 0.35);
+    0 0 1px rgba(65, 105, 225, 0.85),
+    0 0 5px rgba(65, 105, 225, 0.35);
 }
 
 .live-quad-mid-label.is-away.is-winner .live-quad-mid-side {
   color: var(--neon-trophy-purple);
   text-shadow:
-    0 0 1px rgba(192, 96, 232, 0.85),
-    0 0 5px rgba(192, 96, 232, 0.35);
+    0 0 1px rgba(173, 24, 199, 0.85),
+    0 0 5px rgba(173, 24, 199, 0.35);
 }
 
 .live-quad-stat.is-match.is-inline > span.is-neon-final {
@@ -4297,7 +4296,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
   height: 18%;
   background: linear-gradient(
     to bottom,
-    rgba(90, 200, 255, 0.14) 0%,
+    rgba(65, 105, 225, 0.14) 0%,
     rgba(200, 80, 255, 0.1) 40%,
     transparent 100%
   );
@@ -4392,7 +4391,7 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 .live-tv-preview-toggle button.is-on {
-  background: rgba(107, 156, 255, 0.2);
+  background: rgba(65, 105, 225, 0.2);
   color: var(--tv-ink);
 }
 
@@ -4813,17 +4812,17 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 
 /* —— Vertikalni pregled končane tekme (Rezultati) —— */
 .result-view {
-  --rv-bg: #0c0b0b;
+  --rv-bg: #07060a;
   --rv-ink: #f4f2ef;
   --rv-muted: #9a9690;
-  --rv-accent: #6b9cff;
+  --rv-accent: #4169e1;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
   /* Lestvice / rezultat tekme: modra ↔ vijolična (kot board). */
-  --copper: #6b9cff;
+  --copper: #4169e1;
   --copper-2: #b04fc4;
-  --accent: #6b9cff;
-  --round: #6b9cff;
+  --accent: #4169e1;
+  --round: #4169e1;
   --score: #b04fc4;
   /* Pod lepljivimi zavihki — ob odprtju ostane viden Nazaj. */
   scroll-margin-top: 4.75rem;
@@ -4847,7 +4846,10 @@ body:has(.live-tv-preview-overlay) .live-tv:not(.is-fullscreen) {
 }
 
 /* Temna plošča čez celotno širino/višino — brez sivega roba okoli. */
-body:has(.result-view),
+body:has(.result-view) {
+  background: #07060a;
+}
+
 body:has(.board-view) {
   background: #0c0b0b;
 }
@@ -4861,6 +4863,10 @@ body:has(.board-view) {
   padding-right: 0;
   padding-bottom: 0;
   background: #0c0b0b;
+}
+
+.app-shell:has(> .result-view) {
+  background: #07060a;
 }
 
 .app-shell:has(> .result-view) > :not(.result-view),
@@ -4883,7 +4889,7 @@ body:has(.board-view) {
   inset: -10% 0 auto;
   height: 40%;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(107, 156, 255, 0.16), transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(65, 105, 225, 0.16), transparent 55%),
     radial-gradient(ellipse at 60% 20%, rgba(176, 79, 196, 0.12), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -4892,7 +4898,7 @@ body:has(.board-view) {
 .result-view:has(.is-winner) {
   background:
     radial-gradient(ellipse 120% 80% at 50% 110%, rgba(30, 20, 45, 0.9) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 15% 35%, rgba(40, 90, 140, 0.12), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 15% 35%, rgba(65, 105, 225, 0.12), transparent 70%),
     radial-gradient(ellipse 70% 50% at 85% 40%, rgba(90, 30, 110, 0.1), transparent 70%),
     var(--rv-bg);
 }
@@ -4901,7 +4907,7 @@ body:has(.board-view) {
   inset: 0;
   height: auto;
   background:
-    radial-gradient(ellipse 55% 40% at 22% 18%, rgba(70, 170, 255, 0.12), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 22% 18%, rgba(65, 105, 225, 0.12), transparent 70%),
     radial-gradient(ellipse 55% 40% at 78% 22%, rgba(200, 70, 255, 0.1), transparent 70%),
     radial-gradient(ellipse 90% 35% at 50% 100%, rgba(80, 40, 120, 0.18), transparent 75%),
     linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 40%);
@@ -5035,7 +5041,7 @@ body:has(.board-view) {
 
 .result-view-side-label {
   color: var(--rv-muted);
-  font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+  font-size: clamp(1.1rem, 1.9vw, 1.4rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -5080,7 +5086,7 @@ body:has(.board-view) {
   color: var(--rv-accent);
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 700;
-  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-size: clamp(1.25rem, 2.35vw, 1.6rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -5093,7 +5099,7 @@ body:has(.board-view) {
   gap: 0.08em;
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(2.6rem, 7vw, 4.5rem);
+  font-size: clamp(3.15rem, 8.4vw, 5.4rem);
   line-height: 1;
   letter-spacing: -0.04em;
 }
@@ -5144,7 +5150,7 @@ body:has(.board-view) {
   display: block;
   width: clamp(3.4rem, 7.2vw, 5.8rem);
   overflow: visible;
-  /* Manj blura, temnejši accent (kot #6b9cff / #b04fc4) */
+  /* Manj blura, temnejši accent (kot #4169e1 / #b04fc4) */
   filter:
     brightness(0.92)
     drop-shadow(0 0 2px rgba(var(--neon-cyan-rgb), 0.45))
@@ -5199,9 +5205,20 @@ body:has(.board-view) {
   }
 }
 
+/* Črke: samo prosojnost. filter/scale na posamezni črki v Safariju odreže obrobo. */
+@keyframes neon-ink-breathe {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .live-tv-side.is-winner .neon-letter,
 .live-tv-score .neon-digit.is-winner {
-  animation: neon-winner-breathe 3.6s ease-in-out infinite;
+  animation: neon-ink-breathe 3.6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5220,6 +5237,15 @@ body:has(.board-view) {
 .is-fitting .neon-letter {
   -webkit-text-stroke: 0 !important;
   text-shadow: none !important;
+}
+
+/*
+ * Safari odreže -webkit-text-stroke na robu inline-blocka (Chrome ne).
+ * Odmik drži obrobo znotraj kvadratka, negativen margin ohrani razmik črk.
+ */
+.neon-letter {
+  padding: 0.16em 0.09em 0.2em;
+  margin: -0.16em -0.09em -0.2em;
 }
 
 .neon-letter,
@@ -5249,8 +5275,8 @@ body:has(.board-view) {
   color: var(--neon-trophy-blue);
   -webkit-text-stroke-color: var(--neon-trophy-blue-stroke);
   text-shadow:
-    0 0 1px rgba(94, 180, 255, 0.85),
-    0 0 5px rgba(94, 180, 255, 0.35);
+    0 0 1px rgba(65, 105, 225, 0.85),
+    0 0 5px rgba(65, 105, 225, 0.35);
 }
 
 .neon-digit.is-neon-magenta {
@@ -5258,8 +5284,8 @@ body:has(.board-view) {
   color: var(--neon-trophy-purple);
   -webkit-text-stroke-color: var(--neon-trophy-purple-stroke);
   text-shadow:
-    0 0 1px rgba(192, 96, 232, 0.85),
-    0 0 5px rgba(192, 96, 232, 0.35);
+    0 0 1px rgba(173, 24, 199, 0.85),
+    0 0 5px rgba(173, 24, 199, 0.35);
 }
 
 /* Ime zmagovalca: enobarvno, ista barva kot pokal */
@@ -5270,8 +5296,8 @@ body:has(.board-view) {
   color: var(--neon-trophy-blue);
   -webkit-text-stroke-color: var(--neon-trophy-blue-stroke);
   text-shadow:
-    0 0 1px rgba(94, 180, 255, 0.85),
-    0 0 5px rgba(94, 180, 255, 0.35);
+    0 0 1px rgba(65, 105, 225, 0.85),
+    0 0 5px rgba(65, 105, 225, 0.35);
 }
 
 .live-tv-side.is-away.is-winner .neon-letter,
@@ -5281,8 +5307,8 @@ body:has(.board-view) {
   color: var(--neon-trophy-purple);
   -webkit-text-stroke-color: var(--neon-trophy-purple-stroke);
   text-shadow:
-    0 0 1px rgba(192, 96, 232, 0.85),
-    0 0 5px rgba(192, 96, 232, 0.35);
+    0 0 1px rgba(173, 24, 199, 0.85),
+    0 0 5px rgba(173, 24, 199, 0.35);
 }
 
 .result-view-score .neon-digit,
@@ -5294,8 +5320,8 @@ body:has(.board-view) {
 .result-view-score-sep.is-neon-final {
   color: color-mix(in srgb, var(--neon-trophy-blue) 50%, var(--neon-trophy-purple) 50%);
   text-shadow:
-    0 0 3px rgba(94, 180, 255, 0.35),
-    0 0 3px rgba(192, 96, 232, 0.35);
+    0 0 3px rgba(65, 105, 225, 0.35),
+    0 0 3px rgba(173, 24, 199, 0.35);
   opacity: 1;
 }
 
@@ -5312,8 +5338,8 @@ body:has(.board-view) {
   background-clip: text;
   color: transparent;
   filter:
-    drop-shadow(0 0 3px rgba(94, 180, 255, 0.35))
-    drop-shadow(0 0 5px rgba(192, 96, 232, 0.25));
+    drop-shadow(0 0 3px rgba(65, 105, 225, 0.35))
+    drop-shadow(0 0 5px rgba(173, 24, 199, 0.25));
 }
 
 .result-view-side.is-winner .result-view-side-label,
@@ -5326,16 +5352,16 @@ body:has(.board-view) {
 .result-view-side.is-home.is-winner .result-view-side-label {
   color: var(--neon-trophy-blue);
   text-shadow:
-    0 0 1px rgba(94, 180, 255, 0.85),
-    0 0 5px rgba(94, 180, 255, 0.35);
+    0 0 1px rgba(65, 105, 225, 0.85),
+    0 0 5px rgba(65, 105, 225, 0.35);
 }
 
 .live-tv-side.is-away.is-winner .live-tv-side-label,
 .result-view-side.is-away.is-winner .result-view-side-label {
   color: var(--neon-trophy-purple);
   text-shadow:
-    0 0 1px rgba(192, 96, 232, 0.85),
-    0 0 5px rgba(192, 96, 232, 0.35);
+    0 0 1px rgba(173, 24, 199, 0.85),
+    0 0 5px rgba(173, 24, 199, 0.35);
 }
 
 .result-view-side.is-winner .result-view-team {
@@ -5386,7 +5412,7 @@ body:has(.board-view) {
   height: 28px;
   background: radial-gradient(
     ellipse 80% 100% at 50% 50%,
-    rgba(120, 160, 255, 0.16) 0%,
+    rgba(65, 105, 225, 0.16) 0%,
     rgba(180, 80, 220, 0.1) 45%,
     transparent 72%
   );
@@ -5494,22 +5520,19 @@ body:has(.board-view) {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--rv-accent);
-  font-size: clamp(0.8rem, 1.2vw, 0.95rem);
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
 }
 
 .result-view-stat-block strong {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
-  font-size: clamp(1.25rem, 2.6vw, 1.85rem);
+  font-size: clamp(1.5rem, 3.15vw, 2.25rem);
   letter-spacing: -0.02em;
 }
 
-.result-view.is-neon .result-view-stats-featured.is-neon-pair .is-neon-cyan {
-  color: var(--neon-cyan-soft);
-}
-
+.result-view.is-neon .result-view-stats-featured.is-neon-pair .is-neon-cyan,
 .result-view.is-neon .result-view-stats-featured.is-neon-pair .is-neon-magenta {
-  color: var(--neon-magenta-soft);
+  color: var(--rv-ink);
 }
 
 .result-view.is-neon .result-view-stats-featured.is-neon-pair .is-neon-cyan.is-lead {
@@ -5622,13 +5645,10 @@ body:has(.board-view) {
   color: var(--rv-lead);
 }
 
-/* Soft dual-tone pri Male/Velike/Keglji — sijaj samo na vodilnem */
-.result-view-round.is-neon .is-neon-pair .is-neon-cyan {
-  color: var(--neon-cyan-soft);
-}
-
+/* Male/Velike/Keglji: barva samo na zmagovalcu, poraženec in neodločeno belo */
+.result-view-round.is-neon .is-neon-pair .is-neon-cyan,
 .result-view-round.is-neon .is-neon-pair .is-neon-magenta {
-  color: var(--neon-magenta-soft);
+  color: var(--rv-ink);
 }
 
 .result-view-round.is-neon .is-neon-pair .is-neon-cyan.is-lead {
@@ -5726,7 +5746,7 @@ body:has(.board-view) {
   text-transform: uppercase;
   font-size: 0.9rem;
   color: var(--rv-accent);
-  background: rgba(107, 156, 255, 0.08);
+  background: rgba(65, 105, 225, 0.08);
   padding-top: 12px;
   padding-bottom: 8px;
   text-align: left !important;
@@ -5876,7 +5896,7 @@ body:has(.board-view) {
   }
 
   .result-view-side-label {
-    font-size: 0.65rem;
+    font-size: 0.85rem;
     letter-spacing: 0.1em;
   }
 
@@ -5984,14 +6004,14 @@ body:has(.board-view) {
   --rv-bg: #0c0b0b;
   --rv-ink: #f4f2ef;
   --rv-muted: #9a9690;
-  --rv-accent: #6b9cff;
+  --rv-accent: #4169e1;
   --rv-lead: #b04fc4;
   --rv-line: rgba(255, 255, 255, 0.1);
   /* Lestvice: modra ↔ vijolična (kot board). */
-  --copper: #6b9cff;
+  --copper: #4169e1;
   --copper-2: #b04fc4;
-  --accent: #6b9cff;
-  --round: #6b9cff;
+  --accent: #4169e1;
+  --round: #4169e1;
   --score: #b04fc4;
   position: relative;
   isolation: isolate;
@@ -6010,7 +6030,7 @@ body:has(.board-view) {
   inset: -10% 0 auto;
   height: 36%;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(107, 156, 255, 0.14), transparent 55%),
+    radial-gradient(ellipse at 50% 0%, rgba(65, 105, 225, 0.14), transparent 55%),
     radial-gradient(ellipse at 70% 30%, rgba(176, 79, 196, 0.1), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -6413,7 +6433,7 @@ body:has(.board-view) {
   --tv-bg: #07060a;
   --tv-ink: #f4f2ef;
   --tv-muted: #9a9690;
-  --tv-accent: #6b9cff;
+  --tv-accent: #4169e1;
   --tv-live: #b04fc4;
   --tv-line: rgba(255, 255, 255, 0.1);
   position: relative;
@@ -6451,7 +6471,7 @@ body:has(.board-view) {
   inset: -20% 10% auto;
   height: 50%;
   background:
-    radial-gradient(ellipse at 30% 20%, rgba(107, 156, 255, 0.1), transparent 55%),
+    radial-gradient(ellipse at 30% 20%, rgba(65, 105, 225, 0.1), transparent 55%),
     radial-gradient(ellipse at 70% 10%, rgba(176, 79, 196, 0.08), transparent 50%);
   pointer-events: none;
   z-index: 0;
@@ -6655,7 +6675,7 @@ body:has(.board-view) {
   text-transform: uppercase;
   font-size: clamp(1.5rem, 3cqw, 2.4rem);
   color: var(--tv-accent);
-  background: linear-gradient(90deg, #6b9cff 0%, #b04fc4 100%);
+  background: linear-gradient(90deg, #4169e1 0%, #ad18c7 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -6751,7 +6771,7 @@ body:has(.board-view) {
 
 .liga-board-dots span.is-on {
   background: var(--tv-accent);
-  box-shadow: 0 0 0 3px rgba(107, 156, 255, 0.22);
+  box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.22);
 }
 
 .liga-board-idle {
@@ -7000,7 +7020,7 @@ body:has(.board-view) {
   text-transform: uppercase;
   font-size: 0.75rem;
   color: var(--tv-accent);
-  border: 1px solid rgba(107, 156, 255, 0.4);
+  border: 1px solid rgba(65, 105, 225, 0.4);
   border-radius: 999px;
   padding: 3px 10px;
 }
@@ -7228,7 +7248,7 @@ body:has(.board-view) {
   top: 0;
   bottom: 0;
   width: 10px;
-  background: linear-gradient(180deg, rgba(107, 156, 255, 0.55), rgba(176, 79, 196, 0.35));
+  background: linear-gradient(180deg, rgba(65, 105, 225, 0.55), rgba(176, 79, 196, 0.35));
   opacity: 0.7;
 }
 .liga-board-bowl-rail.is-left {
