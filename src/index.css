@@ -5350,6 +5350,7 @@ body:has(.board-view) {
 
 .live-tv-side.is-home.is-winner .live-tv-side-label,
 .result-view-side.is-home.is-winner .result-view-side-label {
+  transform-origin: left center;
   color: var(--neon-trophy-blue);
   text-shadow:
     0 0 1px rgba(65, 105, 225, 0.85),
@@ -5358,6 +5359,7 @@ body:has(.board-view) {
 
 .live-tv-side.is-away.is-winner .live-tv-side-label,
 .result-view-side.is-away.is-winner .result-view-side-label {
+  transform-origin: right center;
   color: var(--neon-trophy-purple);
   text-shadow:
     0 0 1px rgba(173, 24, 199, 0.85),
@@ -5426,15 +5428,10 @@ body:has(.board-view) {
   z-index: 1;
 }
 
-.result-view-scoreboard:has(.is-winner) .result-view-side.is-winner {
-  transform: scale(1.06);
-  transform-origin: center bottom;
-}
-
+/* Brez scale() na celem stolpcu: na 21:9 (in v Firefoxu) sredina stolpca
+   potisne zunanji rob čez zaslon in odreže ime. Večja pisava je v FitTeamName. */
 .result-view-scoreboard:has(.is-winner) .result-view-side:not(.is-winner) {
-  transform: scale(0.96);
   opacity: 0.88;
-  transform-origin: center bottom;
 }
 
 .result-view-scoreboard:has(.is-winner) .result-view-side.is-winner .result-view-name-row {
@@ -5462,12 +5459,7 @@ body:has(.board-view) {
     padding-bottom: clamp(32px, 9vw, 48px);
   }
 
-  .result-view-scoreboard:has(.is-winner) .result-view-side.is-winner {
-    transform: scale(1.04);
-  }
-
   .result-view-scoreboard:has(.is-winner) .result-view-side:not(.is-winner) {
-    transform: scale(0.97);
     opacity: 0.9;
   }
 

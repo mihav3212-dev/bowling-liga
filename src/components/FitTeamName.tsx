@@ -73,36 +73,50 @@ export function FitTeamName({
 
     const key = memberKey.current;
 
+    const widestLine = () => {
+      const lines = el.querySelectorAll(":scope > span");
+      if (lines.length === 0) return el.scrollWidth;
+      let widest = 0;
+      for (const line of lines) {
+        const node = line as HTMLElement;
+        const prev = node.style.display;
+        node.style.display = "inline-block";
+        widest = Math.max(widest, node.scrollWidth);
+        node.style.display = prev;
+      }
+      return widest;
+    };
+
     const fit = () => {
+      const scale = sizeScale > 0 ? sizeScale : 1;
       const fromWidth = Math.max(20, box.clientWidth * widthFactor);
-      const ceiling = maxFontPx != null ? maxFontPx : Math.min(52, fromWidth);
-      const maxPx = Math.min(ceiling, fromWidth);
+      const baseCeiling = maxFontPx != null ? maxFontPx : Math.min(52, fromWidth);
+      // sizeScale je že v merjeni velikosti, da zmagovalec ne zleze čez stolpec.
+      const maxDisplay = Math.min(baseCeiling, fromWidth) * scale;
 
-      // Merimo brez neon obrobe / italic — sicer zmagovalec pade premajhen.
+      // Merimo brez neon obrobe. Italic ostane, da zmagovalec ne zleze čez rob.
       el.classList.add("is-fitting");
-      const prevStyle = el.style.fontStyle;
-      el.style.fontStyle = "normal";
 
-      let size = Math.max(minFontPx, maxPx);
+      let size = Math.max(minFontPx, maxDisplay);
       el.style.fontSize = `${size}px`;
-      while (size > minFontPx && el.scrollWidth > box.clientWidth + 1) {
+      const limit = Math.max(1, box.clientWidth - 6);
+      while (size > minFontPx && widestLine() > limit + 1) {
         size -= 0.5;
         el.style.fontSize = `${size}px`;
       }
 
       el.classList.remove("is-fitting");
-      el.style.fontStyle = prevStyle;
 
       if (fitGroup) {
         publishFit(fitGroup, key, {
-          ideal: size,
-          scale: sizeScale,
+          ideal: size / scale,
+          scale,
           apply: (px) => {
             el.style.fontSize = `${px}px`;
           },
         });
       } else {
-        el.style.fontSize = `${size * sizeScale}px`;
+        el.style.fontSize = `${size}px`;
       }
     };
 
