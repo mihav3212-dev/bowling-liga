@@ -103,6 +103,26 @@ export function slotLabel(side: "home" | "away", index: number): string {
 }
 
 /**
+ * Oznaka igralca v sestavi: A1–A4 starterji, A5–A6 menjave.
+ * Če je na paru že zamenjan igralec, se izpiše njegova oznaka (npr. A5), ne A1.
+ */
+export function playerLineupLabel(
+  side: "home" | "away",
+  playerId: string,
+  starters: string[],
+  bench: string[],
+  fallbackSlot?: number,
+): string {
+  if (playerId) {
+    const starterIndex = (starters ?? []).indexOf(playerId);
+    if (starterIndex >= 0) return slotLabel(side, starterIndex);
+    const benchIndex = (bench ?? []).indexOf(playerId);
+    if (benchIndex >= 0) return slotLabel(side, 4 + benchIndex);
+  }
+  return fallbackSlot == null ? "" : slotLabel(side, fallbackSlot);
+}
+
+/**
  * Privzeto uradna tekma (4v4). Trening poda `size` 2–4.
  * Nikoli ne skrči uradne tekme samo zato, ker sestava še ni polna.
  */

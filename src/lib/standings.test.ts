@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  bestMatchStandings,
   computePlayerStandings,
   computeStandings,
+  keptMatchCount,
+  playerRoundCell,
+  qualifiedPlayerRows,
   requiredQualifyMatches,
+  scheduledTeamRounds,
   shouldSplitPlayerStandings,
   splitPlayerStandingsByQualify,
 } from "./standings";
@@ -152,5 +157,50 @@ describe("lestvica igralcev — 70 % tekem", () => {
     // Ekipa A: 5 tekem → treba 4. pa ima 2 → rest; pa2 ima 3 → rest; pb ima 5 → qualified
     expect(split.qualified.map((r) => r.player.id)).toEqual(["pb"]);
     expect(split.rest.map((r) => r.player.id).sort()).toEqual(["pa", "pa2"]);
+  });
+});
+
+describe("lestvica igralcev — 60 % najboljših tekem", () => {
+  it("obdrži najbližjih 60 % tekem, vsaj eno", () => {
+    expect(keptMatchCount(0)).toBe(0);
+    expect(keptMatchCount(1)).toBe(1);
+    expect(keptMatchCount(2)).toBe(1);
+    expect(keptMatchCount(3)).toBe(2);
+    expect(keptMatchCount(5)).toBe(3);
+    expect(keptMatchCount(10)).toBe(6);
+  });
+
+  it("iz povprečja vrže najšibkejšo tekmo", () => {
+    const teams = [team("a", "A"), team("b", "B")];
+    const players = [player("pa", "a"), player("pb", "b")];
+    const pins = [100, 200, 50];
+    const matches = pins.map((homePins, i) =>
+      sweepMatch(`m${i + 1}`, "a", "b", "pa", "pb", homePins, 80, i + 1),
+    );
+    const s = state(teams, players, matches);
+    const rows = computePlayerStandings(s);
+    const qualified = qualifiedPlayerRows(s, rows);
+    expect(qualified.map((row) => row.player.id)).toEqual(["pa", "pb"]);
+    const best = bestMatchStandings(qualified);
+    const pa = best.find((row) => row.player.id === "pa");
+    // 3 tekme → ostaneta 2 najboljši (200 in 100), 50 izpade
+    expect(pa?.droppedRounds).toEqual([2]);
+    expect(pa?.games).toBe(32);
+    expect(pa?.pins).toBe(200 * 16 + 100 * 16);
+    expect(pa?.avg).toBe((200 * 16 + 100 * 16) / 32);
+    expect(best[0].player.id).toBe("pa");
+  });
+});
+
+describe("lestvica igralcev — kolo brez tekme", () => {
+  it("prazno polje, če ekipa v kolu nima tekme", () => {
+    const scheduled = scheduledTeamRounds([
+      { round: 1, homeTeamId: "a", awayTeamId: "b" },
+    ]);
+    expect(scheduled.has("1:a")).toBe(true);
+    expect(scheduled.has("1:c")).toBe(false);
+    expect(playerRoundCell([], false)).toBe("");
+    expect(playerRoundCell([], true)).toBe("—");
+    expect(playerRoundCell([200, 180], true)).toBe("380");
   });
 });

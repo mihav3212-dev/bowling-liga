@@ -6116,6 +6116,17 @@ body:has(.board-view) {
   color: #0c0b0b;
 }
 
+.board-view-toggle.is-sub {
+  margin-top: 8px;
+  padding-left: 14px;
+}
+
+.board-view-toggle.is-sub button {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
 .board-view-note {
   margin: 8px 0 0;
   color: var(--rv-muted);
@@ -6278,6 +6289,11 @@ body:has(.board-view) {
   min-width: 2.6rem;
   padding-left: 4px;
   padding-right: 4px;
+}
+
+.board-standings.players td.kolo.is-ignored {
+  color: var(--rv-muted);
+  text-decoration: line-through;
 }
 
 /* Skupni keglji, igre, povp. — desno */

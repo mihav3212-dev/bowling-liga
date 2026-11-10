@@ -7,10 +7,12 @@ import {
   computeStandings,
   lastCompletedRound,
   playersByAverage,
+  playerRoundCell,
+  scheduledTeamRounds,
   seasonLabel,
   seasonRoundCount,
 } from "./standings";
-import { pairingTemplate, slotLabel } from "./pairings";
+import { pairingTemplate, playerLineupLabel, slotLabel } from "./pairings";
 import { playerDisplayName, sortTeamRoster } from "./playerName";
 import { matchTotals, scoreGame, scoredPins } from "./scoring";
 import type { LeagueState } from "./types";
@@ -350,6 +352,7 @@ async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
   const season = state.seasonTitle ?? seasonLabel();
   const date = new Date().toLocaleDateString("sl-SI");
   const roundCount = seasonRoundCount(state);
+  const scheduled = scheduledTeamRounds(state.matches);
   const players = playersByAverage(computePlayerStandings(state));
 
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
@@ -383,10 +386,9 @@ async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
     i + 1,
     row.player.name,
     row.teamName,
-    ...row.byRound.map((games) => {
-      const pins = games.reduce((sum, n) => sum + n, 0);
-      return games.length ? String(pins) : "—";
-    }),
+    ...row.byRound.map((games, ri) =>
+      playerRoundCell(games, scheduled.has(`${ri + 1}:${row.player.teamId}`)),
+    ),
     row.pins,
     row.games,
     row.avg.toFixed(1),
@@ -603,14 +605,26 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
       const duel = scoreGame(game, state.players);
       return [
         String(game.lane),
-        slots ? slotLabel("home", slots.homeSlot) : "",
+        playerLineupLabel(
+          "home",
+          game.homePlayerId,
+          match.homeStarters,
+          match.homeBench,
+          slots?.homeSlot,
+        ),
         players.get(game.homePlayerId)?.name ?? "",
         scoredPins(game.homePins, players.get(game.homePlayerId)) ?? "",
         duel ? String(duel.homeTotal) : "",
         duel ? String(duel.awayTotal) : "",
         scoredPins(game.awayPins, players.get(game.awayPlayerId)) ?? "",
         players.get(game.awayPlayerId)?.name ?? "",
-        slots ? slotLabel("away", slots.awaySlot) : "",
+        playerLineupLabel(
+          "away",
+          game.awayPlayerId,
+          match.awayStarters,
+          match.awayBench,
+          slots?.awaySlot,
+        ),
       ];
     });
     doc.setFont("FreeSans", "bold");

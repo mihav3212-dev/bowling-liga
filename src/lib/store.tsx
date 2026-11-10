@@ -62,6 +62,7 @@ import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpe
 import {
   applyLineup,
   applyPlayerSubstitution,
+  preserveSubstitutions,
   repairDuplicateLanePlayers,
   rosterIdsForTeam,
   sanitizeLineup,
@@ -828,7 +829,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const current = stateRef.current.matches.find((m) => m.id === matchId);
         if (!current) return;
         if (roundIndex === 0 && lineupLocked(current.rounds)) return;
-        const nextMatch = applyPlayerSubstitution(current, roundIndex, gameIndex, side, playerId);
+        const nextMatch = preserveSubstitutions(
+          applyPlayerSubstitution(current, roundIndex, gameIndex, side, playerId),
+        );
         if (nextMatch === current) return;
         clearTimeout(saveTimer.current);
         saveTimer.current = undefined;
@@ -1056,7 +1059,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               if (session.id !== sessionId || !session.match) return session;
               const match = session.match;
               if (roundIndex === 0 && lineupLocked(match.rounds)) return session;
-              const next = applyPlayerSubstitution(match, roundIndex, gameIndex, side, playerId);
+              const next = preserveSubstitutions(
+                applyPlayerSubstitution(match, roundIndex, gameIndex, side, playerId),
+              );
               if (next === match) return session;
               return { ...session, match: next };
             }),
@@ -1208,7 +1213,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const packed = compactTrainings(stateRef.current);
         const match = packed.matches.find((item) => item.id === matchId);
         if (!match) return false;
-        const fixed = repairDuplicateLanePlayers(match);
+        const fixed = repairDuplicateLanePlayers(preserveSubstitutions(match));
         if (!remoteRef.current || !seasonIdRef.current) {
           update((s) => ({
             ...s,

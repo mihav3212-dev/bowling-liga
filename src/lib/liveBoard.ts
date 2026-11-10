@@ -1,5 +1,5 @@
 import { formatMatchWhen } from "./labels";
-import { matchesInPlay, nextSlotMatches } from "./live";
+import { matchesInPlay } from "./live";
 import { normalizePlayer, playerDisplayName } from "./playerName";
 import { matchTotals, playerById, scoreGame, scoredPins } from "./scoring";
 import { pairingTemplate, slotLabel } from "./pairings";
@@ -88,9 +88,27 @@ export function forcedLiveMatches(matches: Match[], players: Player[]): Match[] 
   return matches.filter((m) => m.liveOnTv && !matchTotals(m, players).complete);
 }
 
+function startedAtMs(match: Match): number | null {
+  if (!match.startsAt) return null;
+  const t = new Date(match.startsAt).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/** Zadnja tekma, ki je že začela. Nedokončana ima prednost pred končanim pregledom. */
+function lastStartedMatch(matches: Match[], players: Player[], now: number): Match | null {
+  const started = matches.filter((match) => {
+    const t = startedAtMs(match);
+    return t != null && t <= now;
+  });
+  if (started.length === 0) return null;
+  const open = started.filter((match) => !matchTotals(match, players).complete);
+  const pool = open.length > 0 ? open : started;
+  return [...pool].sort((a, b) => (b.startsAt ?? "").localeCompare(a.startsAt ?? ""))[0] ?? null;
+}
+
 /**
  * Tekme v trenutnem terminu: najprej admin »V živo na TV«, potem nedokončana v terminu,
- * sicer prva v terminu. Če ni ničesar v terminu → naslednja, sicer idle.
+ * sicer prva v terminu. Pred naslednjim terminom ostane pregled zadnje tekme, ne prazna naslednja.
  */
 export function pickLiveBoardMatch(matches: Match[], players: Player[], now: number): LiveBoardPick {
   const forced = forcedLiveMatches(matches, players);
@@ -105,11 +123,8 @@ export function pickLiveBoardMatch(matches: Match[], players: Player[], now: num
     return { status: "live", match, siblings: 1, index: 0 };
   }
 
-  const open = matches.filter((m) => !matchTotals(m, players).complete);
-  const upcoming = nextSlotMatches(open, now);
-  if (upcoming.length > 0) {
-    return { status: "next", match: upcoming[0]!, siblings: 1, index: 0 };
-  }
+  const last = lastStartedMatch(matches, players, now);
+  if (last) return { status: "live", match: last, siblings: 1, index: 0 };
 
   return { status: "idle" };
 }
@@ -144,11 +159,20 @@ export function withFinalScoreHold(
     if (prev && matchTotals(prev, players).complete) {
       const leaving = pick.status === "idle" || pick.match.id !== previouslyShownId;
       if (leaving) {
-        const nextHold = { matchId: previouslyShownId, until: now + FINAL_SCORE_HOLD_MS };
-        return {
-          pick: { status: "live", match: prev, siblings: 1, index: 0 },
-          hold: nextHold,
-        };
+        const nextIsOn =
+          pick.status !== "idle" &&
+          (pick.match.liveOnTv === true ||
+            (prev.startsAt != null &&
+              pick.match.startsAt != null &&
+              pick.match.startsAt !== prev.startsAt));
+        // Naslednji termin ali ročni vklop gre takoj noter. V istem terminu še malo držimo končne točke.
+        if (!nextIsOn) {
+          const nextHold = { matchId: previouslyShownId, until: now + FINAL_SCORE_HOLD_MS };
+          return {
+            pick: { status: "live", match: prev, siblings: 1, index: 0 },
+            hold: nextHold,
+          };
+        }
       }
     }
   }

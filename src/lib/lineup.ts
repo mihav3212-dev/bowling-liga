@@ -149,7 +149,7 @@ export function applyLineup(
       };
     }),
   }));
-  return repairDuplicateLanePlayers(next);
+  return preserveSubstitutions(repairDuplicateLanePlayers(next));
 }
 
 /** Isti igralec ne sme stati na dveh stezah istega kroga. */
@@ -168,32 +168,84 @@ function sidePlayerKey(side: "home" | "away"): "homePlayerId" | "awayPlayerId" {
   return side === "home" ? "homePlayerId" : "awayPlayerId";
 }
 
+function slotAtFor(
+  side: "home" | "away",
+  size: number,
+  roundIndex: number,
+  gameIndex: number,
+): number | undefined {
+  const template = pairingTemplate(size);
+  return side === "home"
+    ? template[roundIndex]?.[gameIndex]?.homeSlot
+    : template[roundIndex]?.[gameIndex]?.awaySlot;
+}
+
 /**
- * Igralci, ki so že bili v igri, a v zadnjem zapolnjenem krogu niso več —
- * po menjavi ne smejo nazaj.
+ * Kdo je odšel iz igre in se ne sme več vrniti.
+ * Odhajajoči je tisti, ki ga na istem mestu zamenja nekdo drug.
+ * Novi (A5/A6) ostane na voljo, tudi če je shranjevanje za njim spet vpisalo starega.
  */
 export function substitutedOutIds(match: LineupMatch, side: "home" | "away"): Set<string> {
   const key = sidePlayerKey(side);
   const rounds = match.rounds ?? [];
-  let lastIdx = -1;
-  for (let i = rounds.length - 1; i >= 0; i--) {
-    if ((rounds[i]?.games ?? []).some((g) => Boolean(g[key]))) {
-      lastIdx = i;
-      break;
-    }
-  }
-  if (lastIdx <= 0) return new Set();
-  const active = new Set(
-    (rounds[lastIdx]?.games ?? []).map((g) => g[key]).filter(Boolean) as string[],
-  );
+  const size = Math.max(2, Math.min(4, rounds[0]?.games?.length || PLAYERS_ON_LANE));
   const out = new Set<string>();
-  for (let i = 0; i < lastIdx; i++) {
-    for (const g of rounds[i]?.games ?? []) {
-      const id = g[key];
-      if (id && !active.has(id)) out.add(id);
-    }
-  }
+  const active = new Map<number, string>();
+  rounds.forEach((round, ri) => {
+    (round.games ?? []).forEach((game, gi) => {
+      const slot = slotAtFor(side, size, ri, gi);
+      const id = game[key] ?? "";
+      if (slot == null || !id) return;
+      const prev = active.get(slot);
+      if (!prev) {
+        active.set(slot, id);
+        return;
+      }
+      if (prev === id || out.has(id)) return;
+      out.add(prev);
+      active.set(slot, id);
+    });
+  });
   return out;
+}
+
+/**
+ * Če je odhajajoči po shranjevanju spet na svojem mestu, ga zamenja tisti,
+ * ki je v igri. Sam odhod se ne da razveljaviti.
+ */
+export function preserveSubstitutions<T extends LineupMatch>(match: T): T {
+  const rounds = (match.rounds ?? []).map((round) => ({
+    games: (round.games ?? []).map((game) => ({ ...game })),
+  }));
+  const size = Math.max(2, Math.min(4, rounds[0]?.games?.length || PLAYERS_ON_LANE));
+  let changed = false;
+  for (const side of ["home", "away"] as const) {
+    const key = sidePlayerKey(side);
+    const out = new Set<string>();
+    const active = new Map<number, string>();
+    rounds.forEach((round, ri) => {
+      round.games.forEach((game, gi) => {
+        const slot = slotAtFor(side, size, ri, gi);
+        const id = (game[key] ?? "") as string;
+        if (slot == null || !id) return;
+        const prev = active.get(slot);
+        if (!prev) {
+          active.set(slot, id);
+          return;
+        }
+        if (prev === id) return;
+        if (out.has(id)) {
+          game[key] = prev;
+          changed = true;
+          return;
+        }
+        out.add(prev);
+        active.set(slot, id);
+      });
+    });
+  }
+  if (!changed) return match;
+  return { ...match, rounds: rounds as T["rounds"] };
 }
 
 /**
@@ -221,8 +273,8 @@ export function applyPlayerSubstitution<T extends LineupMatch>(
 
   const oldId = game[key] ?? "";
 
-  // Prazen vnos ali ista oseba / ni koga zamenjati → samo ta celica.
-  if (!playerId || !oldId || oldId === playerId) {
+  // Brisanje ali ista oseba → samo ta celica. Menjava gre naprej po parih.
+  if (!playerId || oldId === playerId) {
     return {
       ...match,
       rounds: match.rounds.map((r, ri) => {
@@ -236,21 +288,35 @@ export function applyPlayerSubstitution<T extends LineupMatch>(
     };
   }
 
+  const size = Math.max(2, Math.min(4, match.rounds[0]?.games?.length || PLAYERS_ON_LANE));
+  const template = pairingTemplate(size);
+  const slotAt = (ri: number, gi: number) =>
+    side === "home" ? template[ri]?.[gi]?.homeSlot : template[ri]?.[gi]?.awaySlot;
+  const fromSlot = slotAt(roundIndex, gameIndex);
+
   return {
     ...match,
     rounds: match.rounds.map((r, ri) => {
       if (ri < roundIndex) return r;
-      return {
-        games: r.games.map((g, gi) => {
-          if (ri === roundIndex && gi === gameIndex) {
-            return { ...g, [key]: playerId };
-          }
-          if (g[key] === oldId) {
-            return { ...g, [key]: playerId };
-          }
-          return g;
-        }),
+      const games = r.games.map((g) => ({ ...g }));
+      const take = (gi: number) => {
+        games[gi] = { ...games[gi], [key]: playerId };
       };
+      if (ri === roundIndex) {
+        take(gameIndex);
+        return { ...r, games };
+      }
+      // Naprej: isto mesto v rotaciji (A1 → A5) ima prednost pred morebitnim drugim parom.
+      const hits: number[] = [];
+      games.forEach((g, gi) => {
+        const sameSlot = fromSlot != null && slotAt(ri, gi) === fromSlot;
+        const samePerson = Boolean(oldId) && g[key] === oldId;
+        if (sameSlot || samePerson) hits.push(gi);
+      });
+      const slotHit = hits.find((gi) => slotAt(ri, gi) === fromSlot);
+      const chosen = slotHit != null ? slotHit : hits[0];
+      if (chosen != null) take(chosen);
+      return { ...r, games };
     }),
   };
 }
@@ -273,11 +339,13 @@ export function repairDuplicateLanePlayers(match: Match): Match {
         const id = game[key];
         if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
       }
+      const starterIds = new Set((starters ?? []).filter(Boolean));
       games.forEach((game, gi) => {
         const slot = side === "home" ? slots[ri]?.[gi]?.homeSlot : slots[ri]?.[gi]?.awaySlot;
         const expected = slot == null ? "" : (starters?.[slot] ?? "");
         const id = game[key];
-        if (id && (counts.get(id) ?? 0) > 1 && id !== expected) {
+        // Menjava (A5/A6) ni starter — ne vračaj je nazaj na A1–A4.
+        if (id && starterIds.has(id) && (counts.get(id) ?? 0) > 1 && id !== expected) {
           game[key] = expected;
           changed = true;
         }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { playerTag } from "../lib/labels";
-import { lineupSize, nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
+import { lineupSize, nominatedIds, pairingTemplate, playerLineupLabel } from "../lib/pairings";
 import { lineupLocked, matchTotals, scoreGame } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import {
@@ -316,7 +316,15 @@ export function TrainingMatch({
                       <td className="mono">{game.lane}</td>
                       <td>
                         <span className="player-pick">
-                          <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
+                          <span className="slot-tag">
+                          {playerLineupLabel(
+                            "home",
+                            game.homePlayerId,
+                            packed.homeStarters,
+                            packed.homeBench,
+                            slots?.homeSlot,
+                          )}
+                        </span>
                           {lockRoundPlayers || ligaReadOnly ? (
                             playerName(allRoster, game.homePlayerId)
                           ) : (
@@ -356,7 +364,15 @@ export function TrainingMatch({
                       </td>
                       <td>
                         <span className="player-pick">
-                          <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
+                          <span className="slot-tag">
+                          {playerLineupLabel(
+                            "away",
+                            game.awayPlayerId,
+                            packed.awayStarters,
+                            packed.awayBench,
+                            slots?.awaySlot,
+                          )}
+                        </span>
                           {lockRoundPlayers || ligaReadOnly ? (
                             playerName(allRoster, game.awayPlayerId)
                           ) : (

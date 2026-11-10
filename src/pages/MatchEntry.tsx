@@ -11,7 +11,7 @@ import {
   releaseMatchEditLockBeacon,
 } from "../lib/leagueApi";
 import { lineupsRevealed, substitutedOutIds, teamMatchSide } from "../lib/lineup";
-import { nominatedIds, pairingTemplate, slotLabel } from "../lib/pairings";
+import { nominatedIds, pairingTemplate, playerLineupLabel, slotLabel } from "../lib/pairings";
 import { lineupLocked, matchPlayerStats, matchTotals, scoreGame, scoredPins } from "../lib/scoring";
 import { useStore } from "../lib/store";
 import { PdfButton } from "./PdfButton";
@@ -686,7 +686,15 @@ export function MatchEntry({
                     <td className="mono duel-lane" data-label="Steza">{game.lane}</td>
                     <td className="duel-home" data-label="Domači">
                       <span className="player-pick">
-                        <span className="slot-tag">{slots ? slotLabel("home", slots.homeSlot) : ""}</span>
+                        <span className="slot-tag">
+                          {playerLineupLabel(
+                            "home",
+                            game.homePlayerId,
+                            match.homeStarters,
+                            match.homeBench,
+                            slots?.homeSlot,
+                          )}
+                        </span>
                         {lockRoundPlayers ? (
                           playerName(homeRoster, game.homePlayerId)
                         ) : (
@@ -755,7 +763,15 @@ export function MatchEntry({
                     </td>
                     <td className="duel-away" data-label="Gostje">
                       <span className="player-pick">
-                        <span className="slot-tag">{slots ? slotLabel("away", slots.awaySlot) : ""}</span>
+                        <span className="slot-tag">
+                          {playerLineupLabel(
+                            "away",
+                            game.awayPlayerId,
+                            match.awayStarters,
+                            match.awayBench,
+                            slots?.awaySlot,
+                          )}
+                        </span>
                         {lockRoundPlayers ? (
                           playerName(awayRoster, game.awayPlayerId)
                         ) : (

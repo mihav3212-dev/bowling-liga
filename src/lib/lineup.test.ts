@@ -5,12 +5,13 @@ import {
   lineupsRevealed,
   maskMatchLineups,
   playerOnOtherLane,
+  preserveSubstitutions,
   repairDuplicateLanePlayers,
   sanitizeLineup,
   substitutedOutIds,
   teamMatchSide,
 } from "./lineup";
-import { emptyRounds } from "./pairings";
+import { emptyRounds, playerLineupLabel } from "./pairings";
 import type { Match } from "./types";
 
 function sampleMatch(over: Partial<Match> = {}): Match {
@@ -166,7 +167,130 @@ describe("team lineup", () => {
       expect(subbed.rounds[r]?.games.some((g) => g.homePlayerId === "h5")).toBe(true);
     }
     expect(substitutedOutIds(subbed, "home").has("h1")).toBe(true);
+    expect(substitutedOutIds(subbed, "home").has("h5")).toBe(false);
     const blocked = applyPlayerSubstitution(subbed, 2, 0, "home", "h1");
+    expect(blocked).toBe(subbed);
     expect(blocked.rounds[2]?.games.some((g) => g.homePlayerId === "h1")).toBe(false);
+  });
+
+  it("does not let the player who left return, and keeps the substitute selectable", () => {
+    const rounds = emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]);
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5", "h6"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      awayBench: ["a5"],
+      rounds,
+    });
+    const subbed = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    // Shranjevanje je A1 spet vpisalo v poznejše kroge.
+    subbed.rounds[2].games[1].homePlayerId = "h1";
+    subbed.rounds[3].games[3].homePlayerId = "h1";
+    const out = substitutedOutIds(subbed, "home");
+    expect(out.has("h1")).toBe(true);
+    expect(out.has("h5")).toBe(false);
+    const healed = preserveSubstitutions(subbed);
+    expect(healed.rounds[2]?.games[1]?.homePlayerId).toBe("h5");
+    expect(healed.rounds[3]?.games[3]?.homePlayerId).toBe("h5");
+    expect(healed.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+
+    const away = applyPlayerSubstitution(match, 1, 3, "away", "a5");
+    expect(substitutedOutIds(away, "away").has("a4")).toBe(true);
+    expect(substitutedOutIds(away, "away").has("a5")).toBe(false);
+    const back = applyPlayerSubstitution(away, 2, 2, "away", "a4");
+    expect(back).toBe(away);
+  });
+
+  it("keeps A5 and A6 on that place down the remaining pairs", () => {
+    const rounds = emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]);
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5", "h6"],
+      rounds,
+    });
+    // 2. krog, A1 je na tretjem paru (homeSlot 0).
+    const asA5 = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    expect(asA5.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+    expect(asA5.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    expect(asA5.rounds[2]?.games[1]?.homePlayerId).toBe("h5");
+    expect(asA5.rounds[3]?.games[3]?.homePlayerId).toBe("h5");
+    expect(asA5.rounds[1]?.games[0]?.homePlayerId).toBe("h3");
+    expect(asA5.rounds[2]?.games[0]?.homePlayerId).toBe("h2");
+    expect(playerLineupLabel("home", "h5", asA5.homeStarters, asA5.homeBench, 0)).toBe("A5");
+
+    // A6 zamenja A2 od 1. kroga naprej (homeSlot 1, prvi par).
+    const asA6 = applyPlayerSubstitution(match, 0, 1, "home", "h6");
+    expect(asA6.rounds[0]?.games[1]?.homePlayerId).toBe("h6");
+    expect(asA6.rounds[1]?.games[3]?.homePlayerId).toBe("h6");
+    expect(asA6.rounds[2]?.games[0]?.homePlayerId).toBe("h6");
+    expect(asA6.rounds[3]?.games[2]?.homePlayerId).toBe("h6");
+    expect(asA6.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+    expect(playerLineupLabel("home", "h6", match.homeStarters, match.homeBench, 1)).toBe("A6");
+
+    const repaired = repairDuplicateLanePlayers(asA5);
+    expect(repaired.rounds[2]?.games[1]?.homePlayerId).toBe("h5");
+    expect(repaired.rounds[3]?.games[3]?.homePlayerId).toBe("h5");
+  });
+
+  it("keeps a later sub when the leaver or the first sub is written back", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5", "h6"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      awayBench: ["a5", "a6"],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    const first = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    const second = applyPlayerSubstitution(first, 2, 1, "home", "h6");
+    expect(second.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+    expect(second.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    expect(second.rounds[2]?.games[1]?.homePlayerId).toBe("h6");
+    expect(second.rounds[3]?.games[3]?.homePlayerId).toBe("h6");
+    expect(second.rounds[2]?.games[0]?.homePlayerId).toBe("h2");
+
+    const out = substitutedOutIds(second, "home");
+    expect(out.has("h1")).toBe(true);
+    expect(out.has("h5")).toBe(true);
+    expect(out.has("h6")).toBe(false);
+    expect(applyPlayerSubstitution(second, 3, 3, "home", "h1")).toBe(second);
+    expect(applyPlayerSubstitution(second, 3, 3, "home", "h5")).toBe(second);
+    expect(applyPlayerSubstitution(second, 3, 0, "home", "h1")).toBe(second);
+
+    second.rounds[3].games[3].homePlayerId = "h1";
+    let healed = preserveSubstitutions(second);
+    expect(healed.rounds[3]?.games[3]?.homePlayerId).toBe("h6");
+    second.rounds[3].games[3].homePlayerId = "h5";
+    healed = preserveSubstitutions(second);
+    expect(healed.rounds[3]?.games[3]?.homePlayerId).toBe("h6");
+    expect(healed.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+
+    const away = applyPlayerSubstitution(healed, 1, 3, "away", "a5");
+    const awayNext = applyPlayerSubstitution(away, 2, 2, "away", "a6");
+    expect(substitutedOutIds(awayNext, "away").has("a4")).toBe(true);
+    expect(substitutedOutIds(awayNext, "away").has("a5")).toBe(true);
+    expect(substitutedOutIds(awayNext, "away").has("a6")).toBe(false);
+    expect(substitutedOutIds(awayNext, "home").has("h6")).toBe(false);
+    expect(awayNext.rounds[3]?.games[3]?.homePlayerId).toBe("h6");
+    expect(applyPlayerSubstitution(awayNext, 3, 3, "away", "a4")).toBe(awayNext);
+    expect(applyPlayerSubstitution(awayNext, 3, 3, "away", "a5")).toBe(awayNext);
+  });
+
+  it("heals a reverted sub when the lineup is saved before the first pins", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    const subbed = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    subbed.rounds[2].games[1].homePlayerId = "h1";
+    subbed.rounds[3].games[3].homePlayerId = "h1";
+    const saved = applyLineup(subbed, "home", subbed.homeStarters, subbed.homeBench);
+    expect(saved.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    expect(saved.rounds[2]?.games[1]?.homePlayerId).toBe("h5");
+    expect(saved.rounds[3]?.games[3]?.homePlayerId).toBe("h5");
+    expect(saved.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+    expect(substitutedOutIds(saved, "home").has("h5")).toBe(false);
+    expect(substitutedOutIds(saved, "home").has("h1")).toBe(true);
   });
 });

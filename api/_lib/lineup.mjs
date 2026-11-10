@@ -140,7 +140,7 @@ export function applyLineup(match, side, starters, bench) {
       };
     }),
   }));
-  return repairDuplicateLanePlayers(next);
+  return preserveSubstitutions(repairDuplicateLanePlayers(next));
 }
 
 export function playerOnOtherLane(games, side, playerId, gameIndex) {
@@ -153,26 +153,69 @@ function sidePlayerKey(side) {
   return side === "home" ? "homePlayerId" : "awayPlayerId";
 }
 
+function slotAt(side, roundIndex, gameIndex) {
+  const pair = PAIRINGS[roundIndex]?.[gameIndex];
+  if (!pair) return null;
+  return side === "home" ? pair.homeSlot : pair.awaySlot;
+}
+
+/** Odhajajoči se ne sme vrniti. Menjava (A5/A6, B5/B6) ostane na voljo. */
 export function substitutedOutIds(match, side) {
   const key = sidePlayerKey(side);
   const rounds = match?.rounds ?? [];
-  let lastIdx = -1;
-  for (let i = rounds.length - 1; i >= 0; i--) {
-    if ((rounds[i]?.games ?? []).some((g) => Boolean(g?.[key]))) {
-      lastIdx = i;
-      break;
-    }
-  }
-  if (lastIdx <= 0) return new Set();
-  const active = new Set((rounds[lastIdx]?.games ?? []).map((g) => g[key]).filter(Boolean));
   const out = new Set();
-  for (let i = 0; i < lastIdx; i++) {
-    for (const g of rounds[i]?.games ?? []) {
-      const id = g[key];
-      if (id && !active.has(id)) out.add(id);
-    }
-  }
+  const active = new Map();
+  rounds.forEach((round, ri) => {
+    (round?.games ?? []).forEach((game, gi) => {
+      const slot = slotAt(side, ri, gi);
+      const id = game?.[key] ?? "";
+      if (slot == null || !id) return;
+      const prev = active.get(slot);
+      if (!prev) {
+        active.set(slot, id);
+        return;
+      }
+      if (prev === id || out.has(id)) return;
+      out.add(prev);
+      active.set(slot, id);
+    });
+  });
   return out;
+}
+
+/** Če je odhajajoči spet vpisan, ga zamenja igralec, ki je ostal v igri. */
+export function preserveSubstitutions(match) {
+  const rounds = (match?.rounds ?? []).map((round) => ({
+    games: (round?.games ?? []).map((game) => ({ ...game })),
+  }));
+  let changed = false;
+  for (const side of ["home", "away"]) {
+    const key = sidePlayerKey(side);
+    const out = new Set();
+    const active = new Map();
+    rounds.forEach((round, ri) => {
+      round.games.forEach((game, gi) => {
+        const slot = slotAt(side, ri, gi);
+        const id = game?.[key] ?? "";
+        if (slot == null || !id) return;
+        const prev = active.get(slot);
+        if (!prev) {
+          active.set(slot, id);
+          return;
+        }
+        if (prev === id) return;
+        if (out.has(id)) {
+          game[key] = prev;
+          changed = true;
+          return;
+        }
+        out.add(prev);
+        active.set(slot, id);
+      });
+    });
+  }
+  if (!changed) return match;
+  return { ...match, rounds };
 }
 
 /** Menjava se ujame naprej po krogih; odhajajoči ne more nazaj. */
@@ -192,7 +235,7 @@ export function applyPlayerSubstitution(match, roundIndex, gameIndex, side, play
   const oldId = game[key] ?? "";
   const pid = playerId || "";
 
-  if (!pid || !oldId || oldId === pid) {
+  if (!pid || oldId === pid) {
     return {
       ...match,
       rounds: match.rounds.map((r, ri) => {
@@ -204,17 +247,35 @@ export function applyPlayerSubstitution(match, roundIndex, gameIndex, side, play
     };
   }
 
+  const slotAt = (ri, gi) => {
+    const pair = PAIRINGS[ri]?.[gi];
+    if (!pair) return null;
+    return side === "home" ? pair.homeSlot : pair.awaySlot;
+  };
+  const fromSlot = slotAt(roundIndex, gameIndex);
+
   return {
     ...match,
     rounds: match.rounds.map((r, ri) => {
       if (ri < roundIndex) return r;
-      return {
-        games: r.games.map((g, gi) => {
-          if (ri === roundIndex && gi === gameIndex) return { ...g, [key]: pid };
-          if (g[key] === oldId) return { ...g, [key]: pid };
-          return g;
-        }),
+      const games = (r.games ?? []).map((g) => ({ ...g }));
+      const take = (gi) => {
+        games[gi] = { ...games[gi], [key]: pid };
       };
+      if (ri === roundIndex) {
+        take(gameIndex);
+        return { ...r, games };
+      }
+      const hits = [];
+      games.forEach((g, gi) => {
+        const sameSlot = fromSlot != null && slotAt(ri, gi) === fromSlot;
+        const samePerson = Boolean(oldId) && g[key] === oldId;
+        if (sameSlot || samePerson) hits.push(gi);
+      });
+      const slotHit = hits.find((gi) => slotAt(ri, gi) === fromSlot);
+      const chosen = slotHit != null ? slotHit : hits[0];
+      if (chosen != null) take(chosen);
+      return { ...r, games };
     }),
   };
 }
@@ -231,11 +292,12 @@ export function repairDuplicateLanePlayers(match) {
         const id = game[key];
         if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
       }
+      const starterIds = new Set((starters ?? []).filter(Boolean));
       games.forEach((game, gi) => {
         const slot = side === "home" ? PAIRINGS[ri]?.[gi]?.homeSlot : PAIRINGS[ri]?.[gi]?.awaySlot;
         const expected = slot == null ? "" : (starters?.[slot] ?? "");
         const id = game[key];
-        if (id && (counts.get(id) ?? 0) > 1 && id !== expected) {
+        if (id && starterIds.has(id) && (counts.get(id) ?? 0) > 1 && id !== expected) {
           game[key] = expected;
           changed = true;
         }

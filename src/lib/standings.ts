@@ -190,6 +190,8 @@ export type PlayerStandingRow = {
   over240: number;
   /** Keglji po kolih (do 4 igre na kolo). */
   byRound: number[][];
+  /** Indeksi kol (0-based), ki se na zavihku najboljših 60 % ne štejejo. */
+  droppedRounds?: number[];
 };
 
 export function seasonRoundCount(state: LeagueState): number {
@@ -199,6 +201,27 @@ export function seasonRoundCount(state: LeagueState): number {
 
 function emptyByRound(rounds: number): number[][] {
   return Array.from({ length: rounds }, () => []);
+}
+
+/** Kolo in ekipa, ki ima v tem kolu tekmo na razporedu. */
+export function scheduledTeamRounds(
+  matches: Pick<Match, "round" | "homeTeamId" | "awayTeamId">[],
+): Set<string> {
+  const keys = new Set<string>();
+  for (const match of matches) {
+    keys.add(`${match.round}:${match.homeTeamId}`);
+    keys.add(`${match.round}:${match.awayTeamId}`);
+  }
+  return keys;
+}
+
+/**
+ * Keglji igralca v kolu.
+ * Ekipa brez tekme: prazno. Ekipa je igrala, igralec pa ne: »—«.
+ */
+export function playerRoundCell(games: number[], teamHadMatch: boolean): string {
+  if (games.length > 0) return String(games.reduce((sum, n) => sum + n, 0));
+  return teamHadMatch ? "—" : "";
 }
 
 export function computePlayerStandings(state: LeagueState): PlayerStandingRow[] {
@@ -273,6 +296,9 @@ export function playersByAverage(rows: PlayerStandingRow[]): PlayerStandingRow[]
 /** Igralec mora imeti ≥ 70 % odigranih tekem svoje ekipe za uradno lestvico. */
 export const PLAYER_QUALIFY_MATCH_RATIO = 0.7;
 
+/** Kolikšen delež najboljših tekem igralca se šteje na zavihku »60 % najboljših«. */
+export const PLAYER_BEST_MATCH_RATIO = 0.6;
+
 /**
  * Dve lestvici (kvalificirani / preostali) šele, ko je zaključenih ≥ polovica krogov.
  * Pred tem ostane ena skupna — zgodaj v sezoni je 70 % še nestabilno.
@@ -283,6 +309,12 @@ export const PLAYER_SPLIT_SEASON_RATIO = 0.5;
 export function requiredQualifyMatches(teamMatchesPlayed: number): number {
   if (teamMatchesPlayed <= 0) return 0;
   return Math.ceil(teamMatchesPlayed * PLAYER_QUALIFY_MATCH_RATIO);
+}
+
+/** Koliko najboljših tekem ostane (zaokroženo na najbližje, vsaj ena). */
+export function keptMatchCount(played: number): number {
+  if (played <= 0) return 0;
+  return Math.max(1, Math.round(played * PLAYER_BEST_MATCH_RATIO));
 }
 
 /** Število zaključenih tekem po ekipi. */
@@ -352,6 +384,66 @@ export function splitPlayerStandingsByQualify(
     else rest.push(row);
   }
   return { qualified, rest, split: true };
+}
+
+/** Igralci z ≥ 70 % tekem ekipe, tudi pred razdelitvijo lestvice. */
+export function qualifiedPlayerRows(
+  state: LeagueState,
+  rows: PlayerStandingRow[],
+): PlayerStandingRow[] {
+  const teamPlayed = teamCompletedMatchCounts(state);
+  const appearances = playerMatchAppearanceCounts(state);
+  return playersByAverage(rows).filter((row) => {
+    const teamMatches = teamPlayed.get(row.player.teamId) ?? 0;
+    const need = requiredQualifyMatches(teamMatches);
+    const played = appearances.get(row.player.id) ?? 0;
+    return need > 0 && played >= need;
+  });
+}
+
+/**
+ * Samo najboljših 60 % tekem (po povprečju kegljev na tekmo).
+ * Šibkejše ostanejo v `byRound`, a so v `droppedRounds` in se ne štejejo.
+ */
+export function bestMatchStandings(rows: PlayerStandingRow[]): PlayerStandingRow[] {
+  const next = rows.map((row) => {
+    const matches = row.byRound
+      .map((games, roundIndex) => ({
+        roundIndex,
+        pins: games.reduce((sum, n) => sum + n, 0),
+        games: games.length,
+      }))
+      .filter((match) => match.games > 0);
+    const keep = keptMatchCount(matches.length);
+    const ranked = [...matches].sort((a, b) => {
+      const avgDiff = b.pins / b.games - a.pins / a.games;
+      if (avgDiff !== 0) return avgDiff;
+      if (b.games !== a.games) return b.games - a.games;
+      return a.roundIndex - b.roundIndex;
+    });
+    const kept = new Set(ranked.slice(0, keep).map((match) => match.roundIndex));
+    const droppedRounds = matches
+      .filter((match) => !kept.has(match.roundIndex))
+      .map((match) => match.roundIndex);
+    const pins = matches
+      .filter((match) => kept.has(match.roundIndex))
+      .reduce((sum, match) => sum + match.pins, 0);
+    const games = matches
+      .filter((match) => kept.has(match.roundIndex))
+      .reduce((sum, match) => sum + match.games, 0);
+    return {
+      ...row,
+      pins,
+      games,
+      avg: games > 0 ? pins / games : 0,
+      droppedRounds,
+    };
+  });
+  return [...next].sort((a, b) => {
+    if (b.avg !== a.avg) return b.avg - a.avg;
+    if (b.pins !== a.pins) return b.pins - a.pins;
+    return a.player.name.localeCompare(b.player.name, "sl");
+  });
 }
 
 export function playersByHighs(

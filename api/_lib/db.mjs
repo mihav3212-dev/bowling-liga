@@ -6,6 +6,7 @@ import {
   applyPlayerSubstitution,
   lineupLocked,
   playerOnOtherLane,
+  preserveSubstitutions,
   sanitizeLineup,
   teamMatchSide,
 } from "./lineup.mjs";
@@ -815,6 +816,7 @@ export async function saveAdminMatch(pool, seasonId, incoming, opts = {}) {
         }),
       })),
     };
+    next = preserveSubstitutions(next);
     const filled = next.rounds.every((round) =>
       round.games.every((game) => game.homePins != null && game.awayPins != null),
     );
@@ -928,7 +930,9 @@ export async function saveMatchGame(pool, viewer, patch, seasonId) {
       }
       const pid = patch.playerId || "";
       const before = match;
-      const after = applyPlayerSubstitution(match, ri, gi, patch.side, pid);
+      const after = preserveSubstitutions(
+        applyPlayerSubstitution(match, ri, gi, patch.side, pid),
+      );
       const beforeId =
         patch.side === "home"
           ? before.rounds?.[ri]?.games?.[gi]?.homePlayerId

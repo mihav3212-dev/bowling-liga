@@ -52,11 +52,28 @@ describe("pickLiveBoardMatch", () => {
     if (pick.status !== "idle") expect(pick.match.id).toBe("m1");
   });
 
-  it("falls back to next upcoming incomplete match", () => {
+  it("stays idle before the first match instead of showing an empty one", () => {
     const start = "2026-10-13T19:00:00.000Z";
     const now = new Date("2026-10-13T17:00:00.000Z").getTime();
     const pick = pickLiveBoardMatch([matchAt(start)], players, now);
-    expect(pick.status).toBe("next");
+    expect(pick.status).toBe("idle");
+  });
+
+  it("keeps the finished match on TV until the next slot is live", () => {
+    const done = matchAt("2026-10-13T17:00:00.000Z", { id: "done", status: "done" });
+    done.rounds = done.rounds.map((round) => ({
+      games: round.games.map((g) => ({ ...g, homePins: 180, awayPins: 160 })),
+    }));
+    const upcoming = matchAt("2026-10-13T19:00:00.000Z", { id: "later" });
+    const gap = new Date("2026-10-13T18:45:00.000Z").getTime();
+    const pick = pickLiveBoardMatch([done, upcoming], players, gap);
+    expect(pick.status).toBe("live");
+    if (pick.status !== "idle") expect(pick.match.id).toBe("done");
+
+    const slot = new Date("2026-10-13T19:10:00.000Z").getTime();
+    const next = pickLiveBoardMatch([done, upcoming], players, slot);
+    expect(next.status).toBe("live");
+    if (next.status !== "idle") expect(next.match.id).toBe("later");
   });
 
   it("is idle when nothing scheduled", () => {
@@ -124,6 +141,20 @@ describe("pickLiveBoardMatch", () => {
     expect(after.pick.status).toBe("live");
     if (after.pick.status !== "idle") expect(after.pick.match.id).toBe("open");
     expect(after.hold).toBeNull();
+  });
+
+  it("switches as soon as the next slot starts instead of holding the finished match", () => {
+    const done = matchAt("2026-10-13T17:00:00.000Z", { id: "done", status: "done" });
+    done.rounds = done.rounds.map((round) => ({
+      games: round.games.map((g) => ({ ...g, homePins: 180, awayPins: 160 })),
+    }));
+    const later = matchAt("2026-10-13T19:00:00.000Z", { id: "later" });
+    const now = new Date("2026-10-13T19:05:00.000Z").getTime();
+    const base = pickLiveBoardMatch([done, later], players, now);
+    const held = withFinalScoreHold(base, [done, later], players, now, null, "done");
+    expect(held.pick.status).toBe("live");
+    if (held.pick.status !== "idle") expect(held.pick.match.id).toBe("later");
+    expect(held.hold).toBeNull();
   });
 });
 
