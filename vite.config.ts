@@ -28,6 +28,11 @@ function adminApi(): Plugin {
             await handleLeague(req, res);
             return;
           }
+          if (url === "/api/presence") {
+            const { handlePresence } = await import("./api/presence.js");
+            await handlePresence(req, res);
+            return;
+          }
           if (url === "/api/me") {
             const { handleMe } = await import("./api/me.js");
             await handleMe(req, res);

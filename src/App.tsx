@@ -20,6 +20,7 @@ import { MatchResultPage } from "./pages/MatchResultPage";
 import { NewSeasonDialog } from "./pages/NewSeasonDialog";
 import { exportResultsPdf } from "./lib/exportPdf";
 import { useAuth } from "./lib/auth";
+import { usePresenceHeartbeat } from "./lib/usePresence";
 import { matchesShowingLive } from "./lib/live";
 import { matchTotals } from "./lib/scoring";
 import { publicSeasonId } from "./lib/storage";
@@ -83,6 +84,7 @@ function writeNavToUrl(nav: NavState, mode: "push" | "replace") {
 }
 
 export function App() {
+  usePresenceHeartbeat();
   const params = new URLSearchParams(window.location.search);
   const displayMode = params.get("display");
   if (displayMode === "live") {

@@ -1,3 +1,4 @@
+import type { PresenceCounts, PresenceKind } from "./presence";
 import type { LeagueState, SeasonInfo, TrainingSession } from "./types";
 
 export type LeaguePayload = {
@@ -491,4 +492,34 @@ export function releaseMatchEditLockBeacon(opts: {
   } catch {
     /* ignore */
   }
+}
+
+export function beatPresence(id: string, kind: PresenceKind): Promise<void> {
+  return fetch("/api/presence", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, kind }),
+    keepalive: true,
+  }).then(() => undefined);
+}
+
+export async function fetchPresenceCounts(): Promise<PresenceCounts | null> {
+  const res = await fetch("/api/presence", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "counts" }),
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as Partial<PresenceCounts> & { ok?: boolean };
+  if (!data.ok || typeof data.total !== "number") return null;
+  return {
+    total: data.total,
+    tv: Number(data.tv) || 0,
+    standings: Number(data.standings) || 0,
+    results: Number(data.results) || 0,
+    other: Number(data.other) || 0,
+  };
 }

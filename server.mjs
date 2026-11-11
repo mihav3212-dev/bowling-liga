@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleLeague } from "./api/league.js";
+import { handlePresence } from "./api/presence.js";
 import { handleLogin } from "./api/login.js";
 import { handleMe } from "./api/me.js";
 import { clearCookieHeader, isSecureRequest } from "./api/_lib/session.mjs";
@@ -76,6 +77,10 @@ const server = createServer(async (req, res) => {
     }
     if (url === "/api/league") {
       await handleLeague(req, res);
+      return;
+    }
+    if (url === "/api/presence") {
+      await handlePresence(req, res);
       return;
     }
     if (url === "/api/logout") {

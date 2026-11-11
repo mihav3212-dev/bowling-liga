@@ -215,8 +215,68 @@ export async function ensureSchema(pool, seed) {
       KEY idx_season_snapshots_created (season_id, created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   );
+  await exec(
+    pool,
+    `CREATE TABLE IF NOT EXISTS site_presence (
+      viewer_id VARCHAR(64) NOT NULL,
+      kind VARCHAR(16) NOT NULL,
+      seen_at DATETIME(3) NOT NULL,
+      PRIMARY KEY (viewer_id),
+      KEY idx_site_presence_seen (seen_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  );
   await syncAdminPassword(pool, seed);
   await syncDisplayPassword(pool);
+}
+
+const PRESENCE_KINDS = new Set(["tv", "standings", "results", "other"]);
+
+export function presenceKindOf(kind) {
+  return PRESENCE_KINDS.has(kind) ? kind : "other";
+}
+
+export function presenceViewerId(id) {
+  const value = String(id || "").trim();
+  return /^[A-Za-z0-9-]{8,64}$/.test(value) ? value : "";
+}
+
+function emptyPresenceCounts() {
+  return { ok: true, total: 0, tv: 0, standings: 0, results: 0, other: 0 };
+}
+
+/** Javni utrip. Šteje se zavihek, viden v zadnjih 90 sekundah. */
+export async function touchSitePresence(pool, id, kind) {
+  const viewerId = presenceViewerId(id);
+  if (!viewerId) return { ok: false };
+  await exec(
+    pool,
+    "DELETE FROM site_presence WHERE seen_at < DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 10 MINUTE)",
+  );
+  await exec(
+    pool,
+    `INSERT INTO site_presence (viewer_id, kind, seen_at)
+     VALUES (?, ?, CURRENT_TIMESTAMP(3))
+     ON DUPLICATE KEY UPDATE kind = VALUES(kind), seen_at = CURRENT_TIMESTAMP(3)`,
+    [viewerId, presenceKindOf(kind)],
+  );
+  return { ok: true };
+}
+
+export async function countSitePresence(pool) {
+  const rows = await exec(
+    pool,
+    `SELECT kind, COUNT(*) AS n
+     FROM site_presence
+     WHERE seen_at >= DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 90 SECOND)
+     GROUP BY kind`,
+  );
+  const counts = emptyPresenceCounts();
+  for (const row of rows) {
+    const kind = presenceKindOf(row.kind);
+    counts[kind] += Number(row.n) || 0;
+  }
+  counts.total = counts.tv + counts.standings + counts.results + counts.other;
+  return counts;
 }
 
 /** Koliko obnovitvenih točk hranimo na sezono. */

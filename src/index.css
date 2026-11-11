@@ -781,6 +781,52 @@ select {
 .admin-menu {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.header-viewers {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 50px;
+  border: 1px solid var(--header-line);
+  color: var(--header-fg);
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.header-viewers strong {
+  color: var(--header-fg);
+  font-weight: 700;
+}
+
+.header-viewers-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 3px rgba(61, 220, 132, 0.18);
+}
+
+.header-viewers-dot.is-idle {
+  background: var(--header-line);
+  box-shadow: none;
+}
+
+.admin-viewers {
+  margin: 0 0 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--row-alt);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .header-admin {

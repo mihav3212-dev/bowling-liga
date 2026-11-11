@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { exportLastRoundBackup } from "../lib/exportPdf";
 import { formatInviteCode, newInviteToken } from "../lib/invite";
-import { getDisplayPasswordStatus, setDisplayPassword } from "../lib/leagueApi";
+import { fetchPresenceCounts, getDisplayPasswordStatus, setDisplayPassword } from "../lib/leagueApi";
+import { presenceSummary, type PresenceCounts } from "../lib/presence";
 import { remainingOfficialRounds, parseScheduleCsv } from "../lib/schedule";
 import { seasonIsComplete } from "../lib/scoring";
 import { lastCompletedRound } from "../lib/standings";
@@ -61,6 +62,26 @@ export function AdminMenu({
   const [tvCode, setTvCode] = useState("");
   const [tvManual, setTvManual] = useState("");
   const [tvNote, setTvNote] = useState("");
+  const [viewers, setViewers] = useState<PresenceCounts | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      void fetchPresenceCounts()
+        .then((counts) => {
+          if (!cancelled) setViewers(counts);
+        })
+        .catch(() => {
+          if (!cancelled) setViewers(null);
+        });
+    };
+    load();
+    const timer = window.setInterval(load, 8_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   const closeMenu = () => {
     setOpen(false);
@@ -175,6 +196,16 @@ export function AdminMenu({
   return (
     <>
     <div className="admin-menu">
+      {viewers && (
+        <span className="header-viewers" title="Odprti zavihki v zadnji minuti">
+          <span
+            className={viewers.total > 0 ? "header-viewers-dot" : "header-viewers-dot is-idle"}
+            aria-hidden="true"
+          />
+          <strong>{viewers.total}</strong>
+          <span>gleda</span>
+        </span>
+      )}
       <button
         className="ghost header-admin"
         type="button"
@@ -199,6 +230,7 @@ export function AdminMenu({
       <div className="admin-menu-panel">
         {panel === "home" && (
           <>
+            {viewers && <p className="admin-viewers">{presenceSummary(viewers)}</p>}
             <button
               className="ghost"
               type="button"

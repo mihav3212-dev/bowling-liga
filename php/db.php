@@ -141,8 +141,72 @@ function ensure_schema(PDO $pdo, $seed = '')
           KEY idx_season_snapshots_created (season_id, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS site_presence (
+          viewer_id VARCHAR(64) NOT NULL,
+          kind VARCHAR(16) NOT NULL,
+          seen_at DATETIME(3) NOT NULL,
+          PRIMARY KEY (viewer_id),
+          KEY idx_site_presence_seen (seen_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+    );
     sync_admin_password($pdo, $seed);
     sync_display_password($pdo);
+}
+
+function presence_kind_of($kind)
+{
+    $value = (string) $kind;
+    return in_array($value, ['tv', 'standings', 'results', 'other'], true) ? $value : 'other';
+}
+
+function presence_viewer_id($id)
+{
+    $value = trim((string) $id);
+    return preg_match('/^[A-Za-z0-9-]{8,64}$/', $value) ? $value : '';
+}
+
+function empty_presence_counts()
+{
+    return ['ok' => true, 'total' => 0, 'tv' => 0, 'standings' => 0, 'results' => 0, 'other' => 0];
+}
+
+function touch_site_presence(PDO $pdo, $id, $kind)
+{
+    $viewerId = presence_viewer_id($id);
+    if ($viewerId === '') {
+        return ['ok' => false];
+    }
+    q_run(
+        $pdo,
+        'DELETE FROM site_presence WHERE seen_at < DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 10 MINUTE)'
+    );
+    q_run(
+        $pdo,
+        'INSERT INTO site_presence (viewer_id, kind, seen_at)
+         VALUES (?, ?, CURRENT_TIMESTAMP(3))
+         ON DUPLICATE KEY UPDATE kind = VALUES(kind), seen_at = CURRENT_TIMESTAMP(3)',
+        [$viewerId, presence_kind_of($kind)]
+    );
+    return ['ok' => true];
+}
+
+function count_site_presence(PDO $pdo)
+{
+    $rows = q_all(
+        $pdo,
+        'SELECT kind, COUNT(*) AS n
+         FROM site_presence
+         WHERE seen_at >= DATE_SUB(CURRENT_TIMESTAMP(3), INTERVAL 90 SECOND)
+         GROUP BY kind'
+    );
+    $counts = empty_presence_counts();
+    foreach ($rows as $row) {
+        $kind = presence_kind_of($row['kind'] ?? '');
+        $counts[$kind] += (int) ($row['n'] ?? 0);
+    }
+    $counts['total'] = $counts['tv'] + $counts['standings'] + $counts['results'] + $counts['other'];
+    return $counts;
 }
 
 define('SNAPSHOT_KEEP', 10);

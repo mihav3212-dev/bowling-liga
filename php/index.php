@@ -121,6 +121,30 @@ if ($route === 'login') {
     }
 }
 
+if ($route === 'presence') {
+    if ($method !== 'POST') {
+        json_out(405, ['ok' => false]);
+    }
+    try {
+        $body = read_json_body();
+        $pdo = boot_db();
+        if (!$pdo) {
+            json_out(200, ['ok' => false, 'storage' => 'local']);
+        }
+        if (($body['action'] ?? '') === 'counts') {
+            $viewer = viewer_of();
+            if (empty($viewer['admin'])) {
+                json_out(401, ['ok' => false]);
+            }
+            json_out(200, count_site_presence($pdo));
+        }
+        $beat = touch_site_presence($pdo, $body['id'] ?? '', $body['kind'] ?? '');
+        json_out(!empty($beat['ok']) ? 200 : 400, $beat);
+    } catch (Exception $e) {
+        json_out(400, ['ok' => false]);
+    }
+}
+
 if ($route === 'me') {
     $pdo = null;
     try {
