@@ -11,6 +11,7 @@ import {
   scheduledTeamRounds,
   seasonLabel,
   seasonRoundCount,
+  stateThroughRound,
 } from "./standings";
 import { pairingTemplate, playerLineupLabel, slotLabel } from "./pairings";
 import { playerDisplayName, sortTeamRoster } from "./playerName";
@@ -106,9 +107,10 @@ export async function exportStandingsPdf(state: LeagueState): Promise<void> {
   built.doc.save(built.filename);
 }
 
-async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
-  const teams = computeStandings(state);
-  const round = lastCompletedRound(state);
+async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promise<BuiltPdf> {
+  const view = asOfRound == null ? state : stateThroughRound(state, asOfRound);
+  const teams = computeStandings(view);
+  const round = asOfRound ?? lastCompletedRound(state);
   const season = state.seasonTitle ?? seasonLabel();
   const date = new Date().toLocaleDateString("sl-SI");
 
@@ -188,7 +190,7 @@ async function buildStandingsPdf(state: LeagueState): Promise<BuiltPdf> {
 
   y = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
   y += 12;
-  const recap = computeWeekRecap(state);
+  const recap = computeWeekRecap(view);
   const fmt = (row: { name: string; team?: string }) =>
     row.team ? `${row.name}  (${row.team})` : row.name;
   const colW = (pageW - margin * 2 - 10) / 2;
@@ -348,12 +350,13 @@ export async function exportPlayersPdf(state: LeagueState): Promise<void> {
   built.doc.save(built.filename);
 }
 
-async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
-  const season = state.seasonTitle ?? seasonLabel();
+async function buildPlayersPdf(state: LeagueState, asOfRound?: number): Promise<BuiltPdf> {
+  const view = asOfRound == null ? state : stateThroughRound(state, asOfRound);
+  const season = view.seasonTitle ?? seasonLabel();
   const date = new Date().toLocaleDateString("sl-SI");
-  const roundCount = seasonRoundCount(state);
-  const scheduled = scheduledTeamRounds(state.matches);
-  const players = playersByAverage(computePlayerStandings(state));
+  const roundCount = seasonRoundCount(view);
+  const scheduled = scheduledTeamRounds(view.matches);
+  const players = playersByAverage(computePlayerStandings(view));
 
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
   await withFonts(doc);
@@ -368,7 +371,9 @@ async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
   doc.text(`BOWLING LIGA ${season}`, pageW - margin, 12, { align: "right" });
   doc.setFontSize(9);
   doc.setTextColor(255, 78, 200);
-  doc.text("LESTVICA IGRALCEV", pageW - margin, 19, { align: "right" });
+  const playersTitle =
+    asOfRound != null && asOfRound > 0 ? `LESTVICA IGRALCEV PO ${asOfRound}. KOLU` : "LESTVICA IGRALCEV";
+  doc.text(playersTitle, pageW - margin, 19, { align: "right" });
   doc.setDrawColor(40);
   doc.setLineWidth(0.3);
   doc.line(margin, 26, pageW - margin, 26);
@@ -420,7 +425,11 @@ async function buildPlayersPdf(state: LeagueState): Promise<BuiltPdf> {
   doc.setFontSize(7);
   doc.setTextColor(90);
   doc.text(`Izpis ${date}`, margin, doc.internal.pageSize.getHeight() - 8);
-  return { filename: "bowling-liga-igralci.pdf", doc };
+  const playersFile =
+    asOfRound != null && asOfRound > 0
+      ? `bowling-liga-igralci-kolo-${asOfRound}.pdf`
+      : "bowling-liga-igralci.pdf";
+  return { filename: playersFile, doc };
 }
 
 function field(doc: jsPDF, label: string, value: string, x: number, y: number, width: number): void {
@@ -768,9 +777,9 @@ async function buildRoundZip(
     const built = await buildMatchPdf(state, match.id);
     if (built) zip.file(built.filename, built.doc.output("blob"));
   }
-  const standings = await buildStandingsPdf(state);
+  const standings = await buildStandingsPdf(state, round);
   zip.file(standings.filename, standings.doc.output("blob"));
-  const players = await buildPlayersPdf(state);
+  const players = await buildPlayersPdf(state, round);
   zip.file(players.filename, players.doc.output("blob"));
   if (opts?.includeJson) {
     const date = new Date().toISOString().slice(0, 10);

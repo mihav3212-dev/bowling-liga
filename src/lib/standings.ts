@@ -199,6 +199,11 @@ export function seasonRoundCount(state: LeagueState): number {
   return maxRound || 13;
 }
 
+/** Stanje po izbranem kolu: samo tekme do vključno tega kola. */
+export function stateThroughRound(state: LeagueState, round: number): LeagueState {
+  return { ...state, matches: state.matches.filter((match) => match.round <= round) };
+}
+
 function emptyByRound(rounds: number): number[][] {
   return Array.from({ length: rounds }, () => []);
 }

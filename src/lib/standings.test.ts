@@ -10,6 +10,7 @@ import {
   scheduledTeamRounds,
   shouldSplitPlayerStandings,
   splitPlayerStandingsByQualify,
+  stateThroughRound,
 } from "./standings";
 import type { LeagueState, Match, Player, Team } from "./types";
 
@@ -202,5 +203,28 @@ describe("lestvica igralcev — kolo brez tekme", () => {
     expect(playerRoundCell([], false)).toBe("");
     expect(playerRoundCell([], true)).toBe("—");
     expect(playerRoundCell([200, 180], true)).toBe("380");
+  });
+});
+
+describe("stanje po izbranem kolu", () => {
+  it("šteje samo tekme do tega kola", () => {
+    const teams = [team("a", "A"), team("b", "B")];
+    const players = [player("pa", "a"), player("pb", "b")];
+    const matches = [
+      sweepMatch("m1", "a", "b", "pa", "pb", 150, 100, 1),
+      sweepMatch("m2", "a", "b", "pa", "pb", 180, 100, 2),
+    ];
+    const full = state(teams, players, matches);
+    const afterFirst = stateThroughRound(full, 1);
+
+    expect(afterFirst.matches.map((match) => match.round)).toEqual([1]);
+    expect(computeStandings(afterFirst).find((row) => row.team.id === "a")?.played).toBe(1);
+    expect(computeStandings(full).find((row) => row.team.id === "a")?.played).toBe(2);
+
+    const early = computePlayerStandings(afterFirst).find((row) => row.player.id === "pa");
+    const now = computePlayerStandings(full).find((row) => row.player.id === "pa");
+    expect(early?.games).toBe(16);
+    expect(now?.games).toBe(32);
+    expect(early?.byRound).toHaveLength(1);
   });
 });
