@@ -13,6 +13,7 @@ import {
   seasonRoundCount,
   stateThroughRound,
 } from "./standings";
+import { matchSheetView, nominationLineupIds } from "./lineup";
 import { pairingTemplate, playerLineupLabel, slotLabel } from "./pairings";
 import { playerDisplayName, sortTeamRoster } from "./playerName";
 import { matchTotals, scoreGame, scoredPins } from "./scoring";
@@ -525,8 +526,10 @@ export async function exportMatchPdf(state: LeagueState, matchId: string): Promi
 }
 
 async function buildMatchPdf(state: LeagueState, matchId: string): Promise<BuiltPdf | null> {
-  const match = state.matches.find((m) => m.id === matchId);
-  if (!match) return null;
+  const raw = state.matches.find((m) => m.id === matchId);
+  if (!raw) return null;
+  // Rounds keep post-sub players; A1–A6 labels stay on nomination.
+  const match = matchSheetView(raw);
   const home = state.teams.find((t) => t.id === match.homeTeamId)?.name ?? "Domači";
   const away = state.teams.find((t) => t.id === match.awayTeamId)?.name ?? "Gostje";
   const players = new Map(state.players.map((p) => [p.id, p]));
@@ -667,8 +670,9 @@ async function buildMatchPdf(state: LeagueState, matchId: string): Promise<Built
     }
   }
 
-  const homeLine = [...match.homeStarters, ...match.homeBench];
-  const awayLine = [...match.awayStarters, ...match.awayBench];
+  // A1–A6 vrstni red iz nominacije; statistika iz rund (kdo je res igral).
+  const homeLine = nominationLineupIds(match, "home");
+  const awayLine = nominationLineupIds(match, "away");
   const sl = (n: number) => n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const playerMatchStats = (playerId: string) => {
     let games = 0;

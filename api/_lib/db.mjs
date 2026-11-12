@@ -5,6 +5,7 @@ import {
   applyLineup,
   applyPlayerSubstitution,
   lineupLocked,
+  matchSheetView,
   playerOnOtherLane,
   preserveSubstitutions,
   sanitizeLineup,
@@ -876,7 +877,8 @@ export async function saveAdminMatch(pool, seasonId, incoming, opts = {}) {
         }),
       })),
     };
-    next = preserveSubstitutions(next);
+    // Klientove menjave v rundah + nominacija A1–A6 (brez prepisovanja starterjev).
+    next = matchSheetView(next);
     const filled = next.rounds.every((round) =>
       round.games.every((game) => game.homePins != null && game.awayPins != null),
     );
