@@ -174,6 +174,11 @@ function teamMatches(state: LeagueState): RecapLine[] {
   return [...best.values()];
 }
 
+/** Samo tekme izbranega kola (ne kumulativa do kola). */
+export function stateForRound(state: LeagueState, round: number): LeagueState {
+  return { ...state, matches: state.matches.filter((match) => match.round === round) };
+}
+
 export function computeWeekRecap(state: LeagueState): WeekRecap {
   const singleRows = singles(state);
   const seriesRows = playerSeries(state);
@@ -186,6 +191,11 @@ export function computeWeekRecap(state: LeagueState): WeekRecap {
     topSeries: topPlaces(seriesRows),
     topTeams: topPlaces(teamRows),
   };
+}
+
+/** Recap samo za izbrano kolo (PDF levi best-*; UI ResultHighlights scope=round). */
+export function computeRoundRecap(state: LeagueState, round: number): WeekRecap {
+  return computeWeekRecap(stateForRound(state, round));
 }
 
 export function recapHasData(recap: WeekRecap): boolean {

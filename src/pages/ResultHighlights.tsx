@@ -1,10 +1,11 @@
-import { computeWeekRecap, recapHasData, type RecapLine } from "../lib/recap";
+import {
+  computeRoundRecap,
+  computeWeekRecap,
+  recapHasData,
+  type RecapLine,
+} from "../lib/recap";
 import { useStore } from "../lib/store";
 import type { LeagueState } from "../lib/types";
-
-function sliceRound(state: LeagueState, round: number): LeagueState {
-  return { ...state, matches: state.matches.filter((m) => m.round === round) };
-}
 
 function Line({ line }: { line: RecapLine }) {
   return (
@@ -41,8 +42,19 @@ function Head({ title, lines }: { title: string; lines: RecapLine[] }) {
   );
 }
 
-function RecapBody({ state }: { state: LeagueState }) {
-  const recap = computeWeekRecap(state);
+function RecapBody({
+  state,
+  scope,
+  round,
+}: {
+  state: LeagueState;
+  scope: "season" | "round";
+  round?: number;
+}) {
+  const recap =
+    scope === "round" && round != null && round > 0
+      ? computeRoundRecap(state, round)
+      : computeWeekRecap(state);
   if (!recapHasData(recap)) return null;
   return (
     <div className="week-recap">
@@ -88,7 +100,6 @@ export function ResultHighlights({
 }) {
   const store = useStore();
   const state = given ?? store.state;
-  const data = scope === "round" && round ? sliceRound(state, round) : state;
   const title =
     scope === "round" && round
       ? `Najboljši rezultati ${round}. kola`
@@ -100,7 +111,7 @@ export function ResultHighlights({
     >
       {scope === "season" && <h2 className="board-view-title board-highlights-title">{title}</h2>}
       {scope === "round" && <h3 className="recap-title">{title}</h3>}
-      <RecapBody state={data} />
+      <RecapBody state={state} scope={scope} round={round} />
     </section>
   );
 }
