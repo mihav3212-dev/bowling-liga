@@ -190,11 +190,12 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
 
   y = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
   y += 12;
-  // Lestvica je kumulativna do kola; highlights (levo + TOP 5) so samo iz tega kola.
-  const recap =
+  // Lestvica + desni TOP 5: kumulativa do kola; levi best-* : samo to kolo.
+  const seasonRecap = computeWeekRecap(view);
+  const leftRecap =
     asOfRound != null && asOfRound > 0
       ? computeRoundRecap(state, asOfRound)
-      : computeWeekRecap(view);
+      : seasonRecap;
   const fmt = (row: { name: string; team?: string }) =>
     row.team ? `${row.name}  (${row.team})` : row.name;
   const colW = (pageW - margin * 2 - 10) / 2;
@@ -202,7 +203,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   const col2 = margin + colW + 10;
   let yLeft = line(
     doc,
-    recap.bestSingle.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    leftRecap.bestSingle.map((row) => ({ name: fmt(row), value: String(row.value) })),
     col1,
     y,
     colW,
@@ -210,7 +211,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   );
   yLeft = line(
     doc,
-    recap.bestSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    leftRecap.bestSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
     col1,
     yLeft,
     colW,
@@ -218,7 +219,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   );
   yLeft = line(
     doc,
-    recap.bestTeam.map((row) => ({ name: row.name, value: String(row.value) })),
+    leftRecap.bestTeam.map((row) => ({ name: row.name, value: String(row.value) })),
     col1,
     yLeft,
     colW,
@@ -226,7 +227,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   );
   let yRight = line(
     doc,
-    recap.topSingles.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    seasonRecap.topSingles.map((row) => ({ name: fmt(row), value: String(row.value) })),
     col2,
     y,
     colW,
@@ -234,7 +235,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   );
   yRight = line(
     doc,
-    recap.topSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
+    seasonRecap.topSeries.map((row) => ({ name: fmt(row), value: String(row.value) })),
     col2,
     yRight,
     colW,
@@ -242,7 +243,7 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
   );
   yRight = line(
     doc,
-    recap.topTeams.map((row) => ({ name: row.name, value: String(row.value) })),
+    seasonRecap.topTeams.map((row) => ({ name: row.name, value: String(row.value) })),
     col2,
     yRight,
     colW,

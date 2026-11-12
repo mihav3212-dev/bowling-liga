@@ -193,7 +193,7 @@ export function computeWeekRecap(state: LeagueState): WeekRecap {
   };
 }
 
-/** Highlights za izbrano kolo — enako kot UI ResultHighlights (scope=round). */
+/** Recap samo za izbrano kolo (PDF levi best-*; UI ResultHighlights scope=round). */
 export function computeRoundRecap(state: LeagueState, round: number): WeekRecap {
   return computeWeekRecap(stateForRound(state, round));
 }
