@@ -291,6 +291,7 @@ export function MatchEntry({
     setMatchLiveOnTv,
     saveMatchLineupNow,
     saveShownMatch,
+    peekState,
     syncFromRemote,
   } = useStore();
   const { admin, teamName } = useAuth();
@@ -925,7 +926,8 @@ export function MatchEntry({
                   return;
                 }
               }
-              await exportMatchPdf(state, match.id);
+              // peekState: postava po menjavi iz stateRef, ne zastareli React state.
+              await exportMatchPdf(peekState(), match.id);
             }}
           />
         )}

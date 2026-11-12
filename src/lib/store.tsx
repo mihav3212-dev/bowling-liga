@@ -62,8 +62,8 @@ import { canEnterPins, canTeam, defaultTeamPerms, teamPerms, teamRosterWindowOpe
 import {
   applyLineup,
   applyPlayerSubstitution,
+  matchSheetView,
   preserveSubstitutions,
-  repairDuplicateLanePlayers,
   rosterIdsForTeam,
   sanitizeLineup,
   teamMatchSide,
@@ -220,6 +220,8 @@ type Store = {
   saveMatchLineupNow: (matchId: string) => Promise<boolean>;
   /** Admin: zapiše to tekmo (oznake A/B + keglje), ne cele sezone. */
   saveShownMatch: (matchId: string) => Promise<boolean>;
+  /** Zadnje lokalno stanje (za PDF takoj po Shrani). */
+  peekState: () => LeagueState;
   saveTeamRosterNow: (teamId: string) => Promise<boolean>;
   setTeamAccess: (teamId: string, password: string) => Promise<void>;
   createTeamInvite: (teamId: string) => Promise<{ url: string; token: string; expiresAt: string }>;
@@ -386,18 +388,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   /** Lokalni popravek brez celotnega saveLeague — za keglje/igralce na tekmi. */
   const touchLocal = (recipe: (s: LeagueState) => LeagueState) => {
     noteEdit();
-    setState((s) => {
-      if (archivedRef.current) return s;
-      const packed = compactTrainings(normalizeLeagueState(recipe(s)));
-      stateRef.current = packed;
-      if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
-        vaultRef.current = writeCurrent(vaultRef.current, packed);
-        setSeasons(vaultInfos(vaultRef.current));
-      } else {
-        saveState(packed);
-      }
-      return packed;
-    });
+    if (archivedRef.current) return;
+    // stateRef takoj — Save/PDF v istem toku ne smeta videti stare postave pred re-renderjem.
+    const packed = compactTrainings(normalizeLeagueState(recipe(stateRef.current)));
+    stateRef.current = packed;
+    if (!remoteRef.current && vaultRef.current && !archivedRef.current) {
+      vaultRef.current = writeCurrent(vaultRef.current, packed);
+      setSeasons(vaultInfos(vaultRef.current));
+    } else {
+      saveState(packed);
+    }
+    setState(packed);
   };
 
   const viewerMayRoster = () => {
@@ -1181,13 +1182,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const packed = compactTrainings(stateRef.current);
         const team = viewerTeamRef.current;
         const match = packed.matches.find((item) => item.id === matchId);
+        if (!match) return false;
+        // Po prvem keglju / menjavi so pari že v rundah (saveMatchGame); sestave ne pošiljaj znova.
+        if (lineupLocked(match.rounds)) return true;
         if (!remoteRef.current || !seasonIdRef.current) {
           update(() => packed);
           return true;
         }
         clearTimeout(saveTimer.current);
         saveTimer.current = undefined;
-        if (!match) return false;
         const own = team ? teamMatchSide(match, team) : null;
         if (team && !own) return false;
         const sides: ("home" | "away")[] = own ? [own] : ["home", "away"];
@@ -1213,9 +1216,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const packed = compactTrainings(stateRef.current);
         const match = packed.matches.find((item) => item.id === matchId);
         if (!match) return false;
-        const fixed = repairDuplicateLanePlayers(preserveSubstitutions(match));
+        const fixed = matchSheetView(match);
         if (!remoteRef.current || !seasonIdRef.current) {
-          update((s) => ({
+          touchLocal((s) => ({
             ...s,
             matches: s.matches.map((item) => (item.id === matchId ? fixed : item)),
           }));
@@ -1241,6 +1244,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           return false;
         }
       },
+      peekState: () => stateRef.current,
       saveTeamRosterNow: async (teamId) => {
         const packed = compactTrainings(stateRef.current);
         clearTimeout(saveTimer.current);
