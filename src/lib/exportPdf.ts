@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import JSZip from "jszip";
-import { computeWeekRecap } from "./recap";
+import { computeRoundRecap, computeWeekRecap } from "./recap";
 import {
   computePlayerStandings,
   computeStandings,
@@ -190,7 +190,11 @@ async function buildStandingsPdf(state: LeagueState, asOfRound?: number): Promis
 
   y = (doc as jsPDF & { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y;
   y += 12;
-  const recap = computeWeekRecap(view);
+  // Lestvica je kumulativna do kola; highlights (levo + TOP 5) so samo iz tega kola.
+  const recap =
+    asOfRound != null && asOfRound > 0
+      ? computeRoundRecap(state, asOfRound)
+      : computeWeekRecap(view);
   const fmt = (row: { name: string; team?: string }) =>
     row.team ? `${row.name}  (${row.team})` : row.name;
   const colW = (pageW - margin * 2 - 10) / 2;
