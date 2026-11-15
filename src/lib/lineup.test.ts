@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   applyLineup,
   applyPlayerSubstitution,
+  hasMidMatchSubstitutions,
   lineupsRevealed,
   maskMatchLineups,
+  matchSheetRoundRows,
+  matchSheetView,
+  nominationLineupIds,
   playerOnOtherLane,
   preserveSubstitutions,
   repairDuplicateLanePlayers,
@@ -292,5 +296,35 @@ describe("team lineup", () => {
     expect(saved.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
     expect(substitutedOutIds(saved, "home").has("h5")).toBe(false);
     expect(substitutedOutIds(saved, "home").has("h1")).toBe(true);
+  });
+
+  it("keeps post-sub round players and A5 labels without rewriting starters", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: ["h5"],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    match.rounds[0].games[0].homePins = 120;
+    match.rounds[0].games[0].awayPins = 110;
+    const subbed = applyPlayerSubstitution(match, 1, 2, "home", "h5");
+    expect(hasMidMatchSubstitutions(subbed)).toBe(true);
+
+    const saved = applyLineup(subbed, "home", ["h1", "h2", "h3", "h4"], ["h5"]);
+    expect(saved.homeStarters).toEqual(["h1", "h2", "h3", "h4"]);
+    expect(saved.homeBench).toEqual(["h5"]);
+    expect(saved.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    expect(saved.rounds[2]?.games.some((g) => g.homePlayerId === "h5")).toBe(true);
+
+    const sheet = matchSheetView(subbed);
+    expect(sheet.homeStarters).toEqual(["h1", "h2", "h3", "h4"]);
+    expect(nominationLineupIds(sheet, "home")).toEqual(["h1", "h2", "h3", "h4", "h5"]);
+    const rows = matchSheetRoundRows(sheet);
+    const afterSub = rows.filter((r) => r.roundIndex >= 1 && r.homePlayerId === "h5");
+    expect(afterSub.length).toBeGreaterThan(0);
+    expect(afterSub.every((r) => r.homeLabel === "A5")).toBe(true);
+    expect(rows.some((r) => r.roundIndex === 0 && r.homePlayerId === "h1" && r.homeLabel === "A1")).toBe(
+      true,
+    );
   });
 });

@@ -1,4 +1,10 @@
-import { emptyRounds, lineupSize, nominatedIds, pairingTemplate } from "./pairings";
+import {
+  emptyRounds,
+  lineupSize,
+  nominatedIds,
+  pairingTemplate,
+  playerLineupLabel,
+} from "./pairings";
 import { lineupLocked, MAX_BENCH, PLAYERS_ON_LANE } from "./scoring";
 import type { GameScore, Match, MatchRound, Player } from "./types";
 
@@ -99,6 +105,73 @@ export function sanitizeLineup(
   return { starters: cleanStarters, bench: cleanBench };
 }
 
+/** Je bila na tekmi že narejena menjava (odhajajoči v rundah)? */
+export function hasMidMatchSubstitutions(match: LineupMatch): boolean {
+  return substitutedOutIds(match, "home").size > 0 || substitutedOutIds(match, "away").size > 0;
+}
+
+/**
+ * Tekma za shrani / zapisnik: ohrani menjave v rundah, ne spreminjaj A1–A4 / A5–A6 nominacije.
+ * Imena v PDF in shranjeni pari pridejo iz rounds.*.*PlayerId.
+ */
+export function matchSheetView<T extends LineupMatch>(match: T): T {
+  return repairDuplicateLanePlayers(preserveSubstitutions(match));
+}
+
+/** Nominirana postava za oznake A1–A6 (brez prepisovanja po menjavi). */
+export function nominationLineupIds(match: LineupMatch, side: "home" | "away"): string[] {
+  const starters = side === "home" ? match.homeStarters : match.awayStarters;
+  const bench = side === "home" ? match.homeBench : match.awayBench;
+  return [...(starters ?? []), ...(bench ?? [])];
+}
+
+export type MatchSheetRoundRow = {
+  roundIndex: number;
+  gameIndex: number;
+  homePlayerId: string;
+  awayPlayerId: string;
+  homeLabel: string;
+  awayLabel: string;
+};
+
+/**
+ * Vrstice zapisnika po krogih: ime = kdo je res igral (po menjavi),
+ * oznaka A1–A6 = nominacija (ne prepisuj starterjev).
+ */
+export function matchSheetRoundRows(match: LineupMatch): MatchSheetRoundRow[] {
+  const sheet = matchSheetView(match);
+  const template = pairingTemplate(
+    Math.max(2, Math.min(4, sheet.rounds[0]?.games?.length || PLAYERS_ON_LANE)),
+  );
+  const rows: MatchSheetRoundRow[] = [];
+  sheet.rounds.forEach((round, ri) => {
+    (round.games ?? []).forEach((game, gi) => {
+      const slots = template[ri]?.[gi];
+      rows.push({
+        roundIndex: ri,
+        gameIndex: gi,
+        homePlayerId: game.homePlayerId ?? "",
+        awayPlayerId: game.awayPlayerId ?? "",
+        homeLabel: playerLineupLabel(
+          "home",
+          game.homePlayerId,
+          sheet.homeStarters,
+          sheet.homeBench,
+          slots?.homeSlot,
+        ),
+        awayLabel: playerLineupLabel(
+          "away",
+          game.awayPlayerId,
+          sheet.awayStarters,
+          sheet.awayBench,
+          slots?.awaySlot,
+        ),
+      });
+    });
+  });
+  return rows;
+}
+
 export function applyLineup(
   match: Match,
   side: "home" | "away",
@@ -117,8 +190,9 @@ export function applyLineup(
       : { awayStarters: cleanStarters, awayBench: cleanBench }),
   };
   // Po prvem keglju / že narejenih menjavah ne povoziti parov z A1–A4 iz sestave.
-  if (lineupLocked(match.rounds)) {
-    return next;
+  // Nominacija (homeStarters/…) ostane; v rundah samo pozdravimo morebitno povrnitev odhajajočega.
+  if (lineupLocked(match.rounds) || hasMidMatchSubstitutions(match)) {
+    return preserveSubstitutions(repairDuplicateLanePlayers(next));
   }
   const home = side === "home" ? cleanStarters : next.homeStarters;
   const away = side === "away" ? cleanStarters : next.awayStarters;
@@ -325,7 +399,7 @@ export function applyPlayerSubstitution<T extends LineupMatch>(
  * Če je isti igralec na dveh stezah, na napačni stezi ga zamenja tisti,
  * ki mu pripada oznaka (A1–A4 / B1–B4). Prava steza in menjave ostanejo.
  */
-export function repairDuplicateLanePlayers(match: Match): Match {
+export function repairDuplicateLanePlayers<T extends LineupMatch>(match: T): T {
   const size = Math.max(2, Math.min(4, match.rounds?.[0]?.games?.length || PLAYERS_ON_LANE));
   const slots = pairingTemplate(size);
   let changed = false;
@@ -353,5 +427,5 @@ export function repairDuplicateLanePlayers(match: Match): Match {
     }
     return { ...round, games };
   });
-  return changed ? { ...match, rounds } : match;
+  return changed ? { ...match, rounds: rounds as T["rounds"] } : match;
 }

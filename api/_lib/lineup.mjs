@@ -100,6 +100,15 @@ export function sanitizeLineup(starters, bench, allowed) {
   return { starters: cleanStarters, bench: cleanBench };
 }
 
+export function hasMidMatchSubstitutions(match) {
+  return substitutedOutIds(match, "home").size > 0 || substitutedOutIds(match, "away").size > 0;
+}
+
+/** Ohrani menjave v rundah; nominacije A1–A6 pusti pri miru. */
+export function matchSheetView(match) {
+  return repairDuplicateLanePlayers(preserveSubstitutions(match));
+}
+
 export function applyLineup(match, side, starters, bench) {
   const home = side === "home" ? starters : match.homeStarters;
   const away = side === "away" ? starters : match.awayStarters;
@@ -110,8 +119,8 @@ export function applyLineup(match, side, starters, bench) {
       : { awayStarters: starters, awayBench: bench }),
   };
   // Po prvem keglju / menjavah ne povoziti parov z začetno sestavo.
-  if (lineupLocked(match.rounds)) {
-    return next;
+  if (lineupLocked(match.rounds) || hasMidMatchSubstitutions(match)) {
+    return preserveSubstitutions(repairDuplicateLanePlayers(next));
   }
   const nominated = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
   next.rounds = PAIRINGS.map((games, ri) => ({
