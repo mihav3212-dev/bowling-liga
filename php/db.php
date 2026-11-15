@@ -1207,7 +1207,7 @@ function set_team_password(PDO $pdo, $teamId, $password, $seasonId)
     }
     $data = $current['data'];
     $data['teams'] = $teams;
-    $ok = save_season($pdo, $current['id'], $data);
+    $ok = save_season($pdo, $current['id'], $data, ['trustInviteFields' => true]);
     return $ok ? get_season($pdo, $current['id']) : null;
 }
 
@@ -1234,7 +1234,7 @@ function create_team_invite(PDO $pdo, $teamId, $seasonId)
     }
     $data = $current['data'];
     $data['teams'] = $teams;
-    $ok = save_season($pdo, $current['id'], $data);
+    $ok = save_season($pdo, $current['id'], $data, ['trustInviteFields' => true]);
     if (!$ok) {
         return null;
     }
@@ -1285,7 +1285,7 @@ function claim_team_invite(PDO $pdo, $token, $password, $seasonId)
     }
     $data = $current['data'];
     $data['teams'] = $teams;
-    $ok = save_season($pdo, $current['id'], $data);
+    $ok = save_season($pdo, $current['id'], $data, ['trustInviteFields' => true]);
     if (!$ok) {
         return ['ok' => false, 'error' => 'conflict'];
     }

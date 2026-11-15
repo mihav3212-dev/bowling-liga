@@ -44,8 +44,11 @@ function preserve_secrets($payload, $existing, $opts = [])
 {
     $prevTeams = $existing['teams'] ?? [];
     $lockPerms = !empty($opts['lockPerms']);
-    $payload['teams'] = array_map(function ($team) use ($prevTeams, $lockPerms) {
+    $trustInvite = !empty($opts['trustInviteFields']);
+    $payload['teams'] = array_map(function ($team) use ($prevTeams, $lockPerms, $trustInvite) {
         $incoming = $team['passwordHash'] ?? null;
+        $incomingInvite = $team['inviteHash'] ?? null;
+        $incomingExpires = $team['inviteExpires'] ?? null;
         unset($team['passwordHash'], $team['hasAccess'], $team['hasInvite'], $team['inviteHash'], $team['inviteExpires']);
         $prev = null;
         foreach ($prevTeams as $item) {
@@ -57,11 +60,22 @@ function preserve_secrets($payload, $existing, $opts = [])
         if ($lockPerms) {
             $team['perms'] = $prev['perms'] ?? ($team['perms'] ?? null);
         }
-        if (!empty($prev['inviteHash'])) {
-            $team['inviteHash'] = $prev['inviteHash'];
-        }
-        if (!empty($prev['inviteExpires'])) {
-            $team['inviteExpires'] = $prev['inviteExpires'];
+        // Client saves omit invite fields. Server create/claim/clear must pass
+        // trustInviteFields or new inviteHash is dropped and claim fails.
+        if ($trustInvite) {
+            if (!empty($incomingInvite)) {
+                $team['inviteHash'] = $incomingInvite;
+            }
+            if (!empty($incomingExpires)) {
+                $team['inviteExpires'] = $incomingExpires;
+            }
+        } else {
+            if (!empty($prev['inviteHash'])) {
+                $team['inviteHash'] = $prev['inviteHash'];
+            }
+            if (!empty($prev['inviteExpires'])) {
+                $team['inviteExpires'] = $prev['inviteExpires'];
+            }
         }
         if ($incoming === '') {
             return $team;

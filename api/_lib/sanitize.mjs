@@ -37,8 +37,16 @@ export function preserveSecrets(payload, existing, opts = {}) {
       team;
     const prev = prevTeams.find((item) => item.id === team.id);
     if (opts.lockPerms) rest.perms = prev?.perms ?? rest.perms;
-    if (prev?.inviteHash) rest.inviteHash = prev.inviteHash;
-    if (prev?.inviteExpires) rest.inviteExpires = prev.inviteExpires;
+    // Client saves never send invite fields (sanitized out). Server invite
+    // mutations pass trustInviteFields so create/claim/clear actually stick —
+    // otherwise new inviteHash is stripped and claim finds nothing.
+    if (opts.trustInviteFields) {
+      if (_ih) rest.inviteHash = _ih;
+      if (_ie) rest.inviteExpires = _ie;
+    } else {
+      if (prev?.inviteHash) rest.inviteHash = prev.inviteHash;
+      if (prev?.inviteExpires) rest.inviteExpires = prev.inviteExpires;
+    }
     if (incoming === "") return rest;
     const passwordHash = incoming || prev?.passwordHash;
     return passwordHash ? { ...rest, passwordHash } : rest;
