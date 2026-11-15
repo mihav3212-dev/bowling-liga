@@ -1196,7 +1196,7 @@ export async function setTeamPassword(pool, teamId, password, seasonId) {
     delete next.inviteExpires;
     return next;
   });
-  const ok = await saveSeason(pool, current.id, { ...current.data, teams });
+  const ok = await saveSeason(pool, current.id, { ...current.data, teams }, { trustInviteFields: true });
   return ok ? getSeason(pool, current.id) : null;
 }
 
@@ -1209,7 +1209,7 @@ export async function createTeamInvite(pool, teamId, seasonId) {
   const teams = (current.data.teams ?? []).map((team) =>
     team.id === teamId ? { ...team, inviteHash: hashInviteToken(token), inviteExpires: expiresAt } : team,
   );
-  const ok = await saveSeason(pool, current.id, { ...current.data, teams });
+  const ok = await saveSeason(pool, current.id, { ...current.data, teams }, { trustInviteFields: true });
   if (!ok) return null;
   const saved = await getSeason(pool, current.id);
   return saved ? { token, expiresAt, current: saved } : null;
@@ -1239,7 +1239,7 @@ export async function claimTeamInvite(pool, token, password, seasonId) {
     delete next.inviteExpires;
     return next;
   });
-  const ok = await saveSeason(pool, current.id, { ...current.data, teams });
+  const ok = await saveSeason(pool, current.id, { ...current.data, teams }, { trustInviteFields: true });
   if (!ok) return { ok: false, error: "conflict" };
   return { ok: true, teamName: team.name ?? "" };
 }
