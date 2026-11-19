@@ -192,7 +192,8 @@ export function applyLineup(
   // Po prvem keglju / že narejenih menjavah ne povoziti parov z A1–A4 iz sestave.
   // Nominacija (homeStarters/…) ostane; v rundah samo pozdravimo morebitno povrnitev odhajajočega.
   if (lineupLocked(match.rounds) || hasMidMatchSubstitutions(match)) {
-    return preserveSubstitutions(repairDuplicateLanePlayers(next));
+    // Same heal order as matchSheetView: preserve menjava, then repair starter dupes.
+    return repairDuplicateLanePlayers(preserveSubstitutions(next));
   }
   const home = side === "home" ? cleanStarters : next.homeStarters;
   const away = side === "away" ? cleanStarters : next.awayStarters;
@@ -223,7 +224,7 @@ export function applyLineup(
       };
     }),
   }));
-  return preserveSubstitutions(repairDuplicateLanePlayers(next));
+  return repairDuplicateLanePlayers(preserveSubstitutions(next));
 }
 
 /** Isti igralec ne sme stati na dveh stezah istega kroga. */

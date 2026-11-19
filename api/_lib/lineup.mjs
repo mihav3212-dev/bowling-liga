@@ -120,7 +120,8 @@ export function applyLineup(match, side, starters, bench) {
   };
   // Po prvem keglju / menjavah ne povoziti parov z začetno sestavo.
   if (lineupLocked(match.rounds) || hasMidMatchSubstitutions(match)) {
-    return preserveSubstitutions(repairDuplicateLanePlayers(next));
+    // Same heal order as matchSheetView: preserve menjava, then repair starter dupes.
+    return repairDuplicateLanePlayers(preserveSubstitutions(next));
   }
   const nominated = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
   next.rounds = PAIRINGS.map((games, ri) => ({
@@ -149,7 +150,7 @@ export function applyLineup(match, side, starters, bench) {
       };
     }),
   }));
-  return preserveSubstitutions(repairDuplicateLanePlayers(next));
+  return repairDuplicateLanePlayers(preserveSubstitutions(next));
 }
 
 export function playerOnOtherLane(games, side, playerId, gameIndex) {
