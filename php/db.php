@@ -929,20 +929,28 @@ function save_match_game_locked(PDO $pdo, $teamId, $patch, $seasonId, $asAdmin, 
                 return finish_season_write($pdo, $started, false, $current['id']);
             }
             $pid = (string) ($patch['playerId'] ?? '');
-            $starters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
-            $bench = $side === 'home' ? ($match['homeBench'] ?? []) : ($match['awayBench'] ?? []);
-            $allowed = array_flip(array_filter(array_merge($starters, $bench)));
-            if ($pid !== '' && !isset($allowed[$pid])) {
+            $before = $match;
+            // Naprej po krogih (kot Node applyPlayerSubstitution), ne samo ena celica.
+            $after = liga_preserve_substitutions(
+                liga_apply_player_substitution($match, $ri, $gi, $side, $pid)
+            );
+            $beforeId = $side === 'home'
+                ? ($before['rounds'][$ri]['games'][$gi]['homePlayerId'] ?? '')
+                : ($before['rounds'][$ri]['games'][$gi]['awayPlayerId'] ?? '');
+            $afterId = $side === 'home'
+                ? ($after['rounds'][$ri]['games'][$gi]['homePlayerId'] ?? '')
+                : ($after['rounds'][$ri]['games'][$gi]['awayPlayerId'] ?? '');
+            // Če se ni spremenilo (npr. prepovedana vrnitev), zavrni.
+            if ($pid !== '' && $beforeId === $afterId && $beforeId !== $pid) {
                 return finish_season_write($pdo, $started, false, $current['id']);
             }
-            if (liga_player_on_other_lane($match['rounds'][$ri]['games'] ?? [], $side, $pid, $gi)) {
-                return finish_season_write($pdo, $started, false, $current['id']);
+            $match = $after;
+            // Pins from this request still need to land on the patched cell.
+            if (array_key_exists('pins', $patch)) {
+                $pinKey = $side === 'home' ? 'homePins' : 'awayPins';
+                $match['rounds'][$ri]['games'][$gi][$pinKey] = $patch['pins'];
             }
-            if ($side === 'home') {
-                $game['homePlayerId'] = $pid;
-            } else {
-                $game['awayPlayerId'] = $pid;
-            }
+            $game = $match['rounds'][$ri]['games'][$gi];
         }
         $match['rounds'][$ri]['games'][$gi] = $game;
         $filled = true;
@@ -1024,14 +1032,26 @@ function save_admin_match(PDO $pdo, $seasonId, $incoming, $opts = [])
                     if (!is_array($cell)) {
                         continue;
                     }
+                    // Ohrani menjave in keglje iz klienta (ne samo keglje).
+                    if (array_key_exists('homePlayerId', $cell)) {
+                        $next['rounds'][$ri]['games'][$gi]['homePlayerId'] = $cell['homePlayerId'];
+                    }
+                    if (array_key_exists('awayPlayerId', $cell)) {
+                        $next['rounds'][$ri]['games'][$gi]['awayPlayerId'] = $cell['awayPlayerId'];
+                    }
                     if (array_key_exists('homePins', $cell)) {
                         $next['rounds'][$ri]['games'][$gi]['homePins'] = $cell['homePins'];
                     }
                     if (array_key_exists('awayPins', $cell)) {
                         $next['rounds'][$ri]['games'][$gi]['awayPins'] = $cell['awayPins'];
                     }
+                    if (array_key_exists('lane', $cell)) {
+                        $next['rounds'][$ri]['games'][$gi]['lane'] = $cell['lane'];
+                    }
                 }
             }
+            // Klientove menjave v rundah + nominacija A1–A6 (brez prepisovanja starterjev).
+            $next = liga_match_sheet_view($next);
             $filled = true;
             foreach ($next['rounds'] as $round) {
                 foreach ($round['games'] ?? [] as $game) {
