@@ -60,9 +60,30 @@ function presentSeason(season, viewer) {
   };
 }
 
+const NO_DB_ACTIONS = new Set([
+  "previewInvite",
+  "claimInvite",
+  "createInvite",
+  "setTeamPassword",
+]);
+
 export async function handleLeague(req, res) {
   const sql = getSql();
   if (!sql) {
+    // Shared invite/password setup needs MySQL. Without it the SPA falls back to
+    // per-browser localStorage — say so instead of a bare {storage:"local"} that
+    // ClaimInvite treats as an invalid code.
+    if (req.method === "POST") {
+      try {
+        const body = await readBody(req);
+        if (NO_DB_ACTIONS.has(body.action)) {
+          json(res, 503, { ok: false, error: "no_db", storage: "local" });
+          return;
+        }
+      } catch {
+        /* fall through to local storage probe */
+      }
+    }
     json(res, 200, { storage: "local" });
     return;
   }

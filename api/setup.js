@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import { isConfigured, saveFileConfig } from "./_lib/config.mjs";
+import { isConfigured, isVercelRuntime, mysqlConfigSource, saveFileConfig } from "./_lib/config.mjs";
 import { ensureSchema, getSql, resetSql } from "./_lib/db.mjs";
 import { setAdminPassword } from "./_lib/session.mjs";
 
@@ -20,8 +20,11 @@ function json(res, status, body) {
 
 export async function handleSetup(req, res) {
   if (req.method === "GET") {
+    const source = mysqlConfigSource();
     json(res, 200, {
       needed: !isConfigured(),
+      source,
+      vercel: isVercelRuntime(),
       defaults: { host: "localhost", port: 3306, database: "bowling_liga" },
     });
     return;
@@ -34,6 +37,17 @@ export async function handleSetup(req, res) {
 
   if (isConfigured()) {
     json(res, 409, { ok: false, error: "Namestitev je že opravljena." });
+    return;
+  }
+
+  // Vercel filesystem is ephemeral — config.json from the setup form does not stick.
+  // Require Project Environment Variables instead.
+  if (isVercelRuntime()) {
+    json(res, 400, {
+      ok: false,
+      error:
+        "Na Vercelu obrazec ne shrani povezave. V Project → Settings → Environment Variables nastavi MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE (ali DATABASE_URL) in ADMIN_PASSWORD, nato Redeploy.",
+    });
     return;
   }
 
