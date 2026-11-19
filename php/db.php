@@ -15,6 +15,9 @@ function get_pdo()
     }
     $mysql = load_config()['mysql'] ?? null;
     if (!is_array($mysql) || empty($mysql['host']) || empty($mysql['user']) || empty($mysql['database'])) {
+        $mysql = mysql_from_env();
+    }
+    if (!is_array($mysql) || empty($mysql['host']) || empty($mysql['user']) || empty($mysql['database'])) {
         $pdo = null;
         return null;
     }

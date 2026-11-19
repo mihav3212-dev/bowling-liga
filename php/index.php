@@ -179,6 +179,13 @@ if ($route === 'me') {
 if ($route === 'league') {
     $pdo = get_pdo();
     if (!$pdo) {
+        if ($method === 'POST') {
+            $body = read_json_body();
+            $action = $body['action'] ?? '';
+            if (in_array($action, ['previewInvite', 'claimInvite', 'createInvite', 'setTeamPassword'], true)) {
+                json_out(503, ['ok' => false, 'error' => 'no_db', 'storage' => 'local']);
+            }
+        }
         json_out(200, ['storage' => 'local']);
     }
     try {

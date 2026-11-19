@@ -23,6 +23,7 @@ export function ClaimInvite({
   const [repeat, setRepeat] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [needsDb, setNeedsDb] = useState(false);
 
   useEffect(() => {
     const next = normalizeInviteToken(initialToken);
@@ -40,6 +41,7 @@ export function ClaimInvite({
     let cancelled = false;
     (async () => {
       setStatus("load");
+      setNeedsDb(false);
       const remote = await previewTeamInvite(token).catch(() => ({ ok: false as const, error: "invalid" }));
       if (cancelled) return;
       if (remote.ok) {
@@ -51,6 +53,11 @@ export function ClaimInvite({
       const team = state.teams.find((item) => item.inviteHash === hash);
       if (cancelled) return;
       if (!team) {
+        if (remote.error === "no_db") {
+          setNeedsDb(true);
+          setStatus("invalid");
+          return;
+        }
         setStatus(remote.error === "expired" ? "expired" : "invalid");
         return;
       }
@@ -104,6 +111,11 @@ export function ClaimInvite({
       }
       if (remote.error === "short") {
         setError(`Geslo naj ima vsaj ${MIN_TEAM_PASSWORD} znake.`);
+        return;
+      }
+      if (remote.error === "no_db") {
+        setNeedsDb(true);
+        setStatus("invalid");
         return;
       }
       const hash = await hashInviteToken(token);
@@ -162,7 +174,15 @@ export function ClaimInvite({
       {status === "load" && <p className="muted">Preverjam kodo…</p>}
       {status === "invalid" && (
         <>
-          <p>Ta koda / povezava ni veljavna. Preveri kodo ali prosi admina za novo.</p>
+          {needsDb ? (
+            <p>
+              Skupna prijava ekipe potrebuje MySQL. Na Vercelu nastavi{" "}
+              <code>MYSQL_HOST</code> / <code>DATABASE_URL</code> in <code>ADMIN_PASSWORD</code>, nato
+              Redeploy. Brez baze koda deluje samo v istem brskalniku, kjer jo je admin ustvaril.
+            </p>
+          ) : (
+            <p>Ta koda / povezava ni veljavna. Preveri kodo ali prosi admina za novo.</p>
+          )}
           <p className="muted">Vpiši kodo znova:</p>
           {codeForm}
           {error && <p className="login-error">{error}</p>}
