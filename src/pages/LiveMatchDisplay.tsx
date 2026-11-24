@@ -409,7 +409,7 @@ type RoundSummary = LiveMatchView["roundSummaries"][number];
 const ROUND_FOCUS_FIRST_MS = 5 * 60 * 1000;
 const ROUND_FOCUS_LATER_MS = 2 * 60 * 1000;
 /** Po vseh kegljih v krogu: še malo pokaži rezultat, preden gre na naslednji krog. */
-const ROUND_FOCUS_RESULTS_MS = 8_000;
+const ROUND_FOCUS_RESULTS_MS = 5_000;
 
 function readRoundFocusOverrideMs(): number | null {
   const params = new URLSearchParams(window.location.search);
@@ -474,7 +474,7 @@ function resultsHold(p: RoundFocusPhase, now: number): RoundFocusPhase {
 }
 
 /**
- * Ko so v krogu vsi keglji, fokus ostane na tem krogu še 8 s.
+ * Ko so v krogu vsi keglji, fokus ostane na tem krogu še 5 s.
  * Šele nato gre na naslednji krog ali na končni pregled.
  * `until` je rok samo za ta prikaz rezultata — uvodni rok se ne sme šteti kot že potekel premor.
  */
