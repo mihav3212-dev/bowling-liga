@@ -165,6 +165,7 @@ export function LineupEditor({
   onEditingChange,
   starterCount = 4,
   showBench = true,
+  startersLocked = false,
   hint,
   formatPlayer,
   searchIn,
@@ -179,6 +180,8 @@ export function LineupEditor({
   /** Koliko mest A1… (2–4). Ostala mesta ostanejo prazna. */
   starterCount?: number;
   showBench?: boolean;
+  /** Po kegljih v 1. krogu: A1–A4 zaklenjeni, A5/A6 (menjave) še dovoljene. */
+  startersLocked?: boolean;
   hint?: string;
   formatPlayer?: (p: Player) => string;
   /** Dodatno iskanje (npr. ime ekipe). */
@@ -210,13 +213,14 @@ export function LineupEditor({
     while (out.length < 4) out.push("");
     return out.slice(0, 4);
   };
+  const defaultHint = startersLocked
+    ? `A1–A4 so zaklenjeni (rezultati 1. kroga). Še lahko dodaš menjave ${side === "home" ? "A5/A6" : "B5/B6"}.`
+    : `Izberi ${slots} + do 2 menjavi iz ${roster.length} igralcev.`;
 
   return (
     <div>
       <h3>{label}</h3>
-      <p className="muted">
-        {hint ?? `Izberi ${slots} + do 2 menjavi iz ${roster.length} igralcev.`}
-      </p>
+      <p className="muted">{hint ?? defaultHint}</p>
       <input
         value={query}
         onChange={(e) => setQuery(e.target.value)}
@@ -226,9 +230,11 @@ export function LineupEditor({
         <select
           key={`s${i}`}
           value={starters[i] ?? ""}
+          disabled={startersLocked}
           onFocus={() => onEditingChange?.(true)}
           onBlur={() => onEditingChange?.(false)}
           onChange={(e) => {
+            if (startersLocked) return;
             const next = padStarters(starters);
             next[i] = e.target.value;
             for (let j = slots; j < 4; j++) next[j] = "";
@@ -489,13 +495,16 @@ export function MatchEntry({
   const playerStats = matchPlayerStats(match, state.players);
   const fmtAvg = (n: number | null) =>
     n != null ? n.toLocaleString("sl-SI", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—";
-  const playersLocked = (readOnly && !teamLineup) || lineupLocked(match.rounds);
+  // A1–A4 zaklenjeni po kegljih; A5/A6 / B5/B6 (menjave) ostanejo urejljivi.
+  const startersLocked = lineupLocked(match.rounds);
+  const lineupViewOnly = readOnly && !teamLineup;
   const homeEditable = lineupTeamId
-    ? ownSide === "home" && perms.lineup && !playersLocked
-    : !playersLocked;
+    ? ownSide === "home" && perms.lineup && !lineupViewOnly
+    : !lineupViewOnly;
   const awayEditable = lineupTeamId
-    ? ownSide === "away" && perms.lineup && !playersLocked
-    : !playersLocked;
+    ? ownSide === "away" && perms.lineup && !lineupViewOnly
+    : !lineupViewOnly;
+  const playersLocked = lineupViewOnly || startersLocked;
   const revealed = lineupsRevealed(match);
   const hideHomeLineup = Boolean(lineupTeamId && ownSide === "away" && !revealed);
   const hideAwayLineup = Boolean(lineupTeamId && ownSide === "home" && !revealed);
@@ -569,22 +578,17 @@ export function MatchEntry({
         </div>
       </div>
 
-      {teamLineup && !playersLocked && (
+      {teamLineup && !startersLocked && (
         <p className="muted" style={{ margin: "12px 0 0" }}>
           Vnesi svojo sestavo ({ownSide === "home" ? "A1–A6" : "B1–B6"}). Nasprotnikova ostane skrita do
           začetka tekme.
           {canResults ? "" : " Rezultate vnaša admin, razen če imaš dovoljenje."}
         </p>
       )}
-      {playersLocked && teamLineup && (
+      {startersLocked && (teamLineup || (!readOnly && !lineupTeamId)) && (
         <p className="muted" style={{ margin: "12px 0 0" }}>
-          Sestava je zaklenjena, ker so že vneseni rezultati 1. kroga.
-        </p>
-      )}
-      {playersLocked && !readOnly && !lineupTeamId && (
-        <p className="muted" style={{ margin: "12px 0 0" }}>
-          Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
-          keglje v 1. krogu.
+          A1–A4 / B1–B4 so zaklenjeni (rezultati 1. kroga). Menjave A5/A6 oziroma B5/B6 lahko še dodaš.
+          Za spremembo začetne sestave najprej zbriši keglje v 1. krogu.
         </p>
       )}
       <div className="grid-2" style={{ margin: "16px 0" }}>
@@ -601,6 +605,7 @@ export function MatchEntry({
               roster={homeRoster}
               starters={match.homeStarters}
               bench={match.homeBench}
+              startersLocked={startersLocked}
               onChange={(starters, bench) => setLineup(match.id, "home", starters, bench)}
               onEditingChange={(editing) => {
                 editingLineupRef.current = editing;
@@ -628,6 +633,7 @@ export function MatchEntry({
               roster={awayRoster}
               starters={match.awayStarters}
               bench={match.awayBench}
+              startersLocked={startersLocked}
               onChange={(starters, bench) => setLineup(match.id, "away", starters, bench)}
               onEditingChange={(editing) => {
                 editingLineupRef.current = editing;

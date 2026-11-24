@@ -9,6 +9,7 @@ import {
   playerOnOtherLane,
   preserveSubstitutions,
   sanitizeLineup,
+  startersForLineupSave,
   teamMatchSide,
 } from "./lineup.mjs";
 import {
@@ -764,10 +765,7 @@ export async function saveMatchLineup(pool, teamId, matchId, side, starters, ben
         return null;
       }
     }
-    if (lineupLocked(match.rounds)) {
-      await conn.rollback();
-      return null;
-    }
+    // Po kegljih v 1. krogu A1–A4 ostanejo; A5/A6 (menjave) so še dovoljene.
     if (Array.isArray(opts.baseStarters)) {
       const serverStarters = side === "home" ? match.homeStarters : match.awayStarters;
       const serverBench = side === "home" ? match.homeBench : match.awayBench;
@@ -782,7 +780,9 @@ export async function saveMatchLineup(pool, teamId, matchId, side, starters, ben
     const allowed = new Set(
       (current.data.players ?? []).filter((player) => player.teamId === rosterTeamId).map((player) => player.id),
     );
-    const clean = sanitizeLineup(starters ?? [], bench ?? [], allowed);
+    const serverStarters = side === "home" ? match.homeStarters : match.awayStarters;
+    const frozenStarters = startersForLineupSave(serverStarters, starters ?? [], match.rounds);
+    const clean = sanitizeLineup(frozenStarters, bench ?? [], allowed);
     matches[index] = applyLineup(match, side, clean.starters, clean.bench);
     const payload = preserveSecrets(asState({ ...current.data, matches }), current.data, { lockPerms: true });
     await conn.execute(

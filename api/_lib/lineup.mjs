@@ -100,6 +100,18 @@ export function sanitizeLineup(starters, bench, allowed) {
   return { starters: cleanStarters, bench: cleanBench };
 }
 
+/** Po kegljih v 1. krogu A1–A4 ostanejo; A5/A6 (bench) so še dovoljene. */
+export function startersForLineupSave(currentStarters, nextStarters, rounds) {
+  if (lineupLocked(rounds)) {
+    const frozen = [...(currentStarters ?? [])];
+    while (frozen.length < PLAYERS_ON_LANE) frozen.push("");
+    return frozen.slice(0, PLAYERS_ON_LANE);
+  }
+  const next = [...(nextStarters ?? [])];
+  while (next.length < PLAYERS_ON_LANE) next.push("");
+  return next.slice(0, PLAYERS_ON_LANE);
+}
+
 export function hasMidMatchSubstitutions(match) {
   return substitutedOutIds(match, "home").size > 0 || substitutedOutIds(match, "away").size > 0;
 }
@@ -110,20 +122,22 @@ export function matchSheetView(match) {
 }
 
 export function applyLineup(match, side, starters, bench) {
-  const home = side === "home" ? starters : match.homeStarters;
-  const away = side === "away" ? starters : match.awayStarters;
+  const currentStarters = side === "home" ? match.homeStarters : match.awayStarters;
+  const frozenStarters = startersForLineupSave(currentStarters, starters, match.rounds);
+  const home = side === "home" ? frozenStarters : match.homeStarters;
+  const away = side === "away" ? frozenStarters : match.awayStarters;
   const next = {
     ...match,
     ...(side === "home"
-      ? { homeStarters: starters, homeBench: bench }
-      : { awayStarters: starters, awayBench: bench }),
+      ? { homeStarters: frozenStarters, homeBench: bench }
+      : { awayStarters: frozenStarters, awayBench: bench }),
   };
   // Po prvem keglju / menjavah ne povoziti parov z začetno sestavo.
   if (lineupLocked(match.rounds) || hasMidMatchSubstitutions(match)) {
     // Same heal order as matchSheetView: preserve menjava, then repair starter dupes.
     return repairDuplicateLanePlayers(preserveSubstitutions(next));
   }
-  const nominated = new Set([...(starters ?? []), ...(bench ?? [])].filter(Boolean));
+  const nominated = new Set([...frozenStarters, ...(bench ?? [])].filter(Boolean));
   next.rounds = PAIRINGS.map((games, ri) => ({
     games: games.map((g, gi) => {
       const prev = match.rounds?.[ri]?.games?.[gi];

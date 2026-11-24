@@ -338,7 +338,7 @@ export function matchPlayerStats(match: Match, players: Player[]): MatchPlayerSt
     });
 }
 
-/** Ko so v 1. krogu vneseni keglji, sestave ni več mogoče spreminjati. */
+/** Ko so v 1. krogu vneseni keglji, so A1–A4 / B1–B4 zaklenjeni (A5/A6 / B5/B6 še grejo). */
 export function lineupLocked(rounds: MatchRound[] | undefined): boolean {
   return Boolean(
     rounds?.[0]?.games.some((game) => game.homePins != null || game.awayPins != null),

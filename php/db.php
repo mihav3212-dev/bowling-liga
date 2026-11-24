@@ -803,9 +803,7 @@ function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench
                     return finish_season_write($pdo, $started, false, $current['id']);
                 }
             }
-            if (liga_lineup_locked($match['rounds'] ?? [])) {
-                return finish_season_write($pdo, $started, false, $current['id']);
-            }
+            // Po kegljih v 1. krogu A1–A4 ostanejo; A5/A6 (menjave) so še dovoljene.
             if (array_key_exists('baseStarters', $opts) && is_array($opts['baseStarters'])) {
                 $serverStarters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
                 $serverBench = $side === 'home' ? ($match['homeBench'] ?? []) : ($match['awayBench'] ?? []);
@@ -823,6 +821,8 @@ function save_match_lineup(PDO $pdo, $teamId, $matchId, $side, $starters, $bench
                     $allowed[$player['id']] = true;
                 }
             }
+            $serverStarters = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
+            $starters = liga_starters_for_lineup_save($serverStarters, $starters, $match['rounds'] ?? []);
             [$cleanStarters, $cleanBench] = liga_sanitize_lineup($starters, $bench, $allowed);
             $matches[$i] = liga_apply_lineup($match, $side, $cleanStarters, $cleanBench);
             $found = true;

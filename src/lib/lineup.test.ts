@@ -12,6 +12,7 @@ import {
   preserveSubstitutions,
   repairDuplicateLanePlayers,
   sanitizeLineup,
+  startersForLineupSave,
   substitutedOutIds,
   teamMatchSide,
 } from "./lineup";
@@ -153,6 +154,33 @@ describe("team lineup", () => {
     expect(saved.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
     expect(saved.rounds[2]?.games.some((g) => g.homePlayerId === "h5")).toBe(true);
     expect(saved.rounds[1]?.games.some((g) => g.homePlayerId === "h1")).toBe(false);
+  });
+
+  it("allows adding A5/A6 after round 1 pins while freezing A1–A4", () => {
+    const match = sampleMatch({
+      homeStarters: ["h1", "h2", "h3", "h4"],
+      homeBench: [],
+      awayStarters: ["a1", "a2", "a3", "a4"],
+      awayBench: [],
+      rounds: emptyRounds(["h1", "h2", "h3", "h4"], ["a1", "a2", "a3", "a4"]),
+    });
+    match.rounds[0].games[0].homePins = 120;
+    match.rounds[0].games[0].awayPins = 110;
+    expect(startersForLineupSave(match.homeStarters, ["x1", "x2", "x3", "x4"], match.rounds)).toEqual([
+      "h1",
+      "h2",
+      "h3",
+      "h4",
+    ]);
+    const withBench = applyLineup(match, "home", ["x1", "x2", "x3", "x4"], ["h5", "h6"]);
+    expect(withBench.homeStarters).toEqual(["h1", "h2", "h3", "h4"]);
+    expect(withBench.homeBench).toEqual(["h5", "h6"]);
+    expect(withBench.rounds[0]?.games[0]?.homePlayerId).toBe("h1");
+    expect(withBench.rounds[0]?.games[0]?.homePins).toBe(120);
+
+    const subbed = applyPlayerSubstitution(withBench, 1, 2, "home", "h5");
+    expect(subbed.rounds[1]?.games[2]?.homePlayerId).toBe("h5");
+    expect(nominationLineupIds(withBench, "home")).toEqual(["h1", "h2", "h3", "h4", "h5", "h6"]);
   });
 
   it("propagates a sub forward and blocks the replaced player from returning", () => {

@@ -131,7 +131,8 @@ export function TrainingMatch({
   const totals = matchTotals(asMatch, state.players);
   const homeNom = nominatedIds(packed.homeStarters, packed.homeBench);
   const awayNom = nominatedIds(packed.awayStarters, packed.awayBench);
-  const playersLocked = ligaReadOnly || lineupLocked(packed.rounds);
+  const startersLocked = lineupLocked(packed.rounds);
+  const playersLocked = ligaReadOnly;
   const nominated = useMemo(
     () => allRoster.filter((p) => homeNom.includes(p.id) || awayNom.includes(p.id)),
     [allRoster, homeNom, awayNom],
@@ -164,7 +165,7 @@ export function TrainingMatch({
       </p>
       {ligaReadOnly ? (
         <p className="muted">Vnos iz zavihka Trening — samo pregled. Spremembe ureja admin.</p>
-      ) : !lineupLocked(packed.rounds) ? (
+      ) : !startersLocked ? (
         <label className="training-date" style={{ marginTop: 8 }}>
           Število mest na stran (2–4)
           <select
@@ -189,8 +190,8 @@ export function TrainingMatch({
         </label>
       ) : (
         <p className="muted">
-          Sestava je zaklenjena, ker so vneseni rezultati 1. kroga. Če jo želiš spremeniti, najprej zbriši
-          keglje v 1. krogu.
+          A1–A4 / B1–B4 so zaklenjeni (rezultati 1. kroga). Menjave A5/A6 oziroma B5/B6 lahko še dodaš.
+          Za spremembo začetne sestave najprej zbriši keglje v 1. krogu.
         </p>
       )}
 
@@ -212,7 +213,12 @@ export function TrainingMatch({
               bench={packed.homeBench}
               starterCount={starterCount}
               showBench={starterCount >= 4}
-              hint={`Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`}
+              startersLocked={startersLocked}
+              hint={
+                startersLocked
+                  ? undefined
+                  : `Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`
+              }
               formatPlayer={formatPlayer}
               searchIn={teamNameOf}
               onChange={(starters, bench) =>
@@ -238,7 +244,12 @@ export function TrainingMatch({
               bench={packed.awayBench}
               starterCount={starterCount}
               showBench={starterCount >= 4}
-              hint={`Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`}
+              startersLocked={startersLocked}
+              hint={
+                startersLocked
+                  ? undefined
+                  : `Izberi ${starterCount} igralce iz ${homeName} / ${awayName}.`
+              }
               formatPlayer={formatPlayer}
               searchIn={teamNameOf}
               onChange={(starters, bench) =>
@@ -249,7 +260,7 @@ export function TrainingMatch({
         </div>
       </div>
 
-      {!ligaReadOnly && !lineupLocked(packed.rounds) && (
+      {!ligaReadOnly && !startersLocked && (
         <div className="panel" style={{ marginBottom: 16 }}>
           <h3>Nov igralec</h3>
           <p className="muted">
@@ -277,7 +288,7 @@ export function TrainingMatch({
         const size = lineupSize(packed.homeStarters, packed.awayStarters);
         const pair = pairingTemplate(size)[ri] ?? [];
         const roundTot = totals.rounds[ri];
-        const lockRoundPlayers = ri === 0 && playersLocked;
+        const lockRoundPlayers = ligaReadOnly || (ri === 0 && startersLocked);
         const visibleGames = round.games
           .map((game, gi) => ({ game, gi }))
           .filter(({ game, gi }) => {

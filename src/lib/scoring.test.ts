@@ -30,7 +30,7 @@ function player(over: Partial<Player> & { id: string }): Player {
 }
 
 describe("zaklep sestave", () => {
-  it("zaklene po prvem vnosu kegljev v 1. krogu", () => {
+  it("zaklene A1–A4 po prvem vnosu kegljev v 1. krogu (menjave A5/A6 ostanejo)", () => {
     const empty = [{ games: [{ homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: null, awayPins: null }] }];
     const scored = [{ games: [{ homePlayerId: "h", awayPlayerId: "a", lane: 1, homePins: 180, awayPins: null }] }];
     expect(lineupLocked(empty)).toBe(false);
