@@ -109,6 +109,25 @@ function liga_sanitize_lineup($starters, $bench, $allowed)
     return [$cleanStarters, $cleanBench];
 }
 
+/**
+ * Po kegljih v 1. krogu A1–A4 ostanejo; A5/A6 (bench) so še dovoljene.
+ */
+function liga_starters_for_lineup_save($currentStarters, $nextStarters, $rounds)
+{
+    if (liga_lineup_locked($rounds)) {
+        $frozen = is_array($currentStarters) ? array_values($currentStarters) : [];
+        while (count($frozen) < 4) {
+            $frozen[] = '';
+        }
+        return array_slice($frozen, 0, 4);
+    }
+    $next = is_array($nextStarters) ? array_values($nextStarters) : [];
+    while (count($next) < 4) {
+        $next[] = '';
+    }
+    return array_slice($next, 0, 4);
+}
+
 function liga_pairings()
 {
     return [
@@ -322,6 +341,8 @@ function liga_match_sheet_view($match)
 
 function liga_apply_lineup($match, $side, $starters, $bench)
 {
+    $current = $side === 'home' ? ($match['homeStarters'] ?? []) : ($match['awayStarters'] ?? []);
+    $starters = liga_starters_for_lineup_save($current, $starters, $match['rounds'] ?? []);
     $home = $side === 'home' ? $starters : ($match['homeStarters'] ?? []);
     $away = $side === 'away' ? $starters : ($match['awayStarters'] ?? []);
     if ($side === 'home') {

@@ -66,6 +66,7 @@ import {
   preserveSubstitutions,
   rosterIdsForTeam,
   sanitizeLineup,
+  startersForLineupSave,
   teamMatchSide,
 } from "./lineup";
 import { useAuth } from "./auth";
@@ -635,14 +636,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const team = viewerTeamRef.current;
         if (team && !canTeam(stateRef.current.teams.find((t) => t.id === team), "lineup")) return;
         const match = stateRef.current.matches.find((item) => item.id === matchId);
-        if (!match || lineupLocked(match.rounds)) return;
+        if (!match) return;
         const baseStarters = [...(side === "home" ? match.homeStarters : match.awayStarters)];
         const baseBench = [...(side === "home" ? match.homeBench : match.awayBench)];
-        let nextStarters = starters;
+        // Po kegljih v 1. krogu A1–A4 ostanejo; A5/A6 (menjave) so še dovoljene.
+        let nextStarters = startersForLineupSave(baseStarters, starters, match.rounds);
         let nextBench = bench;
         if (team) {
           if (teamMatchSide(match, team) !== side) return;
-          const clean = sanitizeLineup(starters, bench, rosterIdsForTeam(stateRef.current.players, team));
+          const clean = sanitizeLineup(nextStarters, bench, rosterIdsForTeam(stateRef.current.players, team));
           nextStarters = clean.starters;
           nextBench = clean.bench;
         }
@@ -651,7 +653,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         touchLocal((s) => ({
           ...s,
           matches: s.matches.map((m) => {
-            if (m.id !== matchId || lineupLocked(m.rounds)) return m;
+            if (m.id !== matchId) return m;
             if (team && teamMatchSide(m, team) !== side) return m;
             return applyLineup(m, side, nextStarters, nextBench);
           }),
@@ -1004,7 +1006,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             teamId,
             getTeamSessions(s, teamId).map((session) => {
               if (session.id !== sessionId || !session.match) return session;
-              if (lineupLocked(session.match.rounds)) return session;
+              // Po kegljih A1–A4 zamrznjeni; applyLineup ohrani bench (A5/A6).
               const next = applyLineup(
                 trainingAsMatch(session.id, session.match),
                 side,
@@ -1183,8 +1185,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         const team = viewerTeamRef.current;
         const match = packed.matches.find((item) => item.id === matchId);
         if (!match) return false;
-        // Po prvem keglju / menjavi so pari že v rundah (saveMatchGame); sestave ne pošiljaj znova.
-        if (lineupLocked(match.rounds)) return true;
+        // Po prvem keglju pari ostanejo; še vedno lahko shraniš A5/A6 (menjave).
         if (!remoteRef.current || !seasonIdRef.current) {
           update(() => packed);
           return true;

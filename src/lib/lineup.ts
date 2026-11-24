@@ -105,6 +105,25 @@ export function sanitizeLineup(
   return { starters: cleanStarters, bench: cleanBench };
 }
 
+/**
+ * Po vnosu kegljev v 1. krogu A1–A4 ostanejo; A5/A6 (bench) so še dovoljene.
+ * Vrne starterje, ki jih smemo zapisati (zamrznjene, če je sestava zaklenjena).
+ */
+export function startersForLineupSave(
+  currentStarters: string[] | undefined,
+  nextStarters: string[],
+  rounds: MatchRound[] | undefined,
+): string[] {
+  if (lineupLocked(rounds)) {
+    const frozen = [...(currentStarters ?? [])];
+    while (frozen.length < PLAYERS_ON_LANE) frozen.push("");
+    return frozen.slice(0, PLAYERS_ON_LANE);
+  }
+  const next = [...nextStarters];
+  while (next.length < PLAYERS_ON_LANE) next.push("");
+  return next.slice(0, PLAYERS_ON_LANE);
+}
+
 /** Je bila na tekmi že narejena menjava (odhajajoči v rundah)? */
 export function hasMidMatchSubstitutions(match: LineupMatch): boolean {
   return substitutedOutIds(match, "home").size > 0 || substitutedOutIds(match, "away").size > 0;
@@ -180,8 +199,8 @@ export function applyLineup(
   /** Trening tekma: 2–4. Uradna liga vedno 4 (privzeto). */
   opts?: { flexiblePairing?: boolean },
 ): Match {
-  const cleanStarters = starters.slice(0, PLAYERS_ON_LANE);
-  while (cleanStarters.length < PLAYERS_ON_LANE) cleanStarters.push("");
+  const currentStarters = side === "home" ? match.homeStarters : match.awayStarters;
+  const cleanStarters = startersForLineupSave(currentStarters, starters, match.rounds);
   const cleanBench = bench.filter(Boolean).slice(0, MAX_BENCH);
   const next: Match = {
     ...match,

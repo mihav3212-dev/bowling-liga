@@ -150,5 +150,23 @@ if ($blocked !== $subbed) {
 }
 ok('outgoing player cannot return');
 
+// Mid-game: add A5/A6 after round-1 pins; starters stay frozen.
+$lockedMatch = $match;
+$lockedMatch['homeBench'] = [];
+$lockedMatch['rounds'][0]['games'][0]['homePins'] = 120;
+$lockedMatch['rounds'][0]['games'][0]['awayPins'] = 110;
+$withBench = liga_apply_lineup($lockedMatch, 'home', ['x1', 'x2', 'x3', 'x4'], ['h5', 'h6']);
+if (($withBench['homeStarters'] ?? []) !== $home) {
+    fail('locked apply_lineup must freeze A1–A4');
+}
+if (($withBench['homeBench'] ?? []) !== ['h5', 'h6']) {
+    fail('locked apply_lineup must accept A5/A6');
+}
+$frozen = liga_starters_for_lineup_save($home, ['x1', 'x2', 'x3', 'x4'], $lockedMatch['rounds']);
+if ($frozen !== $home) {
+    fail('liga_starters_for_lineup_save must freeze when locked');
+}
+ok('mid-game bench A5/A6 allowed while starters frozen');
+
 echo "ALL PASSED\n";
 exit(0);
