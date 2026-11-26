@@ -2482,7 +2482,7 @@ html[data-device="tv"] .liga-board-promo-logo,
   display: none;
 }
 
-.live-tv > *:not(.live-tv-glow):not(.live-tv-lane):not(.live-tv-focus-overlay) {
+.live-tv > *:not(.live-tv-glow):not(.live-tv-lane):not(.live-tv-focus-overlay):not(.live-tv-fs-entry) {
   position: relative;
   z-index: 1;
 }
@@ -2565,6 +2565,90 @@ html[data-device="tv"] .liga-board-promo-logo,
   border-color: var(--tv-live);
   color: var(--tv-live);
   background: rgba(176, 79, 196, 0.12);
+}
+
+/* Vstopni overlay: klik za cel zaslon ob odprtju TV živo */
+.live-tv-fs-entry {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 3cqw, 32px);
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.live-tv-fs-entry-panel {
+  width: min(360px, 100%);
+  border-radius: 10px;
+  background: #121018;
+  border: 1px solid var(--tv-line);
+  padding: clamp(18px, 2.5cqw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.live-tv-fs-entry-panel h2 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: clamp(1.35rem, 2.4cqw, 1.75rem);
+  color: var(--tv-ink);
+}
+
+.live-tv-fs-entry-panel > p {
+  margin: 0;
+  font-size: clamp(0.9rem, 1.4cqw, 1.05rem);
+  line-height: 1.45;
+  color: var(--tv-muted);
+}
+
+.live-tv-fs-entry-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tv-line);
+}
+
+.live-tv-fs-entry-primary {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1rem, 1.6cqw, 1.15rem);
+  background: var(--tv-accent);
+  color: #fff;
+}
+
+.live-tv-fs-entry-primary:hover {
+  filter: brightness(1.08);
+}
+
+.live-tv-fs-entry-secondary {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--tv-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: clamp(0.9rem, 1.3cqw, 1rem);
+  padding: 8px 12px;
+}
+
+.live-tv-fs-entry-secondary:hover {
+  color: var(--tv-ink);
 }
 
 .live-tv.is-fullscreen {

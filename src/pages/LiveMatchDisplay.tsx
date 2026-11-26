@@ -20,6 +20,10 @@ import { formatMatchRound, formatSeasonRound } from "../lib/labels";
 import { shortTvPersonNameFromParts, splitPlayerName } from "../lib/playerName";
 import { findTrainingSession, formatTrainingDate, trainingAsMatch } from "../lib/training";
 import { useStore } from "../lib/store";
+import {
+  dismissTvFullscreenEntry,
+  isTvFullscreenEntryDismissed,
+} from "../lib/tvFullscreenEntry";
 import type { LeagueState } from "../lib/types";
 
 function useLiveFullscreen(rootRef: RefObject<HTMLElement | null>) {
@@ -79,6 +83,63 @@ function LiveFullscreenButton({
     >
       {active ? "Zapri cel zaslon" : "Cel zaslon"}
     </button>
+  );
+}
+
+/** Ob odprtju TV živo: klik za cel zaslon (brskalnik ne dovoli samodejno). */
+function LiveTvFullscreenEntry({
+  enabled,
+  fullscreen,
+  onEnterFullscreen,
+}: {
+  enabled: boolean;
+  fullscreen: boolean;
+  onEnterFullscreen: () => void;
+}) {
+  const [open, setOpen] = useState(() => enabled && !isTvFullscreenEntryDismissed());
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (fullscreen || document.fullscreenElement) setOpen(false);
+  }, [enabled, fullscreen]);
+
+  // Ne blokiraj, če je že cel zaslon (tudi če React state še ni sinhron).
+  if (!enabled || !open || fullscreen || document.fullscreenElement) return null;
+
+  const dismiss = () => {
+    dismissTvFullscreenEntry();
+    setOpen(false);
+  };
+
+  return (
+    <div
+      className="live-tv-fs-entry"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="live-tv-fs-entry-title"
+    >
+      <div className="live-tv-fs-entry-panel">
+        <h2 id="live-tv-fs-entry-title">TV živo</h2>
+        <p>
+          Za cel zaslon klikni spodaj. Brskalnik zahteva klik uporabnika.
+        </p>
+        <div className="live-tv-fs-entry-actions">
+          <button
+            type="button"
+            className="live-tv-fs-entry-primary"
+            onClick={() => {
+              dismiss();
+              onEnterFullscreen();
+            }}
+          >
+            Cel zaslon
+          </button>
+          <button type="button" className="live-tv-fs-entry-secondary" onClick={dismiss}>
+            Nadaljuj brez
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -714,6 +775,8 @@ type ScreenProps = {
   matchKey?: string;
   /** Vklop »V živo na TV« znova odpre fokus na isti tekmi. */
   liveOnTv?: boolean;
+  /** Vstopni overlay za cel zaslon (`?display=live`). */
+  fullscreenEntryPrompt?: boolean;
 };
 
 function LiveMatchScreen({
@@ -725,6 +788,7 @@ function LiveMatchScreen({
   brandSub,
   matchKey,
   liveOnTv = false,
+  fullscreenEntryPrompt = false,
 }: ScreenProps) {
   const sub = brandSub ?? `Liga · ${formatSeasonRound(m.round)}`;
   const shellRef = useRef<HTMLDivElement>(null);
@@ -998,6 +1062,11 @@ function LiveMatchScreen({
             </div>
           ) : null}
         </div>
+        <LiveTvFullscreenEntry
+          enabled={fullscreenEntryPrompt}
+          fullscreen={fullscreen}
+          onEnterFullscreen={toggleFullscreen}
+        />
       </div>
     );
   }
@@ -1146,6 +1215,11 @@ function LiveMatchScreen({
           </div>
         </div>
       ) : null}
+      <LiveTvFullscreenEntry
+        enabled={fullscreenEntryPrompt}
+        fullscreen={fullscreen}
+        onEnterFullscreen={toggleFullscreen}
+      />
     </div>
   );
 }
@@ -1180,6 +1254,11 @@ function LiveIdleScreen() {
           <p className="live-tv-idle-title">Trenutno ni tekme v živo</p>
           <p className="live-tv-idle-sub">Prikaz se osveži samodejno.</p>
         </div>
+        <LiveTvFullscreenEntry
+          enabled
+          fullscreen={fullscreen}
+          onEnterFullscreen={toggleFullscreen}
+        />
       </div>
     </TvScaleStage>
   );
@@ -1294,6 +1373,7 @@ export function LiveMatchBoard() {
       onLayoutChange={setLayout}
       matchKey={pick.match.id}
       liveOnTv={pick.match.liveOnTv === true}
+      fullscreenEntryPrompt
     />
   );
 }
