@@ -15,8 +15,11 @@ export function Setup({ onDone, onSkip }: { onDone: () => void; onSkip?: () => v
       <section className="panel">
         <h2 style={{ marginTop: 0 }}>Namestitev</h2>
         <p className="muted">
-          Datoteke .env ne rabiš. V phpMyAdmin najprej ustvari prazno bazo, sem pa vpiši iste podatke kot za
-          MySQL uporabnika.
+          Na klasičnem hostingu (public_html): v phpMyAdmin ustvari prazno bazo, sem vpiši iste MySQL podatke.
+          Na Vercelu obrazec ne deluje — v Project → Environment Variables nastavi{" "}
+          <code>MYSQL_HOST</code>, <code>MYSQL_USER</code>, <code>MYSQL_PASSWORD</code>,{" "}
+          <code>MYSQL_DATABASE</code> (ali <code>DATABASE_URL</code>) in <code>ADMIN_PASSWORD</code>, nato
+          Redeploy. Brez baze so vabila in gesla ekip samo v tem brskalniku.
         </p>
         <form
           className="setup-form"

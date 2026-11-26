@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import { loadFileConfig } from "./config.mjs";
+import { mysqlFromEnv, mysqlFromFile } from "./config.mjs";
 import { canEnterPins, teamPerms, teamRosterWindowOpen } from "./access.mjs";
 import {
   applyLineup,
@@ -27,39 +27,7 @@ import { setAdminPassword, setDisplayPassword } from "./session.mjs";
 let cached;
 
 function mysqlConfig() {
-  const file = loadFileConfig()?.mysql;
-  if (file?.host && file?.user && file?.database) {
-    return {
-      host: String(file.host),
-      user: String(file.user),
-      password: String(file.password ?? ""),
-      database: String(file.database),
-      port: Number(file.port || 3306),
-      charset: "utf8mb4",
-      waitForConnections: true,
-      connectionLimit: 8,
-    };
-  }
-  const url = process.env.DATABASE_URL || process.env.MYSQL_URL || "";
-  if (url.startsWith("mysql://") || url.startsWith("mariadb://")) {
-    return { uri: url, charset: "utf8mb4" };
-  }
-  const host = process.env.MYSQL_HOST || "";
-  const user = process.env.MYSQL_USER || "";
-  const database = process.env.MYSQL_DATABASE || "";
-  if (!host || !user || !database) return null;
-  const config = {
-    host,
-    user,
-    password: process.env.MYSQL_PASSWORD || "",
-    database,
-    port: Number(process.env.MYSQL_PORT || 3306),
-    charset: "utf8mb4",
-    waitForConnections: true,
-    connectionLimit: 8,
-  };
-  if (process.env.MYSQL_SOCKET) config.socketPath = process.env.MYSQL_SOCKET;
-  return config;
+  return mysqlFromFile() || mysqlFromEnv();
 }
 
 export function getSql() {
